@@ -1,0 +1,117 @@
+/*
+ * Copyright 2021 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.gradle.internal.os.OperatingSystem;
+
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 30
+    ndkVersion '21.4.7075529'
+
+    defaultConfig {
+        applicationId 'com.google.sample.agdktunnel'
+        minSdkVersion 24
+        targetSdkVersion 30
+        versionCode     1
+        versionName    '1.0'
+    }
+    buildTypes {
+        release {
+            minifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'),
+                          'proguard-rules.pro'
+            externalNativeBuild {
+                cmake {
+                    arguments "-DANDROID_STL=c++_shared",
+                            "-DUSE_ASSET_PACKS=false"
+                }
+            }
+        }
+        debug {
+            externalNativeBuild {
+                minifyEnabled = false
+                proguardFiles getDefaultProguardFile('proguard-android.txt'),
+                        'proguard-rules.pro'
+                cmake {
+                    arguments "-DANDROID_STL=c++_shared",
+                            "-DUSE_ASSET_PACKS=false"
+                }
+            }
+            multiDexEnabled true
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path 'src/main/cpp/CMakeLists.txt'
+        }
+    }
+    buildFeatures {
+        prefab true
+    }
+}
+
+dependencies {
+    implementation "androidx.lifecycle:lifecycle-viewmodel:2.2.0"
+    implementation "androidx.lifecycle:lifecycle-livedata:2.2.0"
+    implementation "androidx.lifecycle:lifecycle-runtime:2.2.0"
+    implementation "androidx.constraintlayout:constraintlayout:2.0.4"
+    implementation 'androidx.fragment:fragment:1.2.5'
+    implementation 'com.google.oboe:oboe:1.5.0'
+    implementation "androidx.games:games-frame-pacing:1.9.0"
+    implementation "androidx.games:games-performance-tuner:1.4.3"
+    implementation "androidx.games:games-activity:1.0.0"
+    implementation "androidx.games:games-controller:1.0.0"
+
+    // Example of using local .aar files in libs/ directory.
+    // Comment out the androidx.games implementation lines if
+    // you use a local lib.
+    //implementation fileTree(dir: 'libs', include: ['GameActivity.aar',
+    //                                               'GameController.aar',
+    //                                               'games-frame-pacing-1.9.0.aar',
+    //                                               'games-performance-tuner-1.4.3.aar'])
+}
+
+android.lintOptions {
+        abortOnError  = false
+}
+
+// Android Performance Tuner validation setup and protoc compile tasks
+task createJar(type: GradleBuild) {
+    buildFile = GameSDKPath + '/util/tuningfork/tools/validation/build.gradle'
+    tasks = ['createJar']
+}
+
+def getProtocPath() {
+    String platformName
+    if (OperatingSystem.current().isLinux()) platformName = "linux-x86/bin/protoc"
+    if (OperatingSystem.current().isMacOsX()) platformName = "mac/bin/protoc"
+    if (OperatingSystem.current().isWindows()) platformName = "win/bin/protoc"
+    return GameSDKPath + "/third_party/protobuf-3.0.0/install/"  + platformName
+}
+
+task buildTuningForkBinFiles(type: Exec) {
+    dependsOn createJar
+    commandLine "java",
+            "-jar",
+            GameSDKPath + "/util/tuningfork/tools/validation/build/libs/TuningforkApkValidationTool.jar",
+            "--tuningforkPath",
+            "src/main/assets/tuningfork",
+            "--protoCompiler",
+            getProtocPath()
+}
+
+tasks.preBuild.dependsOn("buildTuningForkBinFiles")

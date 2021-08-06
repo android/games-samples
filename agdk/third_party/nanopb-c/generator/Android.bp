@@ -1,0 +1,33 @@
+package {
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "external_nanopb-c_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-BSD
+    //   SPDX-license-identifier-MIT
+    default_applicable_licenses: ["external_nanopb-c_license"],
+}
+
+python_binary_host {
+   name: "protoc-gen-nanopb",
+   main: "nanopb_generator.py",
+   srcs: [
+       "nanopb_generator.py",
+       "proto/nanopb.proto",
+       "proto/plugin.proto",
+   ],
+   proto: {
+       canonical_path_from_root: false,
+       include_dirs: ["external/protobuf/src"],
+   },
+   libs: ["libprotobuf-python"],
+   version: {
+       py2: {
+           enabled: true,
+           embedded_launcher: true,
+       },
+       py3: {
+           enabled: false,
+       },
+   },
+}

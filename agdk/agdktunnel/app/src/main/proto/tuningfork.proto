@@ -1,0 +1,68 @@
+/*
+ * Copyright (C) 2021 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License
+ */
+
+
+ syntax = "proto2";
+
+ package com.google.tuningfork;
+
+ option java_package = "com.google.tuningfork";
+
+ // Passed by the user to tuning fork at initialization.
+ message Settings {
+   message Histogram {
+     optional int32 instrument_key = 1;
+     optional float bucket_min = 2;
+     optional float bucket_max = 3;
+     optional int32 n_buckets = 4;
+   }
+   message AggregationStrategy {
+     enum Submission {
+       UNDEFINED = 0;
+       TIME_BASED = 1;
+       TICK_BASED = 2;
+     }
+     optional Submission method = 1;
+     optional int32 intervalms_or_count = 2;
+     optional int32 max_instrumentation_keys = 3;
+     repeated int32 annotation_enum_size = 4;
+   }
+   optional AggregationStrategy aggregation_strategy = 1;
+   repeated Histogram histograms = 2;
+
+   // Base request URI.
+   // If missing, https://performanceparameters.googleapis.com/v1/ is used.
+   optional string base_uri = 3;
+
+   // Google Play API key.
+   // Requests may receive an error response if this is missing or wrong.
+   optional string api_key = 4;
+
+   // Name of the fidelitiy_parameters.bin file in assets/tuningfork
+   //  used if no download was ever successful.
+   optional string default_fidelity_parameters_filename = 5;
+
+   // Timeout before first timeout of fidelity parameters request.
+   // The request will then be repeated.
+   optional int32 initial_request_timeout_ms = 6;
+
+   // The time after which repeat requests are ceased.
+   optional int32 ultimate_request_timeout_ms = 7;
+
+   // Reserve 100-120 for indexes into the annotation array.
+   optional int32 loading_annotation_index = 100; // 1-based index
+   optional int32 level_annotation_index = 101; // 1-based index
+ }

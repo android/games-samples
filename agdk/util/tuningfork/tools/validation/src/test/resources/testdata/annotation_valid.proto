@@ -1,0 +1,57 @@
+/*
+ * Copyright (C) 2019 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License
+ */
+
+syntax = "proto3";
+
+package com.google.tuningfork;
+
+enum LoadingState {
+  UNKNOWN_LOADING_STATE = 0;
+  NOT_LOADING = 1;
+}
+enum State {
+  UNKNOWN_STATE = 0;
+  STATE_ONE = 1;
+  STATE_TWO = 2;
+}
+enum QualitySettings {
+  UNKNOWN_SETTINGS = 0;
+  FAST = 1;
+  SIMPLE = 2;
+  GOOD = 3;
+  BEAUTIFUL = 4;
+  FANTASTIC = 5;
+}
+enum UnusedEnum {
+  UNKNOWN_VALUE = 0;
+  VALUE2 = 1;
+  VALUE3 = 2;
+}
+
+message Annotation {
+  enum NestedEnum {
+    UNKNOWN_NESTED_ENUM = 0;
+    FAST = 1;
+    SIMPLE = 2;
+    GOOD = 3;
+    BEAUTIFUL = 4;
+    FANTASTIC = 5;
+  }
+  LoadingState loading_state = 1;
+  State state = 2;
+  QualitySettings settings = 3;
+  NestedEnum nested_enum = 4;
+}

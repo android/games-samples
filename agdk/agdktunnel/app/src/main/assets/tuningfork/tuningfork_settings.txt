@@ -1,0 +1,4 @@
+aggregation_strategy: {method: TIME_BASED, intervalms_or_count: 10000, max_instrumentation_keys: 6, annotation_enum_size: [3,3]}
+api_key: "insert-api-key"
+loading_annotation_index: 1
+level_annotation_index: 2

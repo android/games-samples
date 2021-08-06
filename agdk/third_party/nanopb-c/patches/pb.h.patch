@@ -1,0 +1,27 @@
+diff --git a/pb.h b/pb.h
+index 174a84b..52d24de 100644
+--- a/pb.h
++++ b/pb.h
+@@ -122,6 +122,11 @@
+ #define PB_STATIC_ASSERT_MSG(MSG, LINE, COUNTER) PB_STATIC_ASSERT_MSG_(MSG, LINE, COUNTER)
+ #define PB_STATIC_ASSERT_MSG_(MSG, LINE, COUNTER) pb_static_assertion_##MSG##LINE##COUNTER
+ #endif
++#ifndef STATIC_ASSERT
++#define STATIC_ASSERT PB_STATIC_ASSERT
++#define STATIC_ASSERT_MSG PB_STATIC_ASSERT_MSG
++#define STATIC_ASSERT_MSG_ PB_STATIC_ASSERT_MSG_
++#endif
+ #else
+ #define PB_STATIC_ASSERT(COND,MSG)
+ #endif
+@@ -526,6 +531,7 @@ struct pb_extension_s {
+         PB_ ## rules ## _ ## allocation(tag, message, field, \
+         PB_DATAOFFSET_ ## placement(message, field, prevfield), \
+         PB_LTYPE_MAP_ ## type, ptr)
++#define PB_FIELD2 PB_FIELD
+ 
+ /* Field description for repeated static fixed count fields.*/
+ #define PB_REPEATED_FIXED_COUNT(tag, type, placement, message, field, prevfield, ptr) \
+-- 
+2.18.0.345.g5c9ce644c3-goog
+

@@ -1,0 +1,6 @@
+PROTOBUF {
+    global:
+        *google*protobuf*;
+    local:
+        *;
+};

@@ -1,0 +1,6 @@
+PROTOBUF {
+    global:
+        pb_*;
+    local:
+        *;
+};

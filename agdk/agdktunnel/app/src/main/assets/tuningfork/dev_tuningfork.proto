@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package com.google.tuningfork;
+
+enum InstrumentKey {
+  CPU = 0;
+  GPU = 1;
+  SWAPPY_WAIT = 2;
+  SWAPPY_SWAP = 3;
+  CHOREOGRAPHER = 4;
+}
+
+enum LoadingState {
+  LOADING_INVALID = 0;
+  NOT_LOADING = 1;
+  LOADING = 2;
+}
+
+enum Level {
+  // 0 is not a valid value
+  LEVEL_INVALID = 0;
+  STARTUP = 1;
+  LEVEL_1 = 2;
+};
+
+message Annotation {
+  LoadingState loading = 1;
+  Level level = 2;
+}
+
+message FidelityParams {
+  int32 tunnel_section_count = 1;
+  float tunnel_section_length = 2;
+}
