@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+     Copyright (C) 2021 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\Android">
+      <UniqueIdentifier>{af491163-f95a-40a3-aa57-0db04e1bdedb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Android">
+      <UniqueIdentifier>{77940b53-5039-44c5-b6a1-21aa992af35a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Android">
+      <UniqueIdentifier>{a47a5650-5d6c-4264-bf9d-70244af8a5fa}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="android_native_app_glue.h">
+      <Filter>Header Files\Android</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GameApplication.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="android_native_app_glue.c">
+      <Filter>Source Files\Android</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\main\assets\Shaders\ShaderPlain.fsh">
+      <Filter>Resource Files\Android</Filter>
+    </None>
+    <None Include="Shaders\ShaderPlain.fsh">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="src\main\AndroidManifest.xml">
+      <Filter>Resource Files\Android</Filter>
+    </Xml>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\main\assets\Shaders\VS_ShaderPlain.vsh">
+      <Filter>Resource Files\Android</Filter>
+    </None>
+    <None Include="Shaders\VS_ShaderPlain.vsh">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+</Project>
