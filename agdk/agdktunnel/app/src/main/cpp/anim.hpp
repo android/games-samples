@@ -24,4 +24,3 @@
 void RenderBackgroundAnimation(ShapeRenderer *r);
 
 #endif
-

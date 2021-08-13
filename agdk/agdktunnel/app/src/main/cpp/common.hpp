@@ -32,7 +32,9 @@
 #include "glm/gtc/matrix_transform.hpp"
 
 #define LOG_TAG "AGDKTunnel"
+
 #include "Log.h"
+
 #define ABORT_GAME { ALOGE("*** GAME ABORTING."); *((volatile char*)0) = 'a'; }
 #define DEBUG_BLIP ALOGI("[ BLIP ]: %s:%d", __FILE__, __LINE__)
 
@@ -44,4 +46,3 @@
 #include "our_key_codes.hpp"
 
 #endif
-

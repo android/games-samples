@@ -296,4 +296,3 @@ protected:
 };
 
 #endif
-

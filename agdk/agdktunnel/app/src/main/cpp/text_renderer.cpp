@@ -140,4 +140,3 @@ TextRenderer *TextRenderer::RenderText(const char *str, float centerX, float cen
     }
     return this;
 }
-

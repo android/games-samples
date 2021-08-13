@@ -55,4 +55,3 @@ float SineWave(float min, float max, float period, float phase) {
 bool BlinkFunc(float period) {
     return (int) (Clock() / period) & 1;
 }
-

@@ -349,4 +349,3 @@ void UiWidget::Render(TrivialShader *trivialShader, TextRenderer *textRenderer,
 }
 
 void UiScene::OnCreateWidgets() {}
-

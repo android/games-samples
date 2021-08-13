@@ -181,7 +181,7 @@ void PlayScene::LoadProgress() {
 
     ALOGI("Final decision on starting level: %d", mSavedCheckpoint);
     ALOGI("Final decision on whether to use cloud: %s", mUseCloudSave ? "USE CLOUD" :
-                                                       "DO NOT USE CLOUD (failed)");
+                                                        "DO NOT USE CLOUD (failed)");
 }
 
 void PlayScene::WriteSaveFile(int level) {
@@ -886,4 +886,3 @@ void PlayScene::UpdateProjectionMatrix() {
     mProjMat = glm::perspective(RENDER_FOV, mgr->GetScreenAspect(), RENDER_NEAR_CLIP,
                                 RENDER_FAR_CLIP);
 }
-

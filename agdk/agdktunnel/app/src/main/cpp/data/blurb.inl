@@ -30,4 +30,3 @@
     "to the end of that endless tunnel\n" \
     "collecting white cubes. At the end\n" \
     "you will receive cake."
-

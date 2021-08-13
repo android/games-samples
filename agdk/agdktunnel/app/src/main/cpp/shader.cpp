@@ -283,5 +283,3 @@ void TrivialShader::BeginRender(VertexBuf *geom) {
     MY_ASSERT(mTintLoc >= 0);
     glUniform4f(mTintLoc, mTint[0], mTint[1], mTint[2], 1.0f);
 }
-
-

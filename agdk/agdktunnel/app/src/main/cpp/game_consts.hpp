@@ -159,4 +159,3 @@
 #define LEVELS_PER_CHECKPOINT 4
 
 #endif
-

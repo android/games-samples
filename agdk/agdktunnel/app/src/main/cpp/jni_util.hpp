@@ -27,4 +27,3 @@ struct JniSetup {
 struct JniSetup *GetJNISetup();
 
 #endif
-

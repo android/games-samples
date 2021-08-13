@@ -70,7 +70,7 @@ NativeEngine::NativeEngine(struct android_app *app) {
 
     Paddleboat_init(GetJniEnv(), app->activity->clazz);
 
-            VLOGD("NativeEngine: querying API level.");
+    VLOGD("NativeEngine: querying API level.");
     ALOGI("NativeEngine: API version %d.", mApiVersion);
     ALOGI("NativeEngine: Density %d", mScreenDensity);
 }
@@ -81,7 +81,7 @@ NativeEngine *NativeEngine::GetInstance() {
 }
 
 NativeEngine::~NativeEngine() {
-            VLOGD("NativeEngine: destructor running");
+    VLOGD("NativeEngine: destructor running");
     Paddleboat_destroy(mJniEnv);
     ControllerUIData::UnloadControllerUIData();
     KillContext();
@@ -161,11 +161,11 @@ JNIEnv *NativeEngine::GetJniEnv() {
 void NativeEngine::HandleCommand(int32_t cmd) {
     SceneManager *mgr = SceneManager::GetInstance();
 
-            VLOGD("NativeEngine: handling command %d.", cmd);
+    VLOGD("NativeEngine: handling command %d.", cmd);
     switch (cmd) {
         case APP_CMD_SAVE_STATE:
             // The system has asked us to save our current state.
-                    VLOGD("NativeEngine: APP_CMD_SAVE_STATE");
+            VLOGD("NativeEngine: APP_CMD_SAVE_STATE");
             mState.mHasFocus = mHasFocus;
             mApp->savedState = malloc(sizeof(mState));
             *((NativeEngineSavedState *) mApp->savedState) = mState;
@@ -173,7 +173,7 @@ void NativeEngine::HandleCommand(int32_t cmd) {
             break;
         case APP_CMD_INIT_WINDOW:
             // We have a window!
-                    VLOGD("NativeEngine: APP_CMD_INIT_WINDOW");
+            VLOGD("NativeEngine: APP_CMD_INIT_WINDOW");
             if (mApp->window != NULL) {
                 mHasWindow = true;
                 if (mApp->savedStateSize == sizeof(mState) && mApp->savedState != nullptr) {
@@ -185,69 +185,69 @@ void NativeEngine::HandleCommand(int32_t cmd) {
                     mHasFocus = appState.mHasFocus;
                 }
             }
-                    VLOGD("HandleCommand(%d): hasWindow = %d, hasFocus = %d", cmd,
-                          mHasWindow ? 1 : 0, mHasFocus ? 1 : 0);
+            VLOGD("HandleCommand(%d): hasWindow = %d, hasFocus = %d", cmd,
+                  mHasWindow ? 1 : 0, mHasFocus ? 1 : 0);
             break;
         case APP_CMD_TERM_WINDOW:
             // The window is going away -- kill the surface
-                    VLOGD("NativeEngine: APP_CMD_TERM_WINDOW");
+            VLOGD("NativeEngine: APP_CMD_TERM_WINDOW");
             KillSurface();
             mHasWindow = false;
             break;
         case APP_CMD_GAINED_FOCUS:
-                    VLOGD("NativeEngine: APP_CMD_GAINED_FOCUS");
+            VLOGD("NativeEngine: APP_CMD_GAINED_FOCUS");
             mHasFocus = true;
             mState.mHasFocus = appState.mHasFocus = mHasFocus;
             break;
         case APP_CMD_LOST_FOCUS:
-                    VLOGD("NativeEngine: APP_CMD_LOST_FOCUS");
+            VLOGD("NativeEngine: APP_CMD_LOST_FOCUS");
             mHasFocus = false;
             mState.mHasFocus = appState.mHasFocus = mHasFocus;
             break;
         case APP_CMD_PAUSE:
-                    VLOGD("NativeEngine: APP_CMD_PAUSE");
+            VLOGD("NativeEngine: APP_CMD_PAUSE");
             mgr->OnPause();
             break;
         case APP_CMD_RESUME:
-                    VLOGD("NativeEngine: APP_CMD_RESUME");
+            VLOGD("NativeEngine: APP_CMD_RESUME");
             mgr->OnResume();
             break;
         case APP_CMD_STOP:
-                    VLOGD("NativeEngine: APP_CMD_STOP");
+            VLOGD("NativeEngine: APP_CMD_STOP");
             Paddleboat_onStop(mJniEnv);
             mIsVisible = false;
             break;
         case APP_CMD_START:
-                    VLOGD("NativeEngine: APP_CMD_START");
+            VLOGD("NativeEngine: APP_CMD_START");
             Paddleboat_onStart(mJniEnv);
             mIsVisible = true;
             break;
         case APP_CMD_WINDOW_RESIZED:
         case APP_CMD_CONFIG_CHANGED:
-                    VLOGD("NativeEngine: %s", cmd == APP_CMD_WINDOW_RESIZED ?
-                                              "APP_CMD_WINDOW_RESIZED" : "APP_CMD_CONFIG_CHANGED");
+            VLOGD("NativeEngine: %s", cmd == APP_CMD_WINDOW_RESIZED ?
+                                      "APP_CMD_WINDOW_RESIZED" : "APP_CMD_CONFIG_CHANGED");
             // Window was resized or some other configuration changed.
             // Note: we don't handle this event because we check the surface dimensions
             // every frame, so that's how we know it was resized. If you are NOT doing that,
             // then you need to handle this event!
             break;
         case APP_CMD_LOW_MEMORY:
-                    VLOGD("NativeEngine: APP_CMD_LOW_MEMORY");
+            VLOGD("NativeEngine: APP_CMD_LOW_MEMORY");
             // system told us we have low memory. So if we are not visible, let's
             // cooperate by deallocating all of our graphic resources.
             if (!mHasWindow) {
-                        VLOGD("NativeEngine: trimming memory footprint (deleting GL objects).");
+                VLOGD("NativeEngine: trimming memory footprint (deleting GL objects).");
                 KillGLObjects();
             }
             break;
         default:
-                    VLOGD("NativeEngine: (unknown command).");
+            VLOGD("NativeEngine: (unknown command).");
             break;
     }
 
-            VLOGD("NativeEngine: STATUS: F%d, V%d, W%d, EGL: D %p, S %p, CTX %p, CFG %p",
-                  mHasFocus, mIsVisible, mHasWindow, mEglDisplay, mEglSurface, mEglContext,
-                  mEglConfig);
+    VLOGD("NativeEngine: STATUS: F%d, V%d, W%d, EGL: D %p, S %p, CTX %p, CFG %p",
+          mHasFocus, mIsVisible, mHasWindow, mEglDisplay, mEglSurface, mEglContext,
+          mEglConfig);
 }
 
 static bool _cooked_event_callback(struct CookedEvent *event) {
@@ -392,7 +392,7 @@ bool NativeEngine::PrepareToRender() {
         }
 
         ALOGI("NativeEngine: binding surface and context (display %p, surface %p, context %p)",
-             mEglDisplay, mEglSurface, mEglContext);
+              mEglDisplay, mEglSurface, mEglContext);
 
         // bind them
         if (EGL_FALSE == eglMakeCurrent(mEglDisplay, mEglSurface, mEglSurface, mEglContext)) {
@@ -530,7 +530,7 @@ void NativeEngine::DoFrame() {
     // prepare to render (create context, surfaces, etc, if needed)
     if (!PrepareToRender()) {
         // not ready
-                VLOGD("NativeEngine: preparation to render failed.");
+        VLOGD("NativeEngine: preparation to render failed.");
         return;
     }
 
@@ -545,7 +545,7 @@ void NativeEngine::DoFrame() {
     if (width != mSurfWidth || height != mSurfHeight) {
         // notify scene manager that the surface has changed size
         ALOGI("NativeEngine: surface changed size %dx%d --> %dx%d", mSurfWidth, mSurfHeight,
-             width, height);
+              width, height);
         mSurfWidth = width;
         mSurfHeight = height;
         mgr->SetScreenSize(mSurfWidth, mSurfHeight);

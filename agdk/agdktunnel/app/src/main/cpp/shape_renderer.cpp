@@ -56,4 +56,3 @@ void ShapeRenderer::RenderRect(float centerX, float centerY, float width, float 
     mTrivialShader->SetTintColor(mColor[0], mColor[1], mColor[2]);
     mTrivialShader->RenderSimpleGeom(&mat, mGeom);
 }
-

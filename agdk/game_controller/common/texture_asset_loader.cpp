@@ -126,7 +126,7 @@ namespace {
                                             png_read_row(pngStruct,
                                                          static_cast<png_bytep>(rowPixels), NULL);
                                             const uint8_t *rowPixel =
-                                                static_cast<const uint8_t *>(rowPixels);
+                                                    static_cast<const uint8_t *>(rowPixels);
                                             for (png_uint_32 xIndex = 0;
                                                  xIndex < pngWidth; ++xIndex) {
                                                 *writePixel++ = *rowPixel++;

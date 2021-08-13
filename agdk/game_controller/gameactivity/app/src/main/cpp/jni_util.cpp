@@ -28,5 +28,3 @@ struct JniSetup *GetJNISetup() {
     }
     return &_jni_setup;
 }
-
-

@@ -113,20 +113,20 @@ protected:
     void RenderControllerPanel(const int32_t controllerIndex);
 
     void RenderControllerPanel_ControlsTab(const int32_t controllerIndex,
-        const Paddleboat_Controller_Data& controllerData,
-        const Paddleboat_Controller_Info& controllerInfo);
+                                           const Paddleboat_Controller_Data &controllerData,
+                                           const Paddleboat_Controller_Info &controllerInfo);
 
     void RenderControllerPanel_ControlsTab_ArcadeStick(const int32_t controllerIndex,
-        const Paddleboat_Controller_Data& controllerData,
-        const Paddleboat_Controller_Info& controllerInfo);
+                                                       const Paddleboat_Controller_Data &controllerData,
+                                                       const Paddleboat_Controller_Info &controllerInfo);
 
     void RenderControllerPanel_InfoTab(const int32_t controllerIndex,
-        const Paddleboat_Controller_Data& controllerData,
-        const Paddleboat_Controller_Info& controllerInfo);
+                                       const Paddleboat_Controller_Data &controllerData,
+                                       const Paddleboat_Controller_Info &controllerInfo);
 
     void RenderControllerPanel_VibrationTab(const int32_t controllerIndex,
-        const Paddleboat_Controller_Data& controllerData,
-        const Paddleboat_Controller_Info& controllerInfo);
+                                            const Paddleboat_Controller_Data &controllerData,
+                                            const Paddleboat_Controller_Info &controllerInfo);
 
     void ConfigureButtonLayout(const uint32_t layout);
 

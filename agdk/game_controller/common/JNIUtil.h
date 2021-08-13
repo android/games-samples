@@ -65,7 +65,7 @@ namespace gamesdk {
 
             jclass fileClass = env->FindClass("java/io/File");
             jmethodID createTempFile = env->GetStaticMethodID(fileClass, "createTempFile",
-                    "(Ljava/lang/String;Ljava/lang/String;Ljava/io/File;)Ljava/io/File;");
+                                                              "(Ljava/lang/String;Ljava/lang/String;Ljava/io/File;)Ljava/io/File;");
             jstring prefix = env->NewStringUTF("ags");
             jstring suffix = env->NewStringUTF(ext);
             jobject tempFile = env->CallStaticObjectMethod(fileClass,
@@ -129,7 +129,8 @@ namespace gamesdk {
 
             jstring dexLoaderClassName = env->NewStringUTF("dalvik/system/InMemoryDexClassLoader");
             jclass imclassloaderClass = static_cast<jclass>(env->CallObjectMethod(classLoaderObj,
-                    loadClass, dexLoaderClassName));
+                                                                                  loadClass,
+                                                                                  dexLoaderClassName));
             env->DeleteLocalRef(dexLoaderClassName);
 
             if (env->ExceptionCheck() || !imclassloaderClass) {
@@ -137,7 +138,8 @@ namespace gamesdk {
                 // For older SDK versions <26, where InMemoryDexClassLoader is not available
                 dexLoaderClassName = env->NewStringUTF("dalvik/system/PathClassLoader");
                 imclassloaderClass = static_cast<jclass>(env->CallObjectMethod(classLoaderObj,
-                        loadClass, dexLoaderClassName));
+                                                                               loadClass,
+                                                                               dexLoaderClassName));
                 env->DeleteLocalRef(dexLoaderClassName);
                 if (env->ExceptionCheck() || !imclassloaderClass) {
                     env->ExceptionDescribe();
@@ -223,5 +225,3 @@ namespace gamesdk {
 
 
 } // namespace gamesdk
-
-

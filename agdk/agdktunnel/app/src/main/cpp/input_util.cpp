@@ -94,17 +94,17 @@ CookGameActivityMotionEvent(GameActivityMotionEvent *motionEvent, CookedEventCal
         int action = motionEvent->action;
         int actionMasked = action & AMOTION_EVENT_ACTION_MASK;
         int ptrIndex = (action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >>
-                AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+                                                                          AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
 
         if (ptrIndex < motionEvent->pointerCount) {
             struct CookedEvent ev;
             memset(&ev, 0, sizeof(ev));
 
             if (actionMasked == AMOTION_EVENT_ACTION_DOWN || actionMasked ==
-                    AMOTION_EVENT_ACTION_POINTER_DOWN) {
+                                                             AMOTION_EVENT_ACTION_POINTER_DOWN) {
                 ev.type = COOKED_EVENT_TYPE_POINTER_DOWN;
             } else if (actionMasked == AMOTION_EVENT_ACTION_UP || actionMasked ==
-                    AMOTION_EVENT_ACTION_POINTER_UP) {
+                                                                  AMOTION_EVENT_ACTION_POINTER_UP) {
                 ev.type = COOKED_EVENT_TYPE_POINTER_UP;
             } else {
                 ev.type = COOKED_EVENT_TYPE_POINTER_MOVE;
@@ -158,6 +158,3 @@ bool CookGameControllerEvent(const int32_t gameControllerIndex, CookedEventCallb
     }
     return (addedControllerEvent != 0);
 }
-
-
-

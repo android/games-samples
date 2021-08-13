@@ -28,7 +28,9 @@
 #include <stdlib.h>
 
 #define LOG_TAG "GameControllerSample"
+
 #include "Log.h"
+
 #define ABORT_GAME { ALOGE("*** GAME ABORTING."); *((volatile char*)0) = 'a'; }
 #define DEBUG_BLIP ALOGI("[ BLIP ]: %s:%d", __FILE__, __LINE__)
 

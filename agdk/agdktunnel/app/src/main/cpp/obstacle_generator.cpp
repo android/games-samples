@@ -182,4 +182,3 @@ void ObstacleGenerator::GenHard(Obstacle *result) {
             break;
     }
 }
-

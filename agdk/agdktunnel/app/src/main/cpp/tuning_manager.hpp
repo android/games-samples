@@ -24,19 +24,25 @@
 struct AConfiguration;
 
 class TuningManager {
-    private:
-        bool mTFInitialized;
+private:
+    bool mTFInitialized;
 
-        void InitializeChoreographerCallback(AConfiguration* config);
-    public:
-        TuningManager(JNIEnv* env, jobject context, AConfiguration* config);
-        ~TuningManager();
+    void InitializeChoreographerCallback(AConfiguration *config);
 
-        void HandleChoreographerFrame();
-        void PostFrameTick(const uint16_t frameKey);
-        void SetCurrentAnnotation(const _com_google_tuningfork_Annotation* annotation);
-        void StartLoading();
-        void FinishLoading();
+public:
+    TuningManager(JNIEnv *env, jobject context, AConfiguration *config);
+
+    ~TuningManager();
+
+    void HandleChoreographerFrame();
+
+    void PostFrameTick(const uint16_t frameKey);
+
+    void SetCurrentAnnotation(const _com_google_tuningfork_Annotation *annotation);
+
+    void StartLoading();
+
+    void FinishLoading();
 };
 
 #endif

@@ -60,4 +60,3 @@ CookGameActivityMotionEvent(GameActivityMotionEvent *motionEvent, CookedEventCal
 bool CookGameControllerEvent(const int32_t gameControllerIndex, CookedEventCallback callback);
 
 #endif
-
