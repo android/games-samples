@@ -42,4 +42,3 @@ void Scene::OnPause() {}
 void Scene::OnResume() {}
 
 Scene::~Scene() {}
-

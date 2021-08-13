@@ -35,8 +35,10 @@ namespace {
 
     const char *controllerTabNames[PADDLEBOAT_MAX_CONTROLLERS] = {" #1 ", " #2 ", " #3 ", " #4 ",
                                                                   " #5 ", " #6 ", " #7 ", " #8 "};
+
     typedef void(DemoScene::*ControllerCategoryRenderFunction)(const int32_t,
-            const Paddleboat_Controller_Data&, const Paddleboat_Controller_Info&);
+                                                               const Paddleboat_Controller_Data &,
+                                                               const Paddleboat_Controller_Info &);
 
     typedef struct ControllerCategoryTab {
         int32_t mTabIndex;
@@ -66,7 +68,7 @@ namespace {
     void GameControllerCallback(const int32_t controllerIndex,
                                 const Paddleboat_ControllerStatus status, void *userData) {
         if (userData != nullptr) {
-            DemoScene *scene = reinterpret_cast<DemoScene*>(userData);
+            DemoScene *scene = reinterpret_cast<DemoScene *>(userData);
             scene->GameControllerStatusEvent(controllerIndex, status);
         }
     }
@@ -323,7 +325,7 @@ void DemoScene::RenderControllerTabs() {
                 }
             }
             const ImVec4 tabTextColor =
-                mActiveControllers[index] ? TEXTCOLOR_WHITE : TEXTCOLOR_GREY;
+                    mActiveControllers[index] ? TEXTCOLOR_WHITE : TEXTCOLOR_GREY;
 
             ImGui::PushStyleColor(ImGuiCol_Text, tabTextColor);
             if (ImGui::BeginTabItem(controllerTabNames[index], NULL, tabItemFlags)) {
@@ -362,22 +364,22 @@ void DemoScene::RenderMouseData() {
         ImGui::Text("X: %d Y: %d Btns: ", mouseX, mouseY);
 
         ImVec4 buttonColor = ((mouseData.buttonsDown & PADDLEBOAT_MOUSE_BUTTON_LEFT) != 0) ?
-                TEXTCOLOR_GREEN : TEXTCOLOR_WHITE;
+                             TEXTCOLOR_GREEN : TEXTCOLOR_WHITE;
         ImGui::SameLine();
         ImGui::TextColored(buttonColor, "L");
 
         buttonColor = ((mouseData.buttonsDown & PADDLEBOAT_MOUSE_BUTTON_MIDDLE) != 0)
-                ? TEXTCOLOR_GREEN : TEXTCOLOR_WHITE;
+                      ? TEXTCOLOR_GREEN : TEXTCOLOR_WHITE;
         ImGui::SameLine();
         ImGui::TextColored(buttonColor, "M");
 
         buttonColor = ((mouseData.buttonsDown & PADDLEBOAT_MOUSE_BUTTON_RIGHT) != 0)
-                ? TEXTCOLOR_GREEN : TEXTCOLOR_WHITE;
+                      ? TEXTCOLOR_GREEN : TEXTCOLOR_WHITE;
         ImGui::SameLine();
         ImGui::TextColored(buttonColor, "R");
 
         buttonColor = ((mouseData.buttonsDown & PADDLEBOAT_MOUSE_BUTTON_FORWARD) != 0)
-                ? TEXTCOLOR_GREEN : TEXTCOLOR_WHITE;
+                      ? TEXTCOLOR_GREEN : TEXTCOLOR_WHITE;
         ImGui::SameLine();
         ImGui::TextColored(buttonColor, "F");
 
@@ -428,8 +430,8 @@ void DemoScene::RenderControllerPanel(const int32_t controllerIndex) {
             bool activeTab = false;
 
             const ControllerCategoryTab categoryTabs[] = {
-                    {0, " Controls ", &DemoScene::RenderControllerPanel_ControlsTab},
-                    {1, " Info ", &DemoScene::RenderControllerPanel_InfoTab},
+                    {0, " Controls ",  &DemoScene::RenderControllerPanel_ControlsTab},
+                    {1, " Info ",      &DemoScene::RenderControllerPanel_InfoTab},
                     {2, " Vibration ", &DemoScene::RenderControllerPanel_VibrationTab}
             };
             const size_t categoryTabCount = ARRAY_COUNTOF(categoryTabs);
@@ -457,8 +459,8 @@ void DemoScene::RenderControllerPanel(const int32_t controllerIndex) {
 }
 
 void DemoScene::RenderControllerPanel_ControlsTab(const int32_t controllerIndex,
-            const Paddleboat_Controller_Data& controllerData,
-            const Paddleboat_Controller_Info& controllerInfo) {
+                                                  const Paddleboat_Controller_Data &controllerData,
+                                                  const Paddleboat_Controller_Info &controllerInfo) {
     const uint32_t layout = controllerInfo.controllerFlags & PADDLEBOAT_CONTROLLER_LAYOUT_MASK;
     if (layout == PADDLEBOAT_CONTROLLER_LAYOUT_ARCADE_STICK) {
         RenderControllerPanel_ControlsTab_ArcadeStick(controllerIndex, controllerData,
@@ -552,8 +554,8 @@ void DemoScene::RenderControllerPanel_ControlsTab(const int32_t controllerIndex,
 }
 
 void DemoScene::RenderControllerPanel_ControlsTab_ArcadeStick(const int32_t controllerIndex,
-            const Paddleboat_Controller_Data& controllerData,
-            const Paddleboat_Controller_Info& controllerInfo) {
+                                                              const Paddleboat_Controller_Data &controllerData,
+                                                              const Paddleboat_Controller_Info &controllerInfo) {
     const float leftX = controllerData.leftStick.stickX;
     const float leftY = controllerData.leftStick.stickY;
     const uint32_t buttonsDown = controllerData.buttonsDown;
@@ -596,8 +598,8 @@ void DemoScene::RenderControllerPanel_ControlsTab_ArcadeStick(const int32_t cont
 }
 
 void DemoScene::RenderControllerPanel_InfoTab(const int32_t controllerIndex,
-                                              const Paddleboat_Controller_Data& controllerData,
-                                              const Paddleboat_Controller_Info& controllerInfo) {
+                                              const Paddleboat_Controller_Data &controllerData,
+                                              const Paddleboat_Controller_Info &controllerInfo) {
     // Render vendorId/deviceId in green if they matched with a controller map entry,
     // white if using the generic controller map profile.
     ImVec4 deviceColor =
@@ -651,11 +653,11 @@ void DemoScene::RenderControllerPanel_InfoTab(const int32_t controllerIndex,
 }
 
 void DemoScene::RenderControllerPanel_VibrationTab(const int32_t controllerIndex,
-            const Paddleboat_Controller_Data& controllerData,
-            const Paddleboat_Controller_Info& controllerInfo) {
+                                                   const Paddleboat_Controller_Data &controllerData,
+                                                   const Paddleboat_Controller_Info &controllerInfo) {
     if ((controllerInfo.controllerFlags & PADDLEBOAT_CONTROLLER_FLAG_VIBRATION) != 0) {
         if ((controllerInfo.controllerFlags & PADDLEBOAT_CONTROLLER_FLAG_VIBRATION_DUAL_MOTOR)
-             != 0) {
+            != 0) {
             ImGui::Text("Dual motor vibration support");
         } else {
             ImGui::Text("Single vibration device");
@@ -666,13 +668,14 @@ void DemoScene::RenderControllerPanel_VibrationTab(const int32_t controllerIndex
         static float rightMotorIntensity = 0.4f;
 
         VibrationParameters("Left Duration:   ", "ldur", VIBRATION_DURATION_MIN,
-                VIBRATION_DURATION_MAX, VIBRATION_DURATION_STEP, &leftMotorDuration);
+                            VIBRATION_DURATION_MAX, VIBRATION_DURATION_STEP, &leftMotorDuration);
         VibrationParameters("Left Intensity:  ", "lint", VIBRATION_INTENSITY_MIN,
-                VIBRATION_INTENSITY_MAX, VIBRATION_INTENSITY_STEP, &leftMotorIntensity);
+                            VIBRATION_INTENSITY_MAX, VIBRATION_INTENSITY_STEP, &leftMotorIntensity);
         VibrationParameters("Right Duration:  ", "rdur", VIBRATION_DURATION_MIN,
-                VIBRATION_DURATION_MAX, VIBRATION_DURATION_STEP, &rightMotorDuration);
+                            VIBRATION_DURATION_MAX, VIBRATION_DURATION_STEP, &rightMotorDuration);
         VibrationParameters("Right Intensity: ", "rint", VIBRATION_INTENSITY_MIN,
-                VIBRATION_INTENSITY_MAX, VIBRATION_INTENSITY_STEP, &rightMotorIntensity);
+                            VIBRATION_INTENSITY_MAX, VIBRATION_INTENSITY_STEP,
+                            &rightMotorIntensity);
 
         if (ImGui::Button(" Vibrate ")) {
             Paddleboat_Vibration_Data vibrationData = {

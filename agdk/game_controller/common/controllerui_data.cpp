@@ -200,84 +200,84 @@ namespace {
 
     ControllerButtonInfo controllerButtonInfo[UIBUTTON_COUNT] = {
             {{BUTTON_QUAD_BOTTOM_X, BUTTON_QUAD_BOTTOM_Y}, PADDLEBOAT_BUTTON_A,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{BUTTON_QUAD_RIGHT_X,  BUTTON_QUAD_RIGHT_Y},  PADDLEBOAT_BUTTON_B,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{BUTTON_QUAD_LEFT_X,   BUTTON_QUAD_LEFT_Y},   PADDLEBOAT_BUTTON_X,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{BUTTON_QUAD_TOP_X,    BUTTON_QUAD_TOP_Y},    PADDLEBOAT_BUTTON_Y,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{BUTTON_QUAD_BOTTOM_X, BUTTON_QUAD_BOTTOM_Y}, PADDLEBOAT_BUTTON_A,
-            UIBUTTON_STATE_IDLE, false},
+                    UIBUTTON_STATE_IDLE, false},
             {{BUTTON_QUAD_RIGHT_X,  BUTTON_QUAD_RIGHT_Y},  PADDLEBOAT_BUTTON_B,
-            UIBUTTON_STATE_IDLE, false},
+                    UIBUTTON_STATE_IDLE, false},
             {{BUTTON_QUAD_LEFT_X,   BUTTON_QUAD_LEFT_Y},   PADDLEBOAT_BUTTON_X,
-            UIBUTTON_STATE_IDLE, false},
+                    UIBUTTON_STATE_IDLE, false},
             {{BUTTON_QUAD_TOP_X,    BUTTON_QUAD_TOP_Y},    PADDLEBOAT_BUTTON_Y,
-            UIBUTTON_STATE_IDLE, false},
+                    UIBUTTON_STATE_IDLE, false},
             {{BUTTON_L1_X,          BUTTON_L1_Y},          PADDLEBOAT_BUTTON_L1,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{BUTTON_L2_X,          BUTTON_L2_Y},          PADDLEBOAT_BUTTON_L2,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{BUTTON_R1_X,          BUTTON_R1_Y},          PADDLEBOAT_BUTTON_R1,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{BUTTON_R2_X,          BUTTON_R2_Y},          PADDLEBOAT_BUTTON_R2,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{BUTTON_SELECT_X,      BUTTON_SELECT_Y},      PADDLEBOAT_BUTTON_SYSTEM,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{BUTTON_MODE_X,        BUTTON_MODE_Y},        PADDLEBOAT_BUTTON_SELECT,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{BUTTON_START_X,       BUTTON_START_Y},       PADDLEBOAT_BUTTON_START,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{DPAD_UP_X,            DPAD_UP_Y},            PADDLEBOAT_BUTTON_DPAD_UP,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{DPAD_LEFT_X,          DPAD_LEFT_Y},          PADDLEBOAT_BUTTON_DPAD_LEFT,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{DPAD_DOWN_X,          DPAD_DOWN_Y},          PADDLEBOAT_BUTTON_DPAD_DOWN,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{DPAD_RIGHT_X,         DPAD_RIGHT_Y},         PADDLEBOAT_BUTTON_DPAD_RIGHT,
-            UIBUTTON_STATE_IDLE, true}
+                    UIBUTTON_STATE_IDLE, true}
     };
 
     ControllerButtonInfo controllerButtonInfo_ArcadeStick[UIBUTTON_COUNT] = {
             {{AS_BUTTON_A_X,        AS_BUTTON_A_Y},        PADDLEBOAT_BUTTON_A,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{AS_BUTTON_B_X,        AS_BUTTON_B_Y},        PADDLEBOAT_BUTTON_B,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{AS_BUTTON_X_X,        AS_BUTTON_X_Y},        PADDLEBOAT_BUTTON_X,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{AS_BUTTON_Y_X,        AS_BUTTON_Y_Y},        PADDLEBOAT_BUTTON_Y,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{BUTTON_QUAD_BOTTOM_X, BUTTON_QUAD_BOTTOM_Y}, PADDLEBOAT_BUTTON_A,
-            UIBUTTON_STATE_IDLE, false},
+                    UIBUTTON_STATE_IDLE, false},
             {{BUTTON_QUAD_RIGHT_X,  BUTTON_QUAD_RIGHT_Y},  PADDLEBOAT_BUTTON_B,
-            UIBUTTON_STATE_IDLE, false},
+                    UIBUTTON_STATE_IDLE, false},
             {{BUTTON_QUAD_LEFT_X,   BUTTON_QUAD_LEFT_Y},   PADDLEBOAT_BUTTON_X,
-            UIBUTTON_STATE_IDLE, false},
+                    UIBUTTON_STATE_IDLE, false},
             {{BUTTON_QUAD_TOP_X,    BUTTON_QUAD_TOP_Y},    PADDLEBOAT_BUTTON_Y,
-            UIBUTTON_STATE_IDLE, false},
+                    UIBUTTON_STATE_IDLE, false},
             {{AS_BUTTON_L1_X,       AS_BUTTON_L1_Y},       PADDLEBOAT_BUTTON_L1,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{AS_BUTTON_L2_X,       AS_BUTTON_L2_Y},       PADDLEBOAT_BUTTON_L2,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{AS_BUTTON_R1_X,       AS_BUTTON_R1_Y},       PADDLEBOAT_BUTTON_R1,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{AS_BUTTON_R2_X,       AS_BUTTON_R2_Y},       PADDLEBOAT_BUTTON_R2,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{BUTTON_SELECT_X,      BUTTON_SELECT_Y},      PADDLEBOAT_BUTTON_SYSTEM,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{BUTTON_MODE_X,        BUTTON_MODE_Y},        PADDLEBOAT_BUTTON_SELECT,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{BUTTON_START_X,       BUTTON_START_Y},       PADDLEBOAT_BUTTON_START,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{AS_DPAD_UP_X,         AS_DPAD_UP_Y},         PADDLEBOAT_BUTTON_DPAD_UP,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{AS_DPAD_LEFT_X,       AS_DPAD_LEFT_Y},       PADDLEBOAT_BUTTON_DPAD_LEFT,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{AS_DPAD_DOWN_X,       AS_DPAD_DOWN_Y},       PADDLEBOAT_BUTTON_DPAD_DOWN,
-            UIBUTTON_STATE_IDLE, true},
+                    UIBUTTON_STATE_IDLE, true},
             {{AS_DPAD_RIGHT_X,      AS_DPAD_RIGHT_Y},      PADDLEBOAT_BUTTON_DPAD_RIGHT,
-            UIBUTTON_STATE_IDLE, true}
+                    UIBUTTON_STATE_IDLE, true}
     };
 }
 
@@ -302,23 +302,24 @@ void ControllerUIData::LoadControllerUIData() {
         for (int index = 0; index < UIBUTTON_COUNT; ++index) {
             buttonTextures[index].textureHandles[UIBUTTON_STATE_ACTIVE] =
                     TextureAssetLoader::loadTextureAsset(
-                    buttonDefinitions[index].assetName_Active, &buttonTextures[index].textureWidth,
-                    &buttonTextures[index].textureHeight);
+                            buttonDefinitions[index].assetName_Active,
+                            &buttonTextures[index].textureWidth,
+                            &buttonTextures[index].textureHeight);
             buttonTextures[index].textureHandles[UIBUTTON_STATE_IDLE] =
                     TextureAssetLoader::loadTextureAsset(
-                    buttonDefinitions[index].assetName_Idle, nullptr, nullptr);
+                            buttonDefinitions[index].assetName_Idle, nullptr, nullptr);
         }
 
         stickTextures.textureHandles[UISTICK_STATE_ACTIVE] =
                 TextureAssetLoader::loadTextureAsset(
-                stickDefinition.assetName_Active, &stickTextures.textureWidth,
-                &stickTextures.textureHeight);
+                        stickDefinition.assetName_Active, &stickTextures.textureWidth,
+                        &stickTextures.textureHeight);
         stickTextures.textureHandles[UISTICK_STATE_DEPRESSED] =
                 TextureAssetLoader::loadTextureAsset(
-                stickDefinition.assetName_Depressed, nullptr, nullptr);
+                        stickDefinition.assetName_Depressed, nullptr, nullptr);
         stickTextures.textureHandles[UISTICK_STATE_IDLE] =
                 TextureAssetLoader::loadTextureAsset(
-                stickDefinition.assetName_Idle, nullptr, nullptr);
+                        stickDefinition.assetName_Idle, nullptr, nullptr);
 
         stickRegionTexture.textureHandles[0] = TextureAssetLoader::loadTextureAsset(
                 stickRegionAssetName, &stickRegionTexture.textureWidth,

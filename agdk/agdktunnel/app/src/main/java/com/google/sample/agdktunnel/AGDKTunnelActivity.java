@@ -19,9 +19,11 @@ import android.os.Bundle;
 
 import com.google.androidgamesdk.GameActivity;
 
+// A minimal extension of GameActivity. For this sample, it is only used to invoke
+// a workaround for loading the runtime shared library on old Android versions
 public class AGDKTunnelActivity extends GameActivity {
 
-    // Some code to load our native library:
+    // Load our native library:
     static {
         // Load the STL first to workaround issues on old Android versions:
         // "if your app targets a version of Android earlier than Android 4.3

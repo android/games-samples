@@ -52,4 +52,3 @@ void Scene::OnResume() {}
 void Scene::OnTextInput() {}
 
 Scene::~Scene() {}
-

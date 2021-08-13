@@ -17,12 +17,11 @@
 #include "ascii_to_geom.hpp"
 
 #define GEOM_DEBUG ALOGI
-//#define GEOM_DEBUG
 
 SimpleGeom *AsciiArtToGeom(const char *art, float scale) {
     // figure out width and height
     ALOGI("Creating geometry from ASCII art.");
-            GEOM_DEBUG("Ascii art source:\n%s", art);
+    GEOM_DEBUG("Ascii art source:\n%s", art);
     int rows = 1;
     int curCols = 0, cols = 0;
     int r, c;
@@ -37,8 +36,8 @@ SimpleGeom *AsciiArtToGeom(const char *art, float scale) {
         }
     }
 
-            GEOM_DEBUG("Ascii art has %d rows, %d cols.", rows, cols);
-            GEOM_DEBUG("Making working array.");
+    GEOM_DEBUG("Ascii art has %d rows, %d cols.", rows, cols);
+    GEOM_DEBUG("Making working array.");
 
     // allocate a rows x cols array that we will use as working space
     unsigned int **v = new unsigned int *[rows];
@@ -59,7 +58,7 @@ SimpleGeom *AsciiArtToGeom(const char *art, float scale) {
         }
     }
 
-            GEOM_DEBUG("Removing redundant line markers.");
+    GEOM_DEBUG("Removing redundant line markers.");
 
     // remove redundant line markers
     for (r = 0; r < rows; r++) {
@@ -92,7 +91,7 @@ SimpleGeom *AsciiArtToGeom(const char *art, float scale) {
         }
     }
 
-            GEOM_DEBUG("Total vertices: %d, total indices %d", vertices, indices);
+    GEOM_DEBUG("Total vertices: %d, total indices %d", vertices, indices);
 
     // allocate arrays for the vertices and lines
     const int VERTICES_STRIDE = sizeof(GLfloat) * 7;
@@ -114,7 +113,7 @@ SimpleGeom *AsciiArtToGeom(const char *art, float scale) {
         for (c = 0; c < cols; c++) {
             unsigned t = v[r][c];
             if (t == '+') {
-                        GEOM_DEBUG("Found vertex at %d,%d, index %d", r, c, vertices);
+                GEOM_DEBUG("Found vertex at %d,%d, index %d", r, c, vertices);
                 verticesArray[vertices * 7] = left + c * scale;
                 verticesArray[vertices * 7 + 1] = top - r * scale;
                 verticesArray[vertices * 7 + 2] = 0.0f; // z coord is always 0
@@ -133,25 +132,25 @@ SimpleGeom *AsciiArtToGeom(const char *art, float scale) {
     int col_dir, row_dir;
     int start_c, start_r, end_c, end_r;
 
-            GEOM_DEBUG("Now processing lines.");
+    GEOM_DEBUG("Now processing lines.");
     for (r = 0; r < rows; r++) {
         for (c = 0; c < cols; c++) {
             int t = v[r][c];
             if (t == '-') {
                 // horizontal line
-                        GEOM_DEBUG("Horizontal line found at %d,%d", r, c);
+                GEOM_DEBUG("Horizontal line found at %d,%d", r, c);
                 col_dir = -1, row_dir = 0;
             } else if (t == '|') {
                 // vertical line
-                        GEOM_DEBUG("Vertical line found at %d,%d", r, c);
+                GEOM_DEBUG("Vertical line found at %d,%d", r, c);
                 col_dir = 0, row_dir = -1;
             } else if (t == '`') {
                 // horizontal line, slanting down
-                        GEOM_DEBUG("Downward diagonal line found at %d,%d", r, c);
+                GEOM_DEBUG("Downward diagonal line found at %d,%d", r, c);
                 col_dir = -1, row_dir = -1;
             } else if (t == '/') {
                 // horizontal line, slanting down
-                        GEOM_DEBUG("Upward diagonal line found at %d,%d", r, c);
+                GEOM_DEBUG("Upward diagonal line found at %d,%d", r, c);
                 col_dir = -1, row_dir = 1;
             } else {
                 continue;
@@ -168,8 +167,8 @@ SimpleGeom *AsciiArtToGeom(const char *art, float scale) {
                     ABORT_GAME;
                 }
             }
-                    GEOM_DEBUG("Start vertex is at %d,%d, index %d", start_r, start_c,
-                               v[start_r][start_c] & VERTEX_INDEX_MASK);
+            GEOM_DEBUG("Start vertex is at %d,%d, index %d", start_r, start_c,
+                    v[start_r][start_c] & VERTEX_INDEX_MASK);
 
             // look for the vertex that ends the line
             end_c = c;
@@ -183,17 +182,17 @@ SimpleGeom *AsciiArtToGeom(const char *art, float scale) {
                 }
             }
 
-                    GEOM_DEBUG("End vertex is at %d,%d, index %d", end_r, end_c,
-                               v[end_r][end_c] & VERTEX_INDEX_MASK);
+            GEOM_DEBUG("End vertex is at %d,%d, index %d", end_r, end_c,
+                    v[end_r][end_c] & VERTEX_INDEX_MASK);
 
             indicesArray[indices] = static_cast<GLushort>(v[start_r][start_c] & VERTEX_INDEX_MASK);
             indicesArray[indices + 1] = static_cast<GLushort>(v[end_r][end_c] & VERTEX_INDEX_MASK);
             indices += 2;
-                    GEOM_DEBUG("We now have %d indices.", indices);
+            GEOM_DEBUG("We now have %d indices.", indices);
         }
     }
 
-            GEOM_DEBUG("Deallocating working space.");
+    GEOM_DEBUG("Deallocating working space.");
     // get rid of the working arrays
     for (r = 0; r < rows; r++) {
         delete v[r];
@@ -201,21 +200,21 @@ SimpleGeom *AsciiArtToGeom(const char *art, float scale) {
     delete[] v;
 
     for (int i = 0; i < indices; i++) {
-                GEOM_DEBUG("indices[%d] = %d\n", i, indicesArray[i]);
+        GEOM_DEBUG("indices[%d] = %d\n", i, indicesArray[i]);
     }
     for (int i = 0; i < vertices; i++) {
-                GEOM_DEBUG("vertices[%d]", i * 7);
+        GEOM_DEBUG("vertices[%d]", i * 7);
         for (int j = 0; j < 7; j++) {
-                    GEOM_DEBUG("vertices[%d+%d=%d] = %f\n", i * 7, j, i * 7 + j,
-                               verticesArray[i * 7 + j]);
+            GEOM_DEBUG("vertices[%d+%d=%d] = %f\n", i * 7, j, i * 7 + j,
+                    verticesArray[i * 7 + j]);
         }
     }
 
     // create the buffers
-            GEOM_DEBUG("Creating output VBO (%d vertices) and IBO (%d indices).", vertices,
-                       indices);
+    GEOM_DEBUG("Creating output VBO (%d vertices) and IBO (%d indices).", vertices,
+            indices);
     SimpleGeom *out = new SimpleGeom(new VertexBuf(verticesArray, vertices * sizeof(GLfloat) *
-                                                   VERTICES_STRIDE, VERTICES_STRIDE),
+                                                                  VERTICES_STRIDE, VERTICES_STRIDE),
                                      new IndexBuf(indicesArray, indices *
                                                                 sizeof(GLushort)));
     out->vbuf->SetPrimitive(GL_LINES);  // draw as lines
@@ -231,4 +230,3 @@ SimpleGeom *AsciiArtToGeom(const char *art, float scale) {
 
     return out;
 }
-

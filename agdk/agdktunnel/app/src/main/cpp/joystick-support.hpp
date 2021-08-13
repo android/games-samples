@@ -31,4 +31,3 @@ static const int KEYCODE_BUTTON_B = 97;
 static const int SOURCE_TOUCH_NAVIGATION = 0x00200000;
 
 #endif
-

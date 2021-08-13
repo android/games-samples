@@ -22,6 +22,7 @@
 #include "common.hpp"
 #include "game_asset_manager.hpp"
 #include "game_asset_manifest.hpp"
+
 #if !defined(NO_ASSET_PACKS)
 #include "play/asset_pack.h"
 #endif

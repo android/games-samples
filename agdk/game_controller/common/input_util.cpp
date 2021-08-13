@@ -37,7 +37,7 @@ static bool CookEvent_Motion(AInputEvent *event, CookedEventCallback callback) {
     int action = AMotionEvent_getAction(event);
     int actionMasked = action & AMOTION_EVENT_ACTION_MASK;
     int ptrIndex = (action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >>
-            AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+                                                                      AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
 
     struct CookedEvent ev;
     memset(&ev, 0, sizeof(ev));
@@ -93,4 +93,3 @@ bool CookEvent(AInputEvent *event, CookedEventCallback callback) {
 
     return false;
 }
-

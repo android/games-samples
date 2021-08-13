@@ -63,7 +63,7 @@ namespace Loader_Scene {
         GameAssetManager *gameAssetManager = NativeEngine::GetInstance()->GetGameAssetManager();
         int assetPackFileCount = 0;
         const char **assetPackFiles = gameAssetManager->GetGameAssetPackFileList(assetPackName,
-                &assetPackFileCount);
+                                                                                 &assetPackFileCount);
         if (assetPackFiles != NULL) {
             for (int i = 0; i < assetPackFileCount; ++i) {
                 uint64_t fileSize = gameAssetManager->GetGameAssetSize(assetPackFiles[i]);
@@ -84,8 +84,8 @@ namespace Loader_Scene {
         TextureManager *textureManager = NativeEngine::GetInstance()->GetTextureManager();
         for (int i = 0; i < _currentLoadIndex; ++i) {
             textureManager->CreateTexture(_loadedTextures[i].textureName,
-                _loadedTextures[i].textureSize,
-                static_cast<const uint8_t *>(_loadedTextures[i].textureData));
+                                          _loadedTextures[i].textureSize,
+                                          static_cast<const uint8_t *>(_loadedTextures[i].textureData));
         }
     }
 } // namespace Loader_Scene

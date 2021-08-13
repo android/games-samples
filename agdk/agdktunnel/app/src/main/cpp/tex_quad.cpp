@@ -104,5 +104,3 @@ void TexQuad::Render(glm::mat4 *transform) {
         glEnable(GL_DEPTH_TEST);
     }
 }
-
-

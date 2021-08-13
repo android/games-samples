@@ -49,4 +49,3 @@ void RenderBackgroundAnimation(ShapeRenderer *r) {
         }
     }
 }
-

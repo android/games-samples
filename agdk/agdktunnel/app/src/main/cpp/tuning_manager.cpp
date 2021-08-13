@@ -34,7 +34,7 @@
  * Internal to this file - do not use.
  */
 extern "C" void TuningFork_CProtobufSerialization_Dealloc(
-        TuningFork_CProtobufSerialization* c);
+        TuningFork_CProtobufSerialization *c);
 
 /** @endcond */
 
@@ -45,29 +45,30 @@ namespace {
     TuningFork_LoadingTimeMetadata startupLoadingMetadata;
 
     typedef void (*func_AChoreographer_postFrameCallback64)(
-            AChoreographer* choreographer, AChoreographer_frameCallback64 callback,
-            void* data);
+            AChoreographer *choreographer, AChoreographer_frameCallback64 callback,
+            void *data);
+
     func_AChoreographer_postFrameCallback64 pAChoreographer_postFrameCallback64 = nullptr;
 
-    void choreographer_callback(long /*frameTimeNanos*/, void* data) {
-        TuningManager* tuningManager = reinterpret_cast<TuningManager*>(data);
+    void choreographer_callback(long /*frameTimeNanos*/, void *data) {
+        TuningManager *tuningManager = reinterpret_cast<TuningManager *>(data);
         tuningManager->HandleChoreographerFrame();
     }
 
-    void choreographer_callback64(int64_t /*frameTimeNanos*/, void* data) {
-        TuningManager* tuningManager = reinterpret_cast<TuningManager*>(data);
+    void choreographer_callback64(int64_t /*frameTimeNanos*/, void *data) {
+        TuningManager *tuningManager = reinterpret_cast<TuningManager *>(data);
         tuningManager->HandleChoreographerFrame();
     }
 
-    bool serialize_annotation(TuningFork_CProtobufSerialization& cser,
-                             const _com_google_tuningfork_Annotation* annotation) {
+    bool serialize_annotation(TuningFork_CProtobufSerialization &cser,
+                              const _com_google_tuningfork_Annotation *annotation) {
         bool success = false;
         cser.bytes = NULL;
         cser.size = 0;
 
         size_t encodedSize = 0;
         if (pb_get_encoded_size(&encodedSize, com_google_tuningfork_Annotation_fields,
-            annotation)) {
+                                annotation)) {
             cser.bytes = (uint8_t *) ::malloc(encodedSize);
             cser.size = encodedSize;
             cser.dealloc = TuningFork_CProtobufSerialization_Dealloc;
@@ -80,10 +81,10 @@ namespace {
     }
 }
 
-TuningManager::TuningManager(JNIEnv* env, jobject activity, AConfiguration* config) {
+TuningManager::TuningManager(JNIEnv *env, jobject activity, AConfiguration *config) {
     mTFInitialized = false;
 
-    TuningFork_Settings settings {};
+    TuningFork_Settings settings{};
 
     // Performance Tuner can work with the Frame Pacing library to automatically
     // record frame time via the tracer function
@@ -108,8 +109,8 @@ TuningManager::TuningManager(JNIEnv* env, jobject activity, AConfiguration* conf
      */
     TuningFork_CProtobufSerialization fps = {};
     bool bHighDensity = (RENDER_TUNNEL_SECTION_COUNT == 8 && TUNNEL_SECTION_LENGTH == 75.0f);
-    const char* filename = bHighDensity ? "dev_tuningfork_fidelityparams_2.bin" :
-            "dev_tuningfork_fidelityparams_1.bin";
+    const char *filename = bHighDensity ? "dev_tuningfork_fidelityparams_2.bin" :
+                           "dev_tuningfork_fidelityparams_1.bin";
     if (TuningFork_findFidelityParamsInApk(env, activity, filename, &fps)
         == TUNINGFORK_ERROR_OK) {
         // This overrides the value in default_fidelity_parameters_filename
@@ -142,7 +143,7 @@ TuningManager::~TuningManager() {
     }
 }
 
-void TuningManager::InitializeChoreographerCallback(AConfiguration* config) {
+void TuningManager::InitializeChoreographerCallback(AConfiguration *config) {
     int32_t sdkVersion = AConfiguration_getSdkVersion(config);
     if (sdkVersion >= 29) {
         // The original postFrameCallback is deprecated in 29 and later, try and
@@ -164,7 +165,7 @@ void TuningManager::InitializeChoreographerCallback(AConfiguration* config) {
         }
     } else {
         AChoreographer_postFrameCallback(AChoreographer_getInstance(),
-            choreographer_callback, this);
+                                         choreographer_callback, this);
     }
 }
 
@@ -189,7 +190,7 @@ void TuningManager::PostFrameTick(const TuningFork_InstrumentKey frameKey) {
     }
 }
 
-void TuningManager::SetCurrentAnnotation(const _com_google_tuningfork_Annotation* annotation) {
+void TuningManager::SetCurrentAnnotation(const _com_google_tuningfork_Annotation *annotation) {
     TuningFork_CProtobufSerialization cser;
     if (serialize_annotation(cser, annotation)) {
         if (TuningFork_setCurrentAnnotation(&cser) != TUNINGFORK_ERROR_OK) {

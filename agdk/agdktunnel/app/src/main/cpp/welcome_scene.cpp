@@ -94,10 +94,10 @@ void WelcomeScene::OnButtonClicked(int id) {
         mgr->RequestNewScene(new PlayScene());
     } else if (id == mStoryButtonId) {
         mgr->RequestNewScene((new DialogScene())->SetText(BLURB_STORY)->SetSingleButton(S_OK,
-                DialogScene::ACTION_RETURN));
+                                                                                        DialogScene::ACTION_RETURN));
     } else if (id == mAboutButtonId) {
         mgr->RequestNewScene((new DialogScene())->SetText(BLURB_ABOUT)->SetSingleButton(S_OK,
-                DialogScene::ACTION_RETURN));
+                                                                                        DialogScene::ACTION_RETURN));
     } else if (id == mNameEdit->GetId()) {
         auto activity = NativeEngine::GetInstance()->GetAndroidApp()->activity;
         // NB: the UI is resized when the IME is shown and OnCreateWidgets is called again.
@@ -211,4 +211,3 @@ void WelcomeScene::OnCreateWidgets() {
 void WelcomeScene::OnKillGraphics() {
     UiScene::OnKillGraphics();
 }
-

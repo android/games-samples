@@ -93,4 +93,3 @@ void ImGuiManager::SetFontScale(const float fontScale) {
     ImGuiIO &io = ImGui::GetIO();
     io.FontGlobalScale = fontScale;
 }
-

@@ -103,7 +103,7 @@ public:
     static ControllerButtonInfo &getControllerButtonInfo(const ControllerUIButtons uiButton);
 
     static ControllerButtonInfo &getControllerButtonInfo_ArcadeStick(
-        const ControllerUIButtons uiButton);
+            const ControllerUIButtons uiButton);
 
     static ImVec2 getStickPosition(const bool isLeftStick);
 

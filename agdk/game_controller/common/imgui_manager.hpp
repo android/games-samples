@@ -40,4 +40,3 @@ public:
 private:
     DeltaClock mDeltaClock;
 };
-

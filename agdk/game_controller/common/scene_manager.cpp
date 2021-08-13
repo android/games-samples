@@ -146,6 +146,3 @@ void SceneManager::OnResume() {
         mCurScene->OnResume();
     }
 }
-
-
-

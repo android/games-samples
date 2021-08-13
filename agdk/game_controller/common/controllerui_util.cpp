@@ -45,8 +45,8 @@ void ControllerUIUtil::Button(const ControllerUIPanelParams &panelParams,
         const ImVec2 buttonTextureSize = GetScaledTextureSize(panelParams, buttonTextures);
         ImGui::SetCursorPos(CalcPosFromCenter(buttonBasePos, buttonTextureSize));
         ImGui::Image(
-            reinterpret_cast<ImTextureID>(buttonTextures.textureHandles[buttonInfo.buttonState]),
-            buttonTextureSize);
+                reinterpret_cast<ImTextureID>(buttonTextures.textureHandles[buttonInfo.buttonState]),
+                buttonTextureSize);
     }
 }
 
@@ -58,7 +58,7 @@ void ControllerUIUtil::Thumbstick(const ControllerUIPanelParams &panelParams,
     if (stickRegionTexture.textureHandles[0] != TextureAssetLoader::INVALID_TEXTURE) {
         const ImVec2 stickRegionBasePos = GetScaledBasePos(panelParams, basePos);
         const ImVec2 stickRegionTextureSize = GetScaledTextureSize(panelParams,
-                     stickRegionTexture);
+                                                                   stickRegionTexture);
         ImGui::SetCursorPos(CalcPosFromCenter(stickRegionBasePos, stickRegionTextureSize));
         ImGui::Image(reinterpret_cast<ImTextureID>(stickRegionTexture.textureHandles[0]),
                      stickRegionTextureSize);
@@ -105,5 +105,3 @@ void ControllerUIUtil::TriggerBar(const ControllerUIPanelParams &panelParams,
         draw_list->AddRect(frameMin, frameMax, frameColor);
     }
 }
-
-

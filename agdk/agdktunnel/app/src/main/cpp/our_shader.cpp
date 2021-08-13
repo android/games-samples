@@ -129,4 +129,3 @@ const char *OurShader::GetFragShaderSource() {
 const char *OurShader::GetShaderName() {
     return "OurShader";
 }
-

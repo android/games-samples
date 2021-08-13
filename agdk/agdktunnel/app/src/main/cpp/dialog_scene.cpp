@@ -27,8 +27,8 @@
 #define BUTTON_SIZE BUTTON_WIDTH, BUTTON_HEIGHT
 #define BUTTON_COLOR 0.0f, 1.0f, 0.0f
 #define BUTTON_DISCOURAGE_COLOR 0.0f, 0.4f, 0.0f
-#define LEFT_X center * 2 * 0.33f
-#define RIGHT_X center * 2 * 0.67f
+#define LEFT_X (center * 2 * 0.33f)
+#define RIGHT_X (center * 2 * 0.67f)
 #define TEXT_Y 0.6f
 
 DialogScene::DialogScene() {
@@ -151,4 +151,3 @@ void DialogScene::OnButtonClicked(int id) {
             break;
     }
 }
-

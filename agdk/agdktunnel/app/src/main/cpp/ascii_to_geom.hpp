@@ -40,4 +40,3 @@
 SimpleGeom *AsciiArtToGeom(const char *art, float scale);
 
 #endif
-

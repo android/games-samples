@@ -44,5 +44,3 @@ VertexBuf::~VertexBuf() {
     glDeleteBuffers(1, &mVbo);
     mVbo = 0;
 }
-
-

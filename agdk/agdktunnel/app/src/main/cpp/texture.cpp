@@ -42,4 +42,3 @@ void Texture::Bind(int unit) {
 void Texture::Unbind() {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
-
