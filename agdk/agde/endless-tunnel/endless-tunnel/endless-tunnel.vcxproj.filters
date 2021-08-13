@@ -1,0 +1,320 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+     Copyright (C) 2021 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Android">
+      <UniqueIdentifier>{30452713-4f1a-4a78-96a5-bf238a10e401}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Android\gradle">
+      <UniqueIdentifier>{33bcd694-b75a-4c90-8be7-37e4bf5700af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Android\gradle\wrapper">
+      <UniqueIdentifier>{44e3e18e-e5ee-48ef-9234-6bdae06f4c5a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Android\app">
+      <UniqueIdentifier>{23a09cd9-7c5e-4057-b17f-7ab17d06d1fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Android\app\src">
+      <UniqueIdentifier>{0569f937-66db-4640-b94f-3b570427bda4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Android\app\src\main">
+      <UniqueIdentifier>{b6224ba2-b2ab-4866-a738-688c9ea19ffd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Android\app\src\main\cpp">
+      <UniqueIdentifier>{36bc687e-4532-4226-a366-073a5a23a8cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Android\app\src\main\res">
+      <UniqueIdentifier>{49aebe45-2570-4844-889b-1b5f7d158520}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Android\app\src\main\res\drawable">
+      <UniqueIdentifier>{53123bb8-fecd-494a-b225-ea576d1117a6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Android\app\src\main\res\drawable-v24">
+      <UniqueIdentifier>{58a0ea27-9728-4fb8-9778-19fe98b674aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Android\app\src\main\res\mipmap-anydpi-v26">
+      <UniqueIdentifier>{93119dd9-af50-4d9a-bb32-d6cd47f4dd93}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Android\app\src\main\res\mipmap-hdpi">
+      <UniqueIdentifier>{5a74f16d-4760-4f90-ae91-e96598df765b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Android\app\src\main\res\mipmap-mdpi">
+      <UniqueIdentifier>{19078249-7b7d-4442-8a6a-ec3ecbe7f52f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Android\app\src\main\res\mipmap-xhdpi">
+      <UniqueIdentifier>{cb41c7f0-7e60-4e1c-b2d2-64fedf93d5cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Android\app\src\main\res\mipmap-xxhdpi">
+      <UniqueIdentifier>{524f4c8a-e09f-4f4f-af0a-0ed0f879d8a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Android\app\src\main\res\mipmap-xxxhdpi">
+      <UniqueIdentifier>{86aac811-6b9c-47d7-b2e6-3168799a2be4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Android\app\src\main\res\values">
+      <UniqueIdentifier>{5a96b0c9-9bdd-4590-badd-96e60ad33ace}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\anim.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\ascii_to_geom.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\dialog_scene.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\indexbuf.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\input_util.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\jni_util.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\native_engine.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\obstacle.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\obstacle_generator.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\our_shader.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\play_scene.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\scene.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\scene_manager.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\sfxman.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\shader.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\shape_renderer.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\simplegeom.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\tex_quad.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\text_renderer.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\texture.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\ui_scene.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\util.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\vertexbuf.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="Android\app\src\main\cpp\welcome_scene.hpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\android_main.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\anim.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\ascii_to_geom.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\dialog_scene.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\indexbuf.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\input_util.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\jni_util.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\native_engine.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\obstacle.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\obstacle_generator.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\our_shader.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\play_scene.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\scene.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\scene_manager.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\sfxman.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\shader.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\shape_renderer.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\tex_quad.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\text_renderer.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\texture.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\ui_scene.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\util.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\vertexbuf.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Android\app\src\main\cpp\welcome_scene.cpp">
+      <Filter>Android\app\src\main\cpp</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\gradle\wrapper\gradle-wrapper.jar">
+      <Filter>Android\gradle\wrapper</Filter>
+    </None>
+    <None Include="Android\gradle\wrapper\gradle-wrapper.properties">
+      <Filter>Android\gradle\wrapper</Filter>
+    </None>
+    <None Include="Android\build.gradle">
+      <Filter>Android</Filter>
+    </None>
+    <None Include="Android\gradle.properties">
+      <Filter>Android</Filter>
+    </None>
+    <None Include="Android\gradlew">
+      <Filter>Android</Filter>
+    </None>
+    <None Include="Android\gradlew.bat">
+      <Filter>Android</Filter>
+    </None>
+    <None Include="Android\settings.gradle">
+      <Filter>Android</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\drawable\ic_launcher_background.xml">
+      <Filter>Android\app\src\main\res\drawable</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\drawable-v24\ic_launcher_foreground.xml">
+      <Filter>Android\app\src\main\res\drawable-v24</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\mipmap-anydpi-v26\ic_launcher.xml">
+      <Filter>Android\app\src\main\res\mipmap-anydpi-v26</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\mipmap-anydpi-v26\ic_launcher_round.xml">
+      <Filter>Android\app\src\main\res\mipmap-anydpi-v26</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\mipmap-hdpi\ic_launcher.png">
+      <Filter>Android\app\src\main\res\mipmap-hdpi</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\mipmap-hdpi\ic_launcher_round.png">
+      <Filter>Android\app\src\main\res\mipmap-hdpi</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\mipmap-mdpi\ic_launcher.png">
+      <Filter>Android\app\src\main\res\mipmap-mdpi</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\mipmap-mdpi\ic_launcher_round.png">
+      <Filter>Android\app\src\main\res\mipmap-mdpi</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\mipmap-xhdpi\ic_launcher.png">
+      <Filter>Android\app\src\main\res\mipmap-xhdpi</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\mipmap-xhdpi\ic_launcher_round.png">
+      <Filter>Android\app\src\main\res\mipmap-xhdpi</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\mipmap-xxhdpi\ic_launcher.png">
+      <Filter>Android\app\src\main\res\mipmap-xxhdpi</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\mipmap-xxhdpi\ic_launcher_round.png">
+      <Filter>Android\app\src\main\res\mipmap-xxhdpi</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\mipmap-xxxhdpi\ic_launcher.png">
+      <Filter>Android\app\src\main\res\mipmap-xxxhdpi</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\mipmap-xxxhdpi\ic_launcher_round.png">
+      <Filter>Android\app\src\main\res\mipmap-xxxhdpi</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\values\colors.xml">
+      <Filter>Android\app\src\main\res\values</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\values\strings.xml">
+      <Filter>Android\app\src\main\res\values</Filter>
+    </None>
+    <None Include="Android\app\src\main\res\values\styles.xml">
+      <Filter>Android\app\src\main\res\values</Filter>
+    </None>
+    <None Include="Android\app\src\main\AndroidManifest.xml">
+      <Filter>Android\app\src\main</Filter>
+    </None>
+    <None Include="Android\app\build.gradle">
+      <Filter>Android\app</Filter>
+    </None>
+    <None Include="Android\app\proguard-rules.pro">
+      <Filter>Android\app</Filter>
+    </None>
+  </ItemGroup>
+</Project>
