@@ -1,0 +1,239 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+     Copyright (C) 2021 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="AndroidPackaging">
+      <UniqueIdentifier>{624f2907-264e-4910-a33a-b2c4aeffa0a6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\gradle">
+      <UniqueIdentifier>{4177f22a-5eb1-4ae1-8663-da173ed9aa3f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\gradle\wrapper">
+      <UniqueIdentifier>{26343a85-b8c8-4a5e-afcf-dbd5d6c3a359}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app">
+      <UniqueIdentifier>{553fe5e2-6018-443a-822a-113c33fc1cf4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src">
+      <UniqueIdentifier>{d2b3c9cb-7247-40bf-ba07-f32ec059ef79}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\androidTest">
+      <UniqueIdentifier>{d8919a83-1c81-4394-add6-7502b982770e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\androidTest\java">
+      <UniqueIdentifier>{1168b772-d377-4d0b-bd73-0db5313a2971}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\androidTest\java\com">
+      <UniqueIdentifier>{5d0081f5-9080-4229-94a6-92e3689c9a6a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\androidTest\java\com\example">
+      <UniqueIdentifier>{a5bc5968-483f-4789-b75b-f84693606231}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\androidTest\java\com\example\hellojni">
+      <UniqueIdentifier>{ed8d2b11-ef56-4f62-8515-914304d3514c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main">
+      <UniqueIdentifier>{14bdcc65-7062-4953-b58c-f880ff7364a2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main\cpp">
+      <UniqueIdentifier>{3d1764b5-cb6d-4fa2-af54-f5a7c475bf39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main\java">
+      <UniqueIdentifier>{55c7b2ca-171f-4976-a4b6-cf1f4b9642cf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main\java\com">
+      <UniqueIdentifier>{84e2a609-080f-4a66-95f1-5e1bf3d9e458}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main\java\com\example">
+      <UniqueIdentifier>{b6cef26d-cd51-4ddd-b2da-e8082b050704}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main\java\com\example\hellojni">
+      <UniqueIdentifier>{b498fb20-aa62-49ed-9305-80572d7c9864}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main\res">
+      <UniqueIdentifier>{e62469f5-e13b-4ef4-830a-53a28993545e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main\res\drawable">
+      <UniqueIdentifier>{10205249-ebaa-4162-943e-6ae964b730b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main\res\drawable-v24">
+      <UniqueIdentifier>{5f877e6e-0e9e-44e5-baea-cecca4b2d496}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main\res\layout">
+      <UniqueIdentifier>{dda8683c-1656-4307-89c2-0d2a136417cf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main\res\mipmap-anydpi-v26">
+      <UniqueIdentifier>{59a380a8-bf2d-4ba7-b931-9dd626a89eb3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main\res\mipmap-hdpi">
+      <UniqueIdentifier>{1610fd55-02e5-4125-a372-b51b7a1567c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main\res\mipmap-mdpi">
+      <UniqueIdentifier>{9011dfc7-3c4e-4e3e-be10-05695ab3911b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main\res\mipmap-xhdpi">
+      <UniqueIdentifier>{d6c28d6c-413b-4e19-a258-d4fa1b7bd349}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main\res\mipmap-xxhdpi">
+      <UniqueIdentifier>{c1386fc9-928c-4779-afb2-6976d27dc52a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main\res\mipmap-xxxhdpi">
+      <UniqueIdentifier>{0a34760e-f854-449a-8781-be97dfb919e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\main\res\values">
+      <UniqueIdentifier>{e657bfb2-3ccb-4e4c-93ff-64565d3e7eb5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\test">
+      <UniqueIdentifier>{09571a28-9900-4acf-8e9a-9a3331f8a5d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\test\java">
+      <UniqueIdentifier>{c01b8d3d-a166-41b7-9991-b04da11e239b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\test\java\com">
+      <UniqueIdentifier>{0c312fc7-f371-4d0e-a8db-b6feed06fd9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\test\java\com\example">
+      <UniqueIdentifier>{e2398544-e05a-4176-bdc4-57a0dace3738}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AndroidPackaging\app\src\test\java\com\example\hellojni">
+      <UniqueIdentifier>{1485a895-c0d5-4664-92e6-99decf03c688}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HelloJNI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AndroidPackaging\app\src\main\cpp\JniBindings.cpp">
+      <Filter>AndroidPackaging\app\src\main\cpp</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="AndroidPackaging\gradle\wrapper\gradle-wrapper.jar">
+      <Filter>AndroidPackaging\gradle\wrapper</Filter>
+    </None>
+    <None Include="AndroidPackaging\gradle\wrapper\gradle-wrapper.properties">
+      <Filter>AndroidPackaging\gradle\wrapper</Filter>
+    </None>
+    <None Include="AndroidPackaging\build.gradle">
+      <Filter>AndroidPackaging</Filter>
+    </None>
+    <None Include="AndroidPackaging\gradle.properties">
+      <Filter>AndroidPackaging</Filter>
+    </None>
+    <None Include="AndroidPackaging\gradlew">
+      <Filter>AndroidPackaging</Filter>
+    </None>
+    <None Include="AndroidPackaging\gradlew.bat">
+      <Filter>AndroidPackaging</Filter>
+    </None>
+    <None Include="AndroidPackaging\settings.gradle">
+      <Filter>AndroidPackaging</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\androidTest\java\com\example\hellojni\ExampleInstrumentedTest.java">
+      <Filter>AndroidPackaging\app\src\androidTest\java\com\example\hellojni</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\java\com\example\hellojni\MainActivity.java">
+      <Filter>AndroidPackaging\app\src\main\java\com\example\hellojni</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\drawable\ic_launcher_background.xml">
+      <Filter>AndroidPackaging\app\src\main\res\drawable</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\drawable-v24\ic_launcher_foreground.xml">
+      <Filter>AndroidPackaging\app\src\main\res\drawable-v24</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\layout\activity_main.xml">
+      <Filter>AndroidPackaging\app\src\main\res\layout</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\mipmap-anydpi-v26\ic_launcher.xml">
+      <Filter>AndroidPackaging\app\src\main\res\mipmap-anydpi-v26</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\mipmap-anydpi-v26\ic_launcher_round.xml">
+      <Filter>AndroidPackaging\app\src\main\res\mipmap-anydpi-v26</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\mipmap-hdpi\ic_launcher.png">
+      <Filter>AndroidPackaging\app\src\main\res\mipmap-hdpi</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\mipmap-hdpi\ic_launcher_round.png">
+      <Filter>AndroidPackaging\app\src\main\res\mipmap-hdpi</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\mipmap-mdpi\ic_launcher.png">
+      <Filter>AndroidPackaging\app\src\main\res\mipmap-mdpi</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\mipmap-mdpi\ic_launcher_round.png">
+      <Filter>AndroidPackaging\app\src\main\res\mipmap-mdpi</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\mipmap-xhdpi\ic_launcher.png">
+      <Filter>AndroidPackaging\app\src\main\res\mipmap-xhdpi</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\mipmap-xhdpi\ic_launcher_round.png">
+      <Filter>AndroidPackaging\app\src\main\res\mipmap-xhdpi</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\mipmap-xxhdpi\ic_launcher.png">
+      <Filter>AndroidPackaging\app\src\main\res\mipmap-xxhdpi</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\mipmap-xxhdpi\ic_launcher_round.png">
+      <Filter>AndroidPackaging\app\src\main\res\mipmap-xxhdpi</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\mipmap-xxxhdpi\ic_launcher.png">
+      <Filter>AndroidPackaging\app\src\main\res\mipmap-xxxhdpi</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\mipmap-xxxhdpi\ic_launcher_round.png">
+      <Filter>AndroidPackaging\app\src\main\res\mipmap-xxxhdpi</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\values\colors.xml">
+      <Filter>AndroidPackaging\app\src\main\res\values</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\values\strings.xml">
+      <Filter>AndroidPackaging\app\src\main\res\values</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\res\values\styles.xml">
+      <Filter>AndroidPackaging\app\src\main\res\values</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\main\AndroidManifest.xml">
+      <Filter>AndroidPackaging\app\src\main</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\src\test\java\com\example\hellojni\ExampleUnitTest.java">
+      <Filter>AndroidPackaging\app\src\test\java\com\example\hellojni</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\build.gradle">
+      <Filter>AndroidPackaging\app</Filter>
+    </None>
+    <None Include="AndroidPackaging\app\proguard-rules.pro">
+      <Filter>AndroidPackaging\app</Filter>
+    </None>
+  </ItemGroup>
+</Project>
