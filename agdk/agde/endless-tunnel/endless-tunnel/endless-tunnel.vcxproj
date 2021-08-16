@@ -308,7 +308,7 @@
       <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -327,7 +327,7 @@
       <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -346,7 +346,7 @@
       <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -365,7 +365,7 @@
       <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -424,7 +424,7 @@
       <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CLanguageStandard>c11</CLanguageStandard>
     </ClCompile>
     <Link>
@@ -448,7 +448,7 @@
       <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CLanguageStandard>c11</CLanguageStandard>
     </ClCompile>
     <Link>
@@ -472,7 +472,7 @@
       <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CLanguageStandard>c11</CLanguageStandard>
     </ClCompile>
     <Link>
@@ -496,7 +496,7 @@
       <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CLanguageStandard>c11</CLanguageStandard>
     </ClCompile>
     <Link>
@@ -642,7 +642,7 @@
     <None Include="Android\app\src\main\AndroidManifest.xml" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\glm\glm.vcxproj">
+    <ProjectReference Include="..\third_party\glm\glm.vcxproj">
       <Project>{991f34d0-e1e0-4833-aba3-25af229bc6d5}</Project>
     </ProjectReference>
     <ProjectReference Include="..\native_app_glue\native_app_glue.vcxproj">

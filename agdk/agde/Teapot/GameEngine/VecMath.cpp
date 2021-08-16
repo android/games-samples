@@ -1,5 +1,5 @@
 /*
- * Copy_right 2013 The Android Open Source Project
+ * Copyright 2013 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * y_ou may_ not use this file ex_cept in compliance with the License.
