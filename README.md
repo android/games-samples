@@ -16,6 +16,6 @@ the [Android Game Development Kit libraries](https://developer.android.com/games
 ## TrivialKart sample
 
 TrivialKart is a sample game demonstrating use of the Google Play Billing Library.
-It is current available for the [Godot](https://www.godotengine.org) game engine.
+It is currently available for the [Godot](https://www.godotengine.org) game engine.
 
 * **[trivialkart/trivialkart-godot](trivialkart/trivialkart-godot)**
