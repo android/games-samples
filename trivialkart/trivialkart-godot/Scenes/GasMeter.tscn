@@ -1,0 +1,26 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://Scripts/gas_meter_controller.gd" type="Script" id=1]
+[ext_resource path="res://GraphicAssets/UI/GasBar/gasMeter.png" type="Texture" id=2]
+
+
+[node name="GasMeter" type="Control"]
+margin_right = 194.0
+margin_bottom = 40.0
+script = ExtResource( 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="ColorRect" type="ColorRect" parent="."]
+margin_right = 194.0
+margin_bottom = 36.0
+color = Color( 0.129412, 0.807843, 0.0352941, 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="TextureRect" type="TextureRect" parent="."]
+margin_right = 40.0
+margin_bottom = 40.0
+texture = ExtResource( 2 )

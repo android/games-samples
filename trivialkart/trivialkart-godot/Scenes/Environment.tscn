@@ -1,0 +1,88 @@
+[gd_scene load_steps=12 format=2]
+
+[ext_resource path="res://Tilesets/BlueGrassTileset.tres" type="TileSet" id=1]
+[ext_resource path="res://Tilesets/LandTileset.tres" type="TileSet" id=2]
+[ext_resource path="res://GraphicAssets/Items/roadSegment.png" type="Texture" id=3]
+[ext_resource path="res://GraphicAssets/Items/grass1.png" type="Texture" id=4]
+[ext_resource path="res://GraphicAssets/Items/signRight.png" type="Texture" id=5]
+[ext_resource path="res://GraphicAssets/Items/flagRed1.png" type="Texture" id=6]
+[ext_resource path="res://GraphicAssets/Items/bush.png" type="Texture" id=7]
+[ext_resource path="res://GraphicAssets/Items/flagRed2.png" type="Texture" id=8]
+[ext_resource path="res://GraphicAssets/Items/rock.png" type="Texture" id=9]
+
+[sub_resource type="TileSet" id=1]
+0/name = "roadSegment.png 0"
+0/texture = ExtResource( 3 )
+0/tex_offset = Vector2( 0, 0 )
+0/modulate = Color( 1, 1, 1, 1 )
+0/region = Rect2( 0, 0, 512, 256 )
+0/tile_mode = 0
+0/occluder_offset = Vector2( 0, 0 )
+0/navigation_offset = Vector2( 0, 0 )
+0/shape_offset = Vector2( 0, 0 )
+0/shape_transform = Transform2D( 1, 0, 0, 1, 0, 0 )
+0/shape_one_way = false
+0/shape_one_way_margin = 0.0
+0/shapes = [  ]
+0/z_index = 0
+
+[sub_resource type="SpriteFrames" id=2]
+animations = [ {
+"frames": [ ExtResource( 6 ), ExtResource( 8 ) ],
+"loop": true,
+"name": "default",
+"speed": 3.0
+} ]
+
+[node name="Environment2D" type="Node2D"]
+position = Vector2( 256, 256 )
+
+[node name="BackgroundTileMap" type="TileMap" parent="."]
+scale = Vector2( 0.5, 0.5 )
+tile_set = ExtResource( 1 )
+format = 1
+tile_data = PoolIntArray( -458760, 0, 0, -524280, 0, 0, -524264, 0, 0, -524248, 0, 0, -524232, 0, 0, -524216, 0, 0, -524200, 0, 0, -524184, 0, 0, -524168, 0, 0 )
+
+[node name="RoadTileMap" type="TileMap" parent="."]
+position = Vector2( 0, 80 )
+scale = Vector2( 0.5, 0.5 )
+tile_set = SubResource( 1 )
+format = 1
+tile_data = PoolIntArray( 327672, 0, 0, 262144, 0, 0, 262152, 0, 0, 262160, 0, 0, 262168, 0, 0, 262176, 0, 0, 262184, 0, 0, 262192, 0, 0, 262200, 0, 0, 262208, 0, 0, 262216, 0, 0, 262224, 0, 0, 262232, 0, 0, 262240, 0, 0, 262248, 0, 0, 262256, 0, 0, 262264, 0, 0, 262272, 0, 0 )
+
+[node name="Items2D" type="Node2D" parent="."]
+
+[node name="SignRightSprite" type="Sprite" parent="Items2D"]
+position = Vector2( 1656, 144 )
+texture = ExtResource( 5 )
+
+[node name="GrassSprite1" type="Sprite" parent="Items2D"]
+position = Vector2( 1856, 144 )
+texture = ExtResource( 4 )
+
+[node name="GrassSprite2" type="Sprite" parent="Items2D"]
+position = Vector2( 1896, 144 )
+texture = ExtResource( 4 )
+
+[node name="GrassSprite3" type="Sprite" parent="Items2D"]
+position = Vector2( 1936, 144 )
+texture = ExtResource( 4 )
+
+[node name="RockSprite" type="Sprite" parent="Items2D"]
+position = Vector2( 2056, 144 )
+texture = ExtResource( 9 )
+
+[node name="BushSprite" type="Sprite" parent="Items2D"]
+position = Vector2( 2256, 144 )
+texture = ExtResource( 7 )
+
+[node name="FlagSprite" type="AnimatedSprite" parent="Items2D"]
+position = Vector2( 2506, 144 )
+frames = SubResource( 2 )
+playing = true
+
+[node name="LandTileMap" type="TileMap" parent="."]
+position = Vector2( 0, 80 )
+tile_set = ExtResource( 2 )
+format = 1
+tile_data = PoolIntArray( 327676, 0, 0, 327678, 0, 0, 262144, 0, 0, 262146, 0, 0, 262148, 0, 0, 262150, 0, 0, 262152, 0, 0, 262154, 0, 0, 262156, 0, 0, 262158, 0, 0, 262160, 0, 0, 262162, 0, 0, 262164, 0, 0, 262166, 0, 0, 262168, 0, 0, 262170, 0, 0, 262172, 0, 0, 262174, 0, 0, 262176, 0, 0, 262178, 0, 0, 262180, 0, 0, 262182, 0, 0, 262184, 0, 0, 262186, 0, 0, 262188, 0, 0, 262190, 0, 0, 262192, 0, 0, 262194, 0, 0, 262196, 0, 0, 262198, 0, 0, 262200, 0, 0, 262202, 0, 0, 262204, 0, 0, 262206, 0, 0, 262208, 0, 0, 262210, 0, 0 )
