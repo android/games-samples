@@ -30,7 +30,12 @@
 
 #define MAX_ASSET_TEXTURES 16
 
-namespace Loader_Scene {
+class LoaderScene::TextureLoader {
+ private:
+    int _totalLoadCount = 0;
+    int _currentLoadIndex = 0;
+    int _remainingLoadCount = 0;
+
     struct LoadedTextureData {
         LoadedTextureData() : textureSize(0), textureData(NULL), textureName(NULL) {}
 
@@ -39,10 +44,27 @@ namespace Loader_Scene {
         const char *textureName;
     };
 
-    int _totalLoadCount = 0;
-    volatile int _currentLoadIndex = 0;
-    volatile int _remainingLoadCount = 0;
     LoadedTextureData _loadedTextures[MAX_ASSET_TEXTURES];
+
+ public:
+    ~TextureLoader() {
+        // Wait for any textures to finish loading so we don't accidentally call
+        // callbacks on a deleted loader.
+        constexpr int MAX_WAITS = 20;
+        int waits = MAX_WAITS;
+        while(_remainingLoadCount != 0 && waits > 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            waits--;
+        }
+        if (waits == 0) {
+            ALOGE("Timed-out waiting for textures to load");
+            exit(1);
+        }
+    }
+
+    int TotalNumberToLoad() const { return _totalLoadCount; }
+    int NumberCompetedLoading() const { return _totalLoadCount - _remainingLoadCount; }
+    int NumberRemainingToLoad() const { return _remainingLoadCount; }
 
     void LoadingCallback(const LoadingCompleteMessage *message) {
         if (message->loadSuccessful) {
@@ -59,18 +81,24 @@ namespace Loader_Scene {
         --_remainingLoadCount;
     }
 
+    static void LoadingCallbackProxy(const LoadingCompleteMessage *message) {
+        TextureLoader* loader = (TextureLoader*)message->userData;
+        loader->LoadingCallback(message);
+    }
+
     void LoadTexturesFromAssetPack(const char *assetPackName) {
         GameAssetManager *gameAssetManager = NativeEngine::GetInstance()->GetGameAssetManager();
         int assetPackFileCount = 0;
         const char **assetPackFiles = gameAssetManager->GetGameAssetPackFileList(assetPackName,
-                                                                                 &assetPackFileCount);
+                &assetPackFileCount);
         if (assetPackFiles != NULL) {
             for (int i = 0; i < assetPackFileCount; ++i) {
                 uint64_t fileSize = gameAssetManager->GetGameAssetSize(assetPackFiles[i]);
                 if (fileSize > 0) {
                     uint8_t *fileBuffer = static_cast<uint8_t *>(malloc(fileSize));
                     if (gameAssetManager->LoadGameAssetAsync(assetPackFiles[i], fileSize,
-                                                             fileBuffer, LoadingCallback)) {
+                                                             fileBuffer, LoadingCallbackProxy,
+                                                             this)) {
                         ++_totalLoadCount;
                         ++_remainingLoadCount;
                         ALOGI("Started async load %s", assetPackFiles[i]);
@@ -84,15 +112,13 @@ namespace Loader_Scene {
         TextureManager *textureManager = NativeEngine::GetInstance()->GetTextureManager();
         for (int i = 0; i < _currentLoadIndex; ++i) {
             textureManager->CreateTexture(_loadedTextures[i].textureName,
-                                          _loadedTextures[i].textureSize,
-                                          static_cast<const uint8_t *>(_loadedTextures[i].textureData));
+                _loadedTextures[i].textureSize,
+                static_cast<const uint8_t *>(_loadedTextures[i].textureData));
         }
     }
-} // namespace Loader_Scene
+}; // class LoaderScene::TextureLoader
 
-using namespace Loader_Scene;
-
-LoaderScene::LoaderScene() {
+LoaderScene::LoaderScene() : mTextureLoader(new LoaderScene::TextureLoader()) {
     mLoadingText = NULL;
     mLoadingWidget = NULL;
     mTextBoxId = -1;
@@ -103,8 +129,8 @@ LoaderScene::~LoaderScene() {
 }
 
 void LoaderScene::DoFrame() {
-    if (_remainingLoadCount == 0) {
-        CreateTextures();
+    if (mTextureLoader->NumberRemainingToLoad() == 0) {
+        mTextureLoader->CreateTextures();
 
         // Inform performance tuner we are done loading
         TuningManager *tuningManager = NativeEngine::GetInstance()->GetTuningManager();
@@ -120,8 +146,8 @@ void LoaderScene::DoFrame() {
         SceneManager *mgr = SceneManager::GetInstance();
         mgr->RequestNewScene(new WelcomeScene());
     } else {
-        float totalLoad = _totalLoadCount;
-        float completedLoad = (_totalLoadCount - _remainingLoadCount);
+        float totalLoad = mTextureLoader->TotalNumberToLoad();
+        float completedLoad = mTextureLoader->NumberCompetedLoading();
         int loadingPercentage = static_cast<int>((completedLoad / totalLoad) * 100.0f);
         char progressString[64];
         sprintf(progressString, "%s... %d%%", S_LOADING, loadingPercentage);
@@ -142,11 +168,11 @@ void LoaderScene::OnCreateWidgets() {
     timespec currentTimeSpec;
     clock_gettime(CLOCK_MONOTONIC, &currentTimeSpec);
     mStartTime = currentTimeSpec.tv_sec * 1000 + (currentTimeSpec.tv_nsec / 1000000);
-    LoadTexturesFromAssetPack(GameAssetManifest::MAIN_ASSETPACK_NAME);
+    mTextureLoader->LoadTexturesFromAssetPack(GameAssetManifest::MAIN_ASSETPACK_NAME);
     GameAssetManager *gameAssetManager = NativeEngine::GetInstance()->GetGameAssetManager();
     if (gameAssetManager->GetGameAssetPackStatus(GameAssetManifest::EXPANSION_ASSETPACK_NAME) ==
         GameAssetManager::GAMEASSET_READY) {
-        LoadTexturesFromAssetPack(GameAssetManifest::EXPANSION_ASSETPACK_NAME);
+        mTextureLoader->LoadTexturesFromAssetPack(GameAssetManifest::EXPANSION_ASSETPACK_NAME);
     }
 }
 

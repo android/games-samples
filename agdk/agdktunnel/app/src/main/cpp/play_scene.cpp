@@ -67,6 +67,7 @@ PlayScene::PlayScene() : Scene() {
     mShipSteerX = mShipSteerZ = 0.0f;
     mFilteredSteerX = mFilteredSteerZ = 0.0f;
 
+    mPlayerPos = glm::vec3(0.0f, 0.0f, 0.0f); // center
     mPlayerDir = glm::vec3(0.0f, 1.0f, 0.0f); // forward
     mDifficulty = 0;
     mUseCloudSave = false;
@@ -119,6 +120,8 @@ PlayScene::PlayScene() : Scene() {
     mMenuTouchActive = false;
 
     mCheckpointSignPending = false;
+
+    mActiveWallTextureCount = 0;
 
     SetScore(0);
 
@@ -301,6 +304,7 @@ void PlayScene::OnKillGraphics() {
     for (int i = 0; i < mActiveWallTextureCount; ++i) {
         CleanUp(&mWallTextures[i]);
     }
+    mActiveWallTextureCount = 0;
     CleanUp(&mLifeGeom);
 }
 

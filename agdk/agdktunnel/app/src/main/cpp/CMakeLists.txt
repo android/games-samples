@@ -37,6 +37,7 @@ include_directories(${PROTO_GENS_DIR})
 
 # common include directory for all samples
 set(COMMON_INCLUDE_DIR "../../../../../common/include")
+set(COMMON_SRC_DIR "../../../../../common/src")
 
 # Export GameActivity_onCreate(),
 # Refer to: https://github.com/android-ndk/ndk/issues/381.
@@ -94,6 +95,7 @@ add_library(game SHARED
      util.cpp
      vertexbuf.cpp
      welcome_scene.cpp
+     ${COMMON_SRC_DIR}/Versions.cpp
      )
 
 target_include_directories(game PRIVATE

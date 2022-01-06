@@ -21,7 +21,7 @@ extern "C" {
     void android_main(struct android_app *app);
 };
 
-/* 
+/*
     android_main (not main) is our game entry function, it is called from
     the native app glue utility code as part of the onCreate handler.
 */

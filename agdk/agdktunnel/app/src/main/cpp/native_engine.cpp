@@ -24,6 +24,7 @@
 #include "game-activity/GameActivity.h"
 #include "paddleboat/paddleboat.h"
 #include "swappy/swappyGL.h"
+#include "welcome_scene.hpp"
 
 // verbose debug logs on?
 #define VERBOSE_LOGGING 1
@@ -109,6 +110,21 @@ NativeEngine::NativeEngine(struct android_app *app) {
     SwappyGL_setSwapIntervalNS(SWAPPY_SWAP_60FPS);
 
     mTuningManager = new TuningManager(GetJniEnv(), app->activity->javaGameActivity, app->config);
+
+    WelcomeScene::InitAboutText(GetJniEnv(), app->activity->javaGameActivity);
+
+    // This is needed to allow controller events through to us.
+    // By default, only touch-screen events are passed through, to match the
+    // behaviour of NativeActivity.
+    android_app_set_motion_event_filter(app, nullptr);
+
+    // Flags to control how the IME behaves.
+    constexpr int InputType_dot_TYPE_CLASS_TEXT = 1;
+    constexpr int IME_ACTION_NONE = 1;
+    constexpr int IME_FLAG_NO_FULLSCREEN = 33554432;
+
+    GameActivity_setImeEditorInfo(app->activity, InputType_dot_TYPE_CLASS_TEXT,
+                                  IME_ACTION_NONE, IME_FLAG_NO_FULLSCREEN);
 }
 
 NativeEngine *NativeEngine::GetInstance() {
@@ -195,8 +211,6 @@ void NativeEngine::GameLoop() {
     mApp->userData = this;
     mApp->onAppCmd = _handle_cmd_proxy;
     //mApp->onInputEvent = _handle_input_proxy;
-    mApp->motionEventsCount = 0;
-    mApp->textInputState = 0;
 
     while (1) {
         int events;
@@ -262,6 +276,19 @@ JNIEnv *NativeEngine::GetAppJniEnv() {
 
     return mAppJniEnv;
 }
+
+static char sInsetsTypeName[][32] = {
+    "CAPTION_BAR",
+    "DISPLAY_CUTOUT",
+    "IME",
+    "MANDATORY_SYSTEM_GESTURES",
+    "NAVIGATION_BARS",
+    "STATUS_BARS",
+    "SYSTEM_BARS",
+    "SYSTEM_GESTURES",
+    "TAPABLE_ELEMENT",
+    "WATERFALL",
+};
 
 void NativeEngine::HandleCommand(int32_t cmd) {
     SceneManager *mgr = SceneManager::GetInstance();
@@ -348,6 +375,22 @@ void NativeEngine::HandleCommand(int32_t cmd) {
                 KillGLObjects();
             }
             break;
+        case APP_CMD_CONTENT_RECT_CHANGED:
+            VLOGD("NativeEngine: APP_CMD_CONTENT_RECT_CHANGED");
+            break;
+        case APP_CMD_WINDOW_REDRAW_NEEDED:
+            VLOGD("NativeEngine: APP_CMD_WINDOW_REDRAW_NEEDED");
+            break;
+        case APP_CMD_WINDOW_INSETS_CHANGED:
+            VLOGD("NativeEngine: APP_CMD_WINDOW_INSETS_CHANGED");
+            ARect insets;
+            // Log all the insets types
+            for (int type = 0; type < GAMECOMMON_INSETS_TYPE_COUNT; ++type) {
+                GameActivity_getWindowInsets(mApp->activity, (GameCommonInsetsType)type, &insets);
+                VLOGD("%s insets: left=%d right=%d top=%d bottom=%d",
+                      sInsetsTypeName[type], insets.left, insets.right, insets.top, insets.bottom);
+            }
+            break;
         default:
             VLOGD("NativeEngine: (unknown command).");
             break;
@@ -375,9 +418,14 @@ void NativeEngine::HandleGameActivityInput() {
     // read controller data and cook it into an event
     bool cookGameControllerEvent = false;
 
-    if (mApp->keyDownEventsCount != 0) {
-        for (uint64_t i = 0; i < mApp->keyDownEventsCount; ++i) {
-            GameActivityKeyEvent *keyEvent = &mApp->keyDownEvents[i];
+    // Swap input buffers so we don't miss any events while processing inputBuffer.
+    android_input_buffer* inputBuffer = android_app_swap_input_buffers(mApp);
+    // Early exit if no events.
+    if (inputBuffer == nullptr) return;
+
+    if (inputBuffer->keyEventsCount != 0) {
+        for (uint64_t i = 0; i < inputBuffer->keyEventsCount; ++i) {
+            GameActivityKeyEvent* keyEvent = &inputBuffer->keyEvents[i];
             if (Paddleboat_processGameActivityKeyInputEvent(keyEvent,
                                                             sizeof(GameActivityKeyEvent))) {
                 cookGameControllerEvent = true;
@@ -385,35 +433,22 @@ void NativeEngine::HandleGameActivityInput() {
                 CookGameActivityKeyEvent(keyEvent, _cooked_event_callback);
             }
         }
-        android_app_clear_key_down_events(mApp);
+        android_app_clear_key_events(inputBuffer);
     }
-
-    if (mApp->keyUpEventsCount != 0) {
-        for (uint64_t i = 0; i < mApp->keyUpEventsCount; ++i) {
-            GameActivityKeyEvent *keyEvent = &mApp->keyUpEvents[i];
-            if (Paddleboat_processGameActivityKeyInputEvent(keyEvent,
-                                                            sizeof(GameActivityKeyEvent))) {
-                cookGameControllerEvent = true;
-            } else {
-                CookGameActivityKeyEvent(keyEvent, _cooked_event_callback);
-            }
-        }
-        android_app_clear_key_up_events(mApp);
-    }
-
-    if (mApp->motionEventsCount != 0) {
-        for (uint64_t i = 0; i < mApp->motionEventsCount; ++i) {
-            GameActivityMotionEvent *motionEvent = &mApp->motionEvents[i];
+    if (inputBuffer->motionEventsCount != 0) {
+        for (uint64_t i = 0; i < inputBuffer->motionEventsCount; ++i) {
+            GameActivityMotionEvent* motionEvent = &inputBuffer->motionEvents[i];
 
             if (Paddleboat_processGameActivityMotionInputEvent(motionEvent,
                                                                sizeof(GameActivityMotionEvent))) {
                 cookGameControllerEvent = true;
             } else {
                 // Didn't belong to a game controller, process it ourselves if it is a touch event
-                CookGameActivityMotionEvent(motionEvent, _cooked_event_callback);
+                CookGameActivityMotionEvent(motionEvent,
+                                            _cooked_event_callback);
             }
         }
-        android_app_clear_motion_events(mApp);
+        android_app_clear_motion_events(inputBuffer);
     }
 
     if (cookGameControllerEvent) {

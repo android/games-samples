@@ -14,7 +14,11 @@ AGDKTunnel uses the following AGDK libraries:
 
 ## Prerequisites
 
-Python is expected to be available in your PATH.
+### Python
+
+Python is expected to be available in your `PATH`. The `protobuf` package is
+expected to have been installed via `pip`. It is expected that `python`
+is version 3, not version 2.
 
 ### Note for macOS developers
 

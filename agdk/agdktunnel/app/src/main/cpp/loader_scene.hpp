@@ -22,7 +22,10 @@
 
 /* Loader Scene, displays load progress at startup */
 class LoaderScene : public UiScene {
-protected:
+ private:
+  class TextureLoader;
+
+ protected:
     // text to be shown
     const char *mLoadingText;
 
@@ -33,6 +36,8 @@ protected:
     int mTextBoxId;
 
     uint64_t mStartTime;
+
+    std::unique_ptr<TextureLoader> mTextureLoader;
 
     virtual void OnCreateWidgets() override;
 
@@ -50,8 +55,6 @@ public:
         mLoadingText = text;
         return this;
     }
-
-private:
 };
 
 #endif

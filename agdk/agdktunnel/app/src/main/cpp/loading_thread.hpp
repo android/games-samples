@@ -44,6 +44,7 @@ struct LoadingCompleteMessage {
     size_t bytesRead;
     void *loadBuffer;
     bool loadSuccessful;
+    void* userData; // Opaque pointer to data owned by the load requester.
 };
 
 typedef void (*LoadingCompleteCallback)(const LoadingCompleteMessage *message);
@@ -54,8 +55,10 @@ public:
 
     ~LoadingThread();
 
+    // userData is passed without modification to the callback.
     void StartAssetLoad(const char *assetName, const char *assetPath, const size_t bufferSize,
-                        void *loadBuffer, LoadingCompleteCallback callback, bool useAssetManager);
+                        void *loadBuffer, LoadingCompleteCallback callback, bool useAssetManager,
+                        void* userData);
 
 private:
     void LaunchThread();
@@ -73,6 +76,7 @@ private:
         void *loadBuffer;
         LoadingCompleteCallback callback;
         bool useAssetManager;
+        void* userData; // Opaque pointer to data owned by the load requester.
     };
 
     std::mutex mThreadMutex;
