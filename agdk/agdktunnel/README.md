@@ -20,6 +20,11 @@ Python is expected to be available in your `PATH`. The `protobuf` package is
 expected to have been installed via `pip`. It is expected that `python`
 is version 3, not version 2.
 
+NOTE: If you are building on Windows, Android Studio may be using its own local
+Python install. Using the `Terminal` tab in Android Studio you can check
+for protobuf using `pip list`. If the protobuf package is not present it can be
+installed by running `pip install protobuf` from the Terminal tab.
+
 ### Note for macOS developers
 
 The runtime data files for Android Performance Tuner are compiled using the
