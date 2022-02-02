@@ -44,19 +44,34 @@ public class CarMove : MonoBehaviour
         // Check for fresh touches and see if they touched the car.
         for (int i = 0; i < Input.touchCount; ++i)
         {
-            if (Input.GetTouch(i).phase == TouchPhase.Began)
+            var touch = Input.GetTouch(i);
+            if (touch.phase == TouchPhase.Began)
             {
-                Ray touchRay = Camera.main.ScreenPointToRay(Input.GetTouch(0).position);
-                RaycastHit2D touchHit = Physics2D.Raycast(touchRay.origin, touchRay.direction);
-                if (touchHit.rigidbody == _rigidbody2D)
-                {
-                    if (_rigidbody2D.velocity.magnitude < NoVelocity &&
-                        _gas.HasGas() && _gameManger.IsInPlayCanvas())
-                    {
-                        Drive();
-                    }
-                }
+                Debug.Log("NCT_TOUCH 1");
+                ProcessTouch(touch.position);
+            }
+        }
 
+        // left mouse button
+ #if UNITY_EDITOR       
+        if (Input.GetMouseButtonDown(0))
+        {
+            Debug.Log("NCT_TOUCH 2");
+            ProcessTouch(Input.mousePosition);
+        }
+#endif
+    }
+
+    private void ProcessTouch(Vector2 touchPosition)
+    {
+        Ray touchRay = Camera.main.ScreenPointToRay(touchPosition);
+        RaycastHit2D touchHit = Physics2D.Raycast(touchRay.origin, touchRay.direction);
+        if (touchHit.rigidbody == _rigidbody2D)
+        {
+            if (_rigidbody2D.velocity.magnitude < NoVelocity &&
+                _gas.HasGas() && _gameManger.IsInPlayCanvas())
+            {
+                Drive();
             }
         }
     }
