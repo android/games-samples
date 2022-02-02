@@ -79,13 +79,16 @@ void ControllerUIUtil::Thumbstick(const ControllerUIPanelParams &panelParams,
 void ControllerUIUtil::TriggerBar(const ControllerUIPanelParams &panelParams,
                                   ImDrawList *draw_list,
                                   const ControllerUIButtons buttonId,
-                                  const float triggerValue) {
+                                  const float triggerValue,
+                                  const float offsetY) {
     const ImU32 frameColor = ImColor(255, 255, 255, 255);
     const ImU32 fillColor = ImColor(20, 255, 20, 255);
     ImVec2 rawFrameMin, rawFrameMax;
     ControllerUIData::getTriggerRectExtents(buttonId, &rawFrameMin, &rawFrameMax);
-    const ImVec2 frameMin = GetScaledBasePos(panelParams, rawFrameMin);
-    const ImVec2 frameMax = GetScaledBasePos(panelParams, rawFrameMax);
+    ImVec2 frameMin = GetScaledBasePos(panelParams, rawFrameMin);
+    ImVec2 frameMax = GetScaledBasePos(panelParams, rawFrameMax);
+    frameMin.y += offsetY;
+    frameMax.y += offsetY;
     const float frameWidth = frameMax.x - frameMin.x;
     const float fillAdjust = frameWidth * triggerValue;
     ImVec2 fillMin, fillMax;

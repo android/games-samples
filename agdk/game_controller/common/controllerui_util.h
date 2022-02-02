@@ -36,5 +36,6 @@ public:
     // function outputs to draw_list parameter, must not be null
     static void TriggerBar(const ControllerUIPanelParams &panelParams, ImDrawList *draw_list,
                            const ControllerUIButtons buttonId,
-                           const float triggerValue);
+                           const float triggerValue,
+                           const float offsetY);
 };

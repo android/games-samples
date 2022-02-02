@@ -37,6 +37,9 @@ public:
     // returns the JNI environment
     JNIEnv *GetJniEnv();
 
+    // Return the current system bar offset, not used in NativeActivity version
+    int GetSystemBarOffset() { return 0; }
+
     // returns the Android app object
     android_app *GetAndroidApp();
 

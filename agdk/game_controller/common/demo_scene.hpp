@@ -35,6 +35,8 @@ private:
         SIMULATED_CLICK_UP
     };
 
+    static constexpr size_t MOTION_AXIS_COUNT = 3;
+
 protected:
     // Did we simulate a click for ImGui?
     SimulatedClickState mSimulatedClickState;
@@ -81,6 +83,20 @@ protected:
     // Current mouse data timestamp delta
     uint64_t mMouseDataTimestampDelta;
 
+    // Accelerometer data previous timestamp and delta
+    uint64_t mPreviousAccelerometerTimestamp;
+    uint32_t mAccelerometerTimestampDelta;
+
+    // Gyroscope data previous timestamp and delta
+    uint64_t mPreviousGyroscopeTimestamp;
+    uint32_t mGyroscopeTimestampDelta;
+
+    // Most recently reported accelerometer data
+    float mAccelerometerData[MOTION_AXIS_COUNT];
+
+    // Most recently reported gyroscope data
+    float mGyroscopeData[MOTION_AXIS_COUNT];
+
     // Preferences display is active
     bool mPreferencesActive;
 
@@ -110,23 +126,31 @@ protected:
 
     void RenderControllerTabs();
 
-    void RenderControllerPanel(const int32_t controllerIndex);
+    void RenderPanel(const int32_t controllerIndex);
 
-    void RenderControllerPanel_ControlsTab(const int32_t controllerIndex,
-                                           const Paddleboat_Controller_Data &controllerData,
-                                           const Paddleboat_Controller_Info &controllerInfo);
+    void RenderPanel_ControlsTab(const int32_t controllerIndex,
+                                 const Paddleboat_Controller_Data &controllerData,
+                                 const Paddleboat_Controller_Info &controllerInfo);
 
-    void RenderControllerPanel_ControlsTab_ArcadeStick(const int32_t controllerIndex,
-                                                       const Paddleboat_Controller_Data &controllerData,
-                                                       const Paddleboat_Controller_Info &controllerInfo);
+    void RenderPanel_ControlsTab_ArcadeStick(const int32_t controllerIndex,
+                                             const Paddleboat_Controller_Data &controllerData,
+                                             const Paddleboat_Controller_Info &controllerInfo);
 
-    void RenderControllerPanel_InfoTab(const int32_t controllerIndex,
-                                       const Paddleboat_Controller_Data &controllerData,
-                                       const Paddleboat_Controller_Info &controllerInfo);
+    void RenderPanel_InfoTab(const int32_t controllerIndex,
+                             const Paddleboat_Controller_Data &controllerData,
+                             const Paddleboat_Controller_Info &controllerInfo);
 
-    void RenderControllerPanel_VibrationTab(const int32_t controllerIndex,
-                                            const Paddleboat_Controller_Data &controllerData,
-                                            const Paddleboat_Controller_Info &controllerInfo);
+    void RenderPanel_VibrationTab(const int32_t controllerIndex,
+                                  const Paddleboat_Controller_Data &controllerData,
+                                  const Paddleboat_Controller_Info &controllerInfo);
+
+    void RenderPanel_MotionTab(const int32_t controllerIndex,
+                               const Paddleboat_Controller_Data &controllerData,
+                               const Paddleboat_Controller_Info &controllerInfo);
+
+    void RenderPanel_LightsTab(const int32_t controllerIndex,
+                               const Paddleboat_Controller_Data &controllerData,
+                               const Paddleboat_Controller_Info &controllerInfo);
 
     void ConfigureButtonLayout(const uint32_t layout);
 
@@ -137,6 +161,9 @@ public:
 
     void GameControllerStatusEvent(const int32_t controllerIndex,
                                    const Paddleboat_ControllerStatus status);
+
+    void MotionDataEvent(const int32_t controllerIndex,
+                         const Paddleboat_Motion_Data *motionData);
 
     virtual void OnStartGraphics();
 

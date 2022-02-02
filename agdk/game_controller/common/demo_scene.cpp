@@ -73,6 +73,14 @@ namespace {
         }
     }
 
+    void MotionDataCallback(const int32_t controllerIndex,
+                            const Paddleboat_Motion_Data *motionData, void *userData) {
+        if (userData != nullptr) {
+            DemoScene *scene = reinterpret_cast<DemoScene *>(userData);
+            scene->MotionDataEvent(controllerIndex, motionData);
+        }
+    }
+
     void VibrationParameters(const char *labelText, const char *labelTag, const float vMin,
                              const float vMax, const float vStep, float *vValue) {
         char plusString[16];
@@ -121,6 +129,14 @@ DemoScene::DemoScene() {
     mActiveControllerPanelTab = 0;
     mPreviousControllerDataTimestamp = 0;
     mPreviousMouseDataTimestamp = 0;
+    mPreviousAccelerometerTimestamp = 0;
+    mAccelerometerTimestampDelta = 0;
+    mPreviousGyroscopeTimestamp = 0;
+    mGyroscopeTimestampDelta = 0;
+    for (int i = 0; i < DemoScene::MOTION_AXIS_COUNT; ++i) {
+        mAccelerometerData[i] = 0.0f;
+        mGyroscopeData[i] = 0.0f;
+    }
     mDontTrimDeadzone = false;
     mPreferencesActive = false;
     mRegisteredStatusCallback = false;
@@ -231,7 +247,8 @@ void DemoScene::RenderUI() {
 
 void DemoScene::SetupUIWindow() {
     ImGuiIO &io = ImGui::GetIO();
-    ImVec2 windowPosition(0.0f, 0.0f);
+    const float windowStartY = NativeEngine::GetInstance()->GetSystemBarOffset();
+    ImVec2 windowPosition(0.0f, windowStartY);
     ImVec2 minWindowSize(io.DisplaySize.x * 0.95f, io.DisplaySize.y);
     ImVec2 maxWindowSize = io.DisplaySize;
     ImGui::SetNextWindowPos(windowPosition);
@@ -333,7 +350,7 @@ void DemoScene::RenderControllerTabs() {
                 ImGui::PopStyleColor(1);
                 if (mActiveControllers[index] && mCurrentControllerIndex >= 0 &&
                     mCurrentControllerIndex < PADDLEBOAT_MAX_CONTROLLERS) {
-                    RenderControllerPanel(mCurrentControllerIndex);
+                    RenderPanel(mCurrentControllerIndex);
                 } else {
                     ImGui::Text("Not connected");
                 }
@@ -414,7 +431,7 @@ void DemoScene::RenderMouseData() {
     }
 }
 
-void DemoScene::RenderControllerPanel(const int32_t controllerIndex) {
+void DemoScene::RenderPanel(const int32_t controllerIndex) {
     if (mActiveControllers[controllerIndex]) {
         Paddleboat_Controller_Data controllerData;
         Paddleboat_Controller_Info controllerInfo;
@@ -430,9 +447,11 @@ void DemoScene::RenderControllerPanel(const int32_t controllerIndex) {
             bool activeTab = false;
 
             const ControllerCategoryTab categoryTabs[] = {
-                    {0, " Controls ",  &DemoScene::RenderControllerPanel_ControlsTab},
-                    {1, " Info ",      &DemoScene::RenderControllerPanel_InfoTab},
-                    {2, " Vibration ", &DemoScene::RenderControllerPanel_VibrationTab}
+                    {0, " Controls ",  &DemoScene::RenderPanel_ControlsTab},
+                    {1, " Info ",      &DemoScene::RenderPanel_InfoTab},
+                    {2, " Vibration ", &DemoScene::RenderPanel_VibrationTab},
+                    {3, " Motion ",    &DemoScene::RenderPanel_MotionTab},
+                    {4, " Lights ",    &DemoScene::RenderPanel_LightsTab},
             };
             const size_t categoryTabCount = ARRAY_COUNTOF(categoryTabs);
 
@@ -458,13 +477,13 @@ void DemoScene::RenderControllerPanel(const int32_t controllerIndex) {
     }
 }
 
-void DemoScene::RenderControllerPanel_ControlsTab(const int32_t controllerIndex,
-                                                  const Paddleboat_Controller_Data &controllerData,
-                                                  const Paddleboat_Controller_Info &controllerInfo) {
+void DemoScene::RenderPanel_ControlsTab(const int32_t controllerIndex,
+                                        const Paddleboat_Controller_Data &controllerData,
+                                        const Paddleboat_Controller_Info &controllerInfo) {
     const uint32_t layout = controllerInfo.controllerFlags & PADDLEBOAT_CONTROLLER_LAYOUT_MASK;
     if (layout == PADDLEBOAT_CONTROLLER_LAYOUT_ARCADE_STICK) {
-        RenderControllerPanel_ControlsTab_ArcadeStick(controllerIndex, controllerData,
-                                                      controllerInfo);
+        RenderPanel_ControlsTab_ArcadeStick(controllerIndex, controllerData,
+                                            controllerInfo);
         return;
     }
 
@@ -546,16 +565,21 @@ void DemoScene::RenderControllerPanel_ControlsTab(const int32_t controllerIndex,
                                  rightStickValues, rightStickState);
 
     // Trigger fill bars
+    const float windowStartY = NativeEngine::GetInstance()->GetSystemBarOffset();
     ImDrawList *draw_list = ImGui::GetWindowDrawList();
-    ControllerUIUtil::TriggerBar(panelParams, draw_list, UIBUTTON_L1, controllerData.triggerL1);
-    ControllerUIUtil::TriggerBar(panelParams, draw_list, UIBUTTON_L2, controllerData.triggerL2);
-    ControllerUIUtil::TriggerBar(panelParams, draw_list, UIBUTTON_R1, controllerData.triggerR1);
-    ControllerUIUtil::TriggerBar(panelParams, draw_list, UIBUTTON_R2, controllerData.triggerR2);
+    ControllerUIUtil::TriggerBar(panelParams, draw_list, UIBUTTON_L1, controllerData.triggerL1,
+                                 windowStartY);
+    ControllerUIUtil::TriggerBar(panelParams, draw_list, UIBUTTON_L2, controllerData.triggerL2,
+                                 windowStartY);
+    ControllerUIUtil::TriggerBar(panelParams, draw_list, UIBUTTON_R1, controllerData.triggerR1,
+                                 windowStartY);
+    ControllerUIUtil::TriggerBar(panelParams, draw_list, UIBUTTON_R2, controllerData.triggerR2,
+                                 windowStartY);
 }
 
-void DemoScene::RenderControllerPanel_ControlsTab_ArcadeStick(const int32_t controllerIndex,
-                                                              const Paddleboat_Controller_Data &controllerData,
-                                                              const Paddleboat_Controller_Info &controllerInfo) {
+void DemoScene::RenderPanel_ControlsTab_ArcadeStick(const int32_t controllerIndex,
+                                                    const Paddleboat_Controller_Data &controllerData,
+                                                    const Paddleboat_Controller_Info &controllerInfo) {
     const float leftX = controllerData.leftStick.stickX;
     const float leftY = controllerData.leftStick.stickY;
     const uint32_t buttonsDown = controllerData.buttonsDown;
@@ -597,14 +621,14 @@ void DemoScene::RenderControllerPanel_ControlsTab_ArcadeStick(const int32_t cont
 
 }
 
-void DemoScene::RenderControllerPanel_InfoTab(const int32_t controllerIndex,
-                                              const Paddleboat_Controller_Data &controllerData,
-                                              const Paddleboat_Controller_Info &controllerInfo) {
+void DemoScene::RenderPanel_InfoTab(const int32_t controllerIndex,
+                                    const Paddleboat_Controller_Data &controllerData,
+                                    const Paddleboat_Controller_Info &controllerInfo) {
     // Render vendorId/deviceId in green if they matched with a controller map entry,
     // white if using the generic controller map profile.
-    ImVec4 deviceColor =
-            ((controllerInfo.controllerFlags & PADDLEBOAT_CONTROLLER_FLAG_GENERIC_PROFILE) != 0)
-            ? TEXTCOLOR_WHITE : TEXTCOLOR_GREEN;
+    ImVec4 deviceColor = ((controllerInfo.controllerFlags &
+                           PADDLEBOAT_CONTROLLER_FLAG_GENERIC_PROFILE) != 0)
+                         ? TEXTCOLOR_WHITE : TEXTCOLOR_GREEN;
 
     ImGui::TextColored(deviceColor, "Contr. Num.: %d - VendorId: 0x%x - ProductId: 0x%x",
                        controllerInfo.controllerNumber, controllerInfo.vendorId,
@@ -649,15 +673,40 @@ void DemoScene::RenderControllerPanel_InfoTab(const int32_t controllerIndex,
     int32_t dataMouseDeltaMS = static_cast<int32_t>((mMouseDataTimestampDelta / 1000));
     ImGui::Text("Mouse data delta timestamp (ms): %d", dataMouseDeltaMS);
 
-    ImGui::Text("Last Keycode: %d", Paddleboat_getLastKeycode());
+    ImGui::Text("Last Keycode: %d   ", Paddleboat_getLastKeycode());
+    ImGui::SameLine();
+
+    if ((controllerInfo.controllerFlags & PADDLEBOAT_CONTROLLER_FLAG_BATTERY) != 0) {
+        const char *batteryStatusString = "Unknown";
+        switch (controllerData.battery.batteryStatus) {
+            case PADDLEBOAT_CONTROLLER_BATTERY_UNKNOWN:
+                break;
+            case PADDLEBOAT_CONTROLLER_BATTERY_CHARGING:
+                batteryStatusString = "Charging";
+                break;
+            case PADDLEBOAT_CONTROLLER_BATTERY_DISCHARGING:
+                batteryStatusString = "Discharging";
+                break;
+            case PADDLEBOAT_CONTROLLER_BATTERY_NOT_CHARGING:
+                batteryStatusString = "Not charging";
+                break;
+            case PADDLEBOAT_CONTROLLER_BATTERY_FULL:
+                batteryStatusString = "Full";
+                break;
+        }
+        ImGui::Text("Battery %.1f%%, %s",
+                    controllerData.battery.batteryLevel * 100.0f, batteryStatusString);
+    } else {
+        ImGui::Text("No battery status available");
+    }
 }
 
-void DemoScene::RenderControllerPanel_VibrationTab(const int32_t controllerIndex,
-                                                   const Paddleboat_Controller_Data &controllerData,
-                                                   const Paddleboat_Controller_Info &controllerInfo) {
+void DemoScene::RenderPanel_VibrationTab(const int32_t controllerIndex,
+                                         const Paddleboat_Controller_Data &controllerData,
+                                         const Paddleboat_Controller_Info &controllerInfo) {
     if ((controllerInfo.controllerFlags & PADDLEBOAT_CONTROLLER_FLAG_VIBRATION) != 0) {
-        if ((controllerInfo.controllerFlags & PADDLEBOAT_CONTROLLER_FLAG_VIBRATION_DUAL_MOTOR)
-            != 0) {
+        if ((controllerInfo.controllerFlags & PADDLEBOAT_CONTROLLER_FLAG_VIBRATION_DUAL_MOTOR) !=
+            0) {
             ImGui::Text("Dual motor vibration support");
         } else {
             ImGui::Text("Single vibration device");
@@ -689,6 +738,91 @@ void DemoScene::RenderControllerPanel_VibrationTab(const int32_t controllerIndex
         }
     } else {
         ImGui::Text("No vibration support");
+    }
+}
+
+void DemoScene::RenderPanel_MotionTab(const int32_t controllerIndex,
+                                      const Paddleboat_Controller_Data &controllerData,
+                                      const Paddleboat_Controller_Info &controllerInfo) {
+    // Motion axis
+    float motionData[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+    const bool hasAccel =
+            (controllerInfo.controllerFlags & PADDLEBOAT_CONTROLLER_FLAG_ACCELEROMETER) != 0;
+    const bool hasGyro =
+            (controllerInfo.controllerFlags & PADDLEBOAT_CONTROLLER_FLAG_GYROSCOPE) != 0;
+    if (hasAccel) {
+        motionData[0] = mAccelerometerData[0];
+        motionData[2] = mAccelerometerData[1];
+        motionData[4] = mAccelerometerData[2];
+    }
+
+    if (hasGyro) {
+        motionData[1] = mGyroscopeData[0];
+        motionData[3] = mGyroscopeData[1];
+        motionData[5] = mGyroscopeData[2];
+    }
+
+    if (ImGui::BeginTable("##motiontable", 2, ImGuiTableFlags_ColumnsWidthFixed,
+                          ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 4.5f))) {
+        ImGui::TableSetupColumn("Accelerometer   ", ImGuiTableColumnFlags_WidthAutoResize);
+        ImGui::TableSetupColumn("Gyroscope  ", ImGuiTableColumnFlags_WidthAutoResize);
+        ImGui::TableHeadersRow();
+        for (size_t i = 0; i < 4; ++i) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            if (hasAccel) {
+                if (i == 0) {
+                    ImGui::Text("%4u", mAccelerometerTimestampDelta);
+                } else {
+                    ImGui::Text("%.3f", motionData[((i - 1) * 2)]);
+                }
+            } else if (i == 0) {
+                ImGui::Text("None");
+            }
+            ImGui::TableNextColumn();
+            if (hasGyro) {
+                if (i == 0) {
+                    ImGui::Text("%4u", mGyroscopeTimestampDelta);
+                } else {
+                    ImGui::Text("%.3f", motionData[((i - 1) * 2) + 1]);
+                }
+            } else if (i == 0) {
+                ImGui::Text("None");
+            }
+        }
+        ImGui::EndTable();
+    }
+}
+
+void DemoScene::RenderPanel_LightsTab(const int32_t controllerIndex,
+                                      const Paddleboat_Controller_Data &controllerData,
+                                      const Paddleboat_Controller_Info &controllerInfo) {
+    if ((controllerInfo.controllerFlags & PADDLEBOAT_CONTROLLER_FLAG_LIGHT_PLAYER) != 0) {
+        static int playerIndex = 1;
+        ImGui::DragInt("Player index", &playerIndex, 1.0f, 1, 4,
+                       "%d", ImGuiSliderFlags_NoInput);
+        if (ImGui::Button("Set Player Index Light")) {
+            Paddleboat_setControllerLight(controllerIndex, PADDLEBOAT_LIGHT_PLAYER_NUMBER,
+                                          playerIndex, NativeEngine::GetInstance()->GetJniEnv());
+        }
+    } else {
+        ImGui::Text("No player index light present");
+    }
+
+    if ((controllerInfo.controllerFlags & PADDLEBOAT_CONTROLLER_FLAG_LIGHT_RGB) != 0) {
+        static float rgbLights[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+        ImGui::ColorEdit4("LightColor", rgbLights);
+        if (ImGui::Button("Set Light Color")) {
+            uint32_t r = static_cast<uint32_t>(rgbLights[0] * 255.0f);
+            uint32_t g = static_cast<uint32_t>(rgbLights[1] * 255.0f);
+            uint32_t b = static_cast<uint32_t>(rgbLights[2] * 255.0f);
+            uint32_t a = static_cast<uint32_t>(rgbLights[3] * 255.0f);
+            uint32_t rgba = (a << 24) | (r << 16) | (g << 8) | b;
+            Paddleboat_setControllerLight(controllerIndex, PADDLEBOAT_LIGHT_RGB, rgba,
+                                          NativeEngine::GetInstance()->GetJniEnv());
+        }
+    } else {
+        ImGui::Text("No RGB light present");
     }
 }
 
@@ -792,14 +926,43 @@ void DemoScene::GameControllerStatusEvent(const int32_t controllerIndex,
     ALOGI("Paddleboat_ControllerStatusEvent index: %d status: %s", controllerIndex, statusString);
 }
 
+void DemoScene::MotionDataEvent(const int32_t controllerIndex,
+                                const Paddleboat_Motion_Data *motionData) {
+    if (controllerIndex == mCurrentControllerIndex) {
+        if (motionData->motionType == PADDLEBOAT_MOTION_ACCELEROMETER) {
+            if (mPreviousAccelerometerTimestamp > 0) {
+                uint64_t deltaTime = motionData->timestamp - mPreviousAccelerometerTimestamp;
+                // nanoseconds to milliseconds
+                mAccelerometerTimestampDelta = static_cast<uint32_t>(deltaTime / 1000000);
+            }
+            mAccelerometerData[0] = motionData->motionX;
+            mAccelerometerData[1] = motionData->motionY;
+            mAccelerometerData[2] = motionData->motionZ;
+            mPreviousAccelerometerTimestamp = motionData->timestamp;
+        } else if (motionData->motionType == PADDLEBOAT_MOTION_GYROSCOPE) {
+            if (mPreviousGyroscopeTimestamp > 0) {
+                uint64_t deltaTime = motionData->timestamp - mPreviousGyroscopeTimestamp;
+                // nanoseconds to milliseconds
+                mGyroscopeTimestampDelta = static_cast<uint32_t>(deltaTime / 1000000);
+            }
+            mGyroscopeData[0] = motionData->motionX;
+            mGyroscopeData[1] = motionData->motionY;
+            mGyroscopeData[2] = motionData->motionZ;
+            mPreviousGyroscopeTimestamp = motionData->timestamp;
+        }
+    }
+}
+
 void DemoScene::OnInstall() {
-    ALOGI("Setting status callback");
+    ALOGI("Setting status and motion data callbacks");
     Paddleboat_setControllerStatusCallback(GameControllerCallback, this);
+    Paddleboat_setMotionDataCallback(MotionDataCallback, this);
     mRegisteredStatusCallback = true;
 }
 
 void DemoScene::OnUninstall() {
-    ALOGI("Clearing status callback");
+    ALOGI("Clearing status and motion data callbacks");
     Paddleboat_setControllerStatusCallback(nullptr, nullptr);
+    Paddleboat_setMotionDataCallback(nullptr, nullptr);
     mRegisteredStatusCallback = false;
 }

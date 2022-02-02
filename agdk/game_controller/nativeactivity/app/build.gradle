@@ -24,8 +24,8 @@ android {
         applicationId 'com.google.android.games.paddleboat.gamecontrollersample'
         minSdkVersion 16
         targetSdkVersion 30
-        versionCode     1
-        versionName    '1.0'
+        versionCode     2
+        versionName    '1.1'
         externalNativeBuild {
             cmake {
                 arguments '-DANDROID_STL=c++_shared'
@@ -54,11 +54,11 @@ android.lintOptions {
 }
 
 dependencies {
-    implementation "androidx.games:games-controller:1.0.0"
+    implementation "androidx.games:games-controller:1.1.0-beta01"
     implementation "com.android.ndk.thirdparty:libpng:1.6.37-alpha-1"
 
     // Example of using local .aar files in libs/ directory.
     // Comment out the androidx.games implementation lines if
     // you use a local lib.
-    // implementation fileTree(dir: 'libs', include: ['GameController.aar'])
+    //implementation fileTree(dir: 'libs', include: ['GameController.aar'])
 }
