@@ -47,7 +47,6 @@ public class CarMove : MonoBehaviour
             var touch = Input.GetTouch(i);
             if (touch.phase == TouchPhase.Began)
             {
-                Debug.Log("NCT_TOUCH 1");
                 ProcessTouch(touch.position);
             }
         }
@@ -56,7 +55,6 @@ public class CarMove : MonoBehaviour
  #if UNITY_EDITOR       
         if (Input.GetMouseButtonDown(0))
         {
-            Debug.Log("NCT_TOUCH 2");
             ProcessTouch(Input.mousePosition);
         }
 #endif
