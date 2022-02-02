@@ -374,17 +374,8 @@ void NativeEngine::HandleGameActivityInput() {
         android_app_clear_key_events(inputBuffer);
     }
     if (inputBuffer->motionEventsCount != 0) {
-        ALOGI("MotionEvent!");
         for (uint64_t i = 0; i < inputBuffer->motionEventsCount; ++i) {
             GameActivityMotionEvent* motionEvent = &inputBuffer->motionEvents[i];
-
-            // NCT_TEST
-            {
-                for (uint32_t p = 0; p < motionEvent->pointerCount; ++p) {
-                    const GameActivityPointerAxes &pointerAxes = motionEvent->pointers[p];
-                    ALOGI("%u 0 %f %f", p, pointerAxes.axisValues[0], pointerAxes.axisValues[1]);
-                }
-            }
             if (!Paddleboat_processGameActivityMotionInputEvent(motionEvent,
                                                                sizeof(GameActivityMotionEvent))) {
                 // Didn't belong to a game controller, process it ourselves if it is a touch event
