@@ -133,6 +133,14 @@ not enabled for in-app billing".
 subscriptions without being charged. Test accounts also have greatly reduced
 subscription periods, allowing for easier testing of subscription features.
 
+## Building for Google Play Games
+
+TODO: Verify setup instructions across supported Unity versions and frame pacing guidance.
+
+You need to enable x86 ABI architecture. This can be activated using `Player Settings > Other Settings > Target Architectures` and enabling both x86 (Chrome OS) and x86-64 (Chrome OS).
+
+*Note:* You can only enable x86 support when using the IL2CPP Scripting Backend. This can be done from `Player Settings > Configuration > Scripting Backend > IL2CPP`.
+
 ## Support
 
 If you've found any errors or bugs in this sample game, please
