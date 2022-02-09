@@ -29,9 +29,16 @@ public class CarMove : MonoBehaviour
     private CarList.Car _carObj;
     private Gas _gas;
     private const float NoVelocity = 0.01f;
+    private const float TurboVelocity = 1.5f;
+
+    private int _clickCounter;
+    private float _firstClickTime;
+    private const float ClickDelay = 0.15f;
 
     private void Start()
     {
+        _clickCounter = 0;
+        _firstClickTime = 0f;
         _gameManger = FindObjectOfType<GameManager>();
         // Get the carObj corresponding to the car game object the script attached to.
         _carObj = CarList.GetCarByName(carName);
@@ -52,12 +59,39 @@ public class CarMove : MonoBehaviour
         }
 
         // left mouse button
- #if UNITY_EDITOR       
+#if UNITY_EDITOR
         if (Input.GetMouseButtonDown(0))
         {
             ProcessTouch(Input.mousePosition);
         }
 #endif
+        // Check for pending car movements
+        if (_clickCounter > 0 && Time.time - _firstClickTime > ClickDelay)
+        {
+            ProcessClickAction(_clickCounter);
+        }
+    }
+
+    // Moves the car at a velocity given by the number of clicks
+    private void ProcessClickAction(int clicks)
+    {
+        if (_rigidbody2D.velocity.magnitude < NoVelocity &&
+                _gas.HasGas() && _gameManger.IsInPlayCanvas())
+        {
+            switch (clicks)
+            {
+                case 1:
+                    // Single click to drive
+                    Drive();
+                    break;
+                case 2:
+                default:
+                    // Double click for turbo
+                    Turbo();
+                    break;
+            }
+        }
+        _clickCounter = 0;
     }
 
     private void ProcessTouch(Vector2 touchPosition)
@@ -66,11 +100,11 @@ public class CarMove : MonoBehaviour
         RaycastHit2D touchHit = Physics2D.Raycast(touchRay.origin, touchRay.direction);
         if (touchHit.rigidbody == _rigidbody2D)
         {
-            if (_rigidbody2D.velocity.magnitude < NoVelocity &&
-                _gas.HasGas() && _gameManger.IsInPlayCanvas())
+            if (_clickCounter == 0)
             {
-                Drive();
+                _firstClickTime = Time.time;
             }
+            _clickCounter++;
         }
     }
 
@@ -78,5 +112,11 @@ public class CarMove : MonoBehaviour
     {
         tapToDriveText.SetActive(false);
         _rigidbody2D.AddForce(new Vector2(_carObj.Speed, 0));
+    }
+
+    private void Turbo()
+    {
+        tapToDriveText.SetActive(false);
+        _rigidbody2D.AddForce(new Vector2(_carObj.Speed * TurboVelocity, 0));
     }
 }
