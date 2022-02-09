@@ -49,6 +49,15 @@ public class StoreController : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        // Use tab key to switch between store pages
+        if (Input.GetKeyUp(KeyCode.Tab))
+        {
+            OnSwitchPageTabClicked((_currentTabIndex + 1) % _storePages.Count);
+        }
+    }
+
     private void OnEnable()
     {
         // Update Coin text when entering the store.

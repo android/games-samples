@@ -21,6 +21,19 @@ using UnityEngine;
 /// </summary>
 public class BackgroundGaragePageController : MonoBehaviour
 {
+    private void Update()
+    {
+        // Use the keyboard arrows to select the background
+        if (Input.GetKeyUp(KeyCode.LeftArrow))
+        {
+            SwitchToPreviousBackground();
+        }
+        if (Input.GetKeyUp(KeyCode.RightArrow))
+        {
+            SwitchToNextBackground();
+        }
+    }
+
     private void OnEnable()
     {
         RefreshPage();
@@ -62,5 +75,39 @@ public class BackgroundGaragePageController : MonoBehaviour
 
         GameDataController.GetGameData().BackgroundInUseObj.GarageItemGameObj.transform.Find("statusText").gameObject
             .SetActive(true);
+    }
+
+    // Select the next unlocked background from the current index
+    private void SwitchToNextBackground()
+    {
+        // Current background index
+        int backgroundIndex = BackgroundList
+            .List.IndexOf(GameDataController.GetGameData().BackgroundInUseObj);
+        int totalBackgrounds = BackgroundList.List.Count;
+
+        // Search for the next unlocked background to the right
+        do
+        {
+            backgroundIndex = (backgroundIndex + 1) % totalBackgrounds;
+        } while (!GameDataController.GetGameData()
+            .CheckBackgroundOwnership(BackgroundList.GetBackgroundByIndex(backgroundIndex)));
+        SwitchToTargetBackground(BackgroundList.GetBackgroundByIndex(backgroundIndex));
+    }
+
+    // Select the previous unlocked background from the current index
+    private void SwitchToPreviousBackground()
+    {
+        // Current background index
+        int backgroundIndex = BackgroundList
+            .List.IndexOf(GameDataController.GetGameData().BackgroundInUseObj);
+        int totalBackgrounds = BackgroundList.List.Count;
+
+        // Search for the next unlocked background to the left
+        do
+        {
+            backgroundIndex = (backgroundIndex - 1 + totalBackgrounds) % totalBackgrounds;
+        } while (!GameDataController.GetGameData()
+            .CheckBackgroundOwnership(BackgroundList.GetBackgroundByIndex(backgroundIndex)));
+        SwitchToTargetBackground(BackgroundList.GetBackgroundByIndex(backgroundIndex));
     }
 }

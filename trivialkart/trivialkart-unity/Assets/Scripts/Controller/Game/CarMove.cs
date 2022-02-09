@@ -35,6 +35,9 @@ public class CarMove : MonoBehaviour
     private float _firstClickTime;
     private const float ClickDelay = 0.15f;
 
+    private const int NORMAL_SPEED = 1;
+    private const int TURBO_SPEED = 2;
+
     private void Start()
     {
         _clickCounter = 0;
@@ -48,13 +51,44 @@ public class CarMove : MonoBehaviour
 
     private void Update()
     {
-        // Check for fresh touches and see if they touched the car.
-        for (int i = 0; i < Input.touchCount; ++i)
+        // Use keys to control menu/gameplay
+        if (Input.GetKeyUp(KeyCode.G))
         {
-            var touch = Input.GetTouch(i);
-            if (touch.phase == TouchPhase.Began)
+            _gameManger.OnEnterGaragePageButtonClicked();
+        }
+        if (Input.GetKeyUp(KeyCode.S))
+        {
+            _gameManger.OnEnterStoreButtonClicked();
+        }
+        if (Input.GetKeyUp(KeyCode.Escape))
+        {
+            _gameManger.OnEnterPlayPageButtonClicked();
+        }
+
+        // Check for keyboard controls
+        if (Input.GetKeyUp(KeyCode.Space))
+        {
+            if (Input.GetKey(KeyCode.LeftShift))
             {
-                ProcessTouch(touch.position);
+                // left shift + space for turbo
+                ProcessClickAction(TURBO_SPEED);
+            }
+            else
+            {
+                // single space to drive
+                ProcessClickAction(NORMAL_SPEED);
+            }
+        }
+        else
+        {
+            // Check for fresh touches and see if they touched the car.
+            for (int i = 0; i < Input.touchCount; ++i)
+            {
+                var touch = Input.GetTouch(i);
+                if (touch.phase == TouchPhase.Began)
+                {
+                    ProcessTouch(touch.position);
+                }
             }
         }
 
@@ -80,11 +114,11 @@ public class CarMove : MonoBehaviour
         {
             switch (clicks)
             {
-                case 1:
+                case NORMAL_SPEED:
                     // Single click to drive
                     Drive();
                     break;
-                case 2:
+                case TURBO_SPEED:
                 default:
                     // Double click for turbo
                     Turbo();

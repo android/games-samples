@@ -21,6 +21,19 @@ using UnityEngine;
 /// </summary>
 public class CarGaragePageController : MonoBehaviour
 {
+    private void Update()
+    {
+        // Use the keyboard arrows to select the car
+        if (Input.GetKeyUp(KeyCode.LeftArrow))
+        {
+            SwitchToPreviousCar();
+        }
+        if (Input.GetKeyUp(KeyCode.RightArrow))
+        {
+            SwitchToNextCar();
+        }
+    }
+
     // Refresh the page when switching to the car garage page.
     private void OnEnable()
     {
@@ -63,5 +76,39 @@ public class CarGaragePageController : MonoBehaviour
     {
         GameDataController.GetGameData().UpdateCarInUse(targetCar);
         SetCarUsageStatus();
+    }
+
+    // Select the next unlocked car from the current index
+    private void SwitchToNextCar()
+    {
+        // Current car index
+        int carIndex = CarList
+            .List.IndexOf(GameDataController.GetGameData().CarInUseObj);
+        int totalCars = CarList.List.Count;
+
+        // Search for the next unlocked car to the right
+        do
+        {
+            carIndex = (carIndex + 1) % totalCars;
+        } while (!GameDataController.GetGameData()
+            .CheckCarOwnership(CarList.GetCarByCarIndex(carIndex)));
+        SwitchCarInUse(CarList.GetCarByCarIndex(carIndex));
+    }
+
+    // Select the previous unlocked car from the current index
+    private void SwitchToPreviousCar()
+    {
+        // Current car index
+        int carIndex = CarList
+            .List.IndexOf(GameDataController.GetGameData().CarInUseObj);
+        int totalCars = CarList.List.Count;
+
+        // Search for the next unlocked car to the left
+        do
+        {
+            carIndex = (carIndex - 1 + totalCars) % totalCars;
+        } while (!GameDataController.GetGameData()
+            .CheckCarOwnership(CarList.GetCarByCarIndex(carIndex)));
+        SwitchCarInUse(CarList.GetCarByCarIndex(carIndex));
     }
 }
