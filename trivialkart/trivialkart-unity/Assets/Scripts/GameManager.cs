@@ -15,6 +15,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+#if PLAY_GAMES_PC
+using Google.Play.InputMapping;
+#endif
+
 /// <summary>
 /// GameManager inits the game when the game starts and controls the play canvas.
 /// It inits constant data, requests for game data load;
@@ -48,8 +52,12 @@ public class GameManager : MonoBehaviour
     public GameObject goldenVipSubscribeButtonGameObj;
 
     private List<GameObject> _canvasPagesList;
-    private bool _purchasingMessageActive; 
-    
+    private bool _purchasingMessageActive;
+
+#if PLAY_GAMES_PC
+    private readonly InputSDKMappingProvider _inputMapProvider = new InputSDKMappingProvider();
+#endif
+
     // Init the game.
     public void Awake()
     {
@@ -60,6 +68,12 @@ public class GameManager : MonoBehaviour
         InitConstantData();
         GameDataController.LoadGameData();
         SetCanvas(playPageCanvas);
+
+#if PLAY_GAMES_PC
+        InputMappingClient inputMappingClient =
+            Google.Play.InputMapping.Input.GetInputMappingClient();
+        inputMappingClient.RegisterInputMappingProvider(_inputMapProvider);
+#endif
     }
 
     public bool GetPurchasingMessageActive()
@@ -163,7 +177,7 @@ public class GameManager : MonoBehaviour
         CoinList.TwentyCoins.StoreItemCoinGameObj = storeItemTwentyCoinGameObject;
         CoinList.FiftyCoins.StoreItemCoinGameObj = storeItemFiftyCoinGameObject;
     }
-    
+
     private void OnApplicationPause(bool pauseStatus)
     {
         GameDataController.SaveGameData();
@@ -172,5 +186,11 @@ public class GameManager : MonoBehaviour
     private void OnApplicationQuit()
     {
         GameDataController.SaveGameData();
+
+#if PLAY_GAMES_PC
+        InputMappingClient inputMappingClient =
+            Google.Play.InputMapping.Input.GetInputMappingClient();
+        inputMappingClient.UnregisterInputMappingProvider(_inputMapProvider);
+#endif
     }
 }

@@ -14,48 +14,87 @@
 
 using UnityEditor;
 using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
 
 [InitializeOnLoad]
 public static class EditorMenuBuildOptions
 {
-    private const string MENU_NAME = "TrivialKart/BuildOptions/Build with IAP";
+    private const string IAP_MENU_NAME = "TrivialKart/BuildOptions/Build with IAP";
+    private const string PLAY_GAMES_MENU_NAME =
+        "TrivialKart/BuildOptions/Build for Google Play Games PC";
 
-    private static bool _iapEnabled;
+    private static BuildMenuItem _iapItem;
+    private static BuildMenuItem _playGamesPCItem;
+
+    private static IList<BuildMenuItem> _buildItems;
 
     // InitializeOnLoad attribute means this is called on load
     static EditorMenuBuildOptions()
     {
-        _iapEnabled = EditorPrefs.GetBool(MENU_NAME, false);
+        _iapItem = new BuildMenuItem(IAP_MENU_NAME,
+            EditorPrefs.GetBool(IAP_MENU_NAME, false), "USE_IAP", "NO_IAP");
+        _playGamesPCItem = new BuildMenuItem(PLAY_GAMES_MENU_NAME,
+            EditorPrefs.GetBool(PLAY_GAMES_MENU_NAME, false), "PLAY_GAMES_PC");
+
+        _buildItems = new List<BuildMenuItem>()
+        {
+            _iapItem,
+            _playGamesPCItem
+        };
+
+        foreach (BuildMenuItem buildItem in _buildItems)
+        {
+            UpdateMenu(buildItem);
+        }
 
         // Delaying until first editor tick so that the menu
         // will be populated before setting check state, and
         // re-apply correct action
-        EditorApplication.delayCall += () => { PerformAction(_iapEnabled); };
+        EditorApplication.delayCall += () => { SetBuildDirectives(); };
     }
 
-    [MenuItem(MENU_NAME)]
-    private static void ToggleAction()
-    {
-        // Toggling action
-        PerformAction(!_iapEnabled);
-    }
-
-    private static void PerformAction(bool enabled)
+    private static void UpdateMenu(BuildMenuItem buildItem)
     {
         // Set checkmark on menu item
-        Menu.SetChecked(MENU_NAME, enabled);
+        Menu.SetChecked(buildItem.ItemName, buildItem.IsEnabled);
         // Saving editor state
-        EditorPrefs.SetBool(MENU_NAME, enabled);
+        EditorPrefs.SetBool(buildItem.ItemName, buildItem.IsEnabled);
+    }
 
-        _iapEnabled = enabled;
-        if (enabled)
+    [MenuItem(IAP_MENU_NAME)]
+    private static void ToggleIAPAction()
+    {
+        // Toggling action
+        PerformAction(_iapItem);
+    }
+
+    [MenuItem(PLAY_GAMES_MENU_NAME)]
+    private static void TogglePlayGamesPCAction()
+    {
+        // Toggling action
+        PerformAction(_playGamesPCItem);
+    }
+
+    private static void PerformAction(BuildMenuItem buildItem)
+    {
+        buildItem.IsEnabled = !buildItem.IsEnabled;
+        UpdateMenu(buildItem);
+        SetBuildDirectives();
+    }
+
+    private static void SetBuildDirectives()
+    {
+        IList<string> buildDirectives = new List<string>();
+        foreach (BuildMenuItem buildItem in _buildItems)
         {
-            Debug.Log(enabled);
-            PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.Android, "USE_IAP");
+            if (!string.IsNullOrEmpty(buildItem.GetDirective))
+            {
+                Debug.Log(buildItem.GetDirective);
+                buildDirectives.Add(buildItem.GetDirective);
+            }
         }
-        else
-        {
-            PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.Android, "NO_IAP");
-        }
+        PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.Android,
+            buildDirectives.ToArray());
     }
 }
