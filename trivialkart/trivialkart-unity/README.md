@@ -141,9 +141,17 @@ TODO(b/217769153): Verify setup instructions across supported Unity versions and
 
    *Note:* You can only enable x86 support when using the IL2CPP Scripting Backend. This can be done from `Player Settings > Configuration > Scripting Backend > IL2CPP`.
 
-2. Install the Input SDK Unity package using `Assets > Import Package > Custom Package`.
+2. Disable unsupported android features and permissions. This can be done by adding custom build logic to your `AndroidManifest.xml`. To do this, open `Player Settings > Publishing Settings` and find the `Build` section. Then, enable the `Custom Main Manifest` or corresponding manifest for the feature or permission you need to disable.
 
-3. From the Unity menu bar, select
+At this point, you can find that manifest and add `android:required="false"` to the `<uses-feature>` or `uses-permission` declaration for all features that Google Play Games does not support.
+
+For more information, see the [unity documention on Android Manifests](https://docs.unity3d.com/Manual/android-manifest.html).
+
+You should also disable any lines requesting permissions in your unity code. See the unity documentation on [requestion permissions](https://docs.unity3d.com/Manual/android-RequestingPermissions.html) for more details.
+
+3. Install the Input SDK Unity package using `Assets > Import Package > Custom Package`.
+
+4. From the Unity menu bar, select
 `TrivialKart > BuildOptions > Build for Google Play Games PC`.
 
 
