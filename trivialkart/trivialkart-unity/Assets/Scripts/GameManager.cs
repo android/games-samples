@@ -14,6 +14,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Android;
 
 #if PLAY_GAMES_PC
 using Google.Play.InputMapping;
@@ -74,6 +75,17 @@ public class GameManager : MonoBehaviour
             Google.Play.InputMapping.Input.GetInputMappingClient();
         inputMappingClient.RegisterInputMappingProvider(_inputMapProvider);
 #endif
+
+#if PLAY_GAMES_PC
+        // On a PC, some Android features available on a mobile phone or tablet
+        // will be inaccessible. If your game requests access to an unsupported 
+        // permission, the request automatically fails or has unknown behavior.
+#elif PLATFORM_ANDROID
+       if (!Permission.HasUserAuthorizedPermission(Permission.Camera)) {
+            Permission.RequestUserPermission(Permission.Camera);
+       }
+#endif
+
     }
 
     public bool GetPurchasingMessageActive()
