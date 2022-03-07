@@ -23,9 +23,15 @@ public static class EditorMenuBuildOptions
     private const string IAP_MENU_NAME = "TrivialKart/BuildOptions/Build with IAP";
     private const string PLAY_GAMES_MENU_NAME =
         "TrivialKart/BuildOptions/Build for Google Play Games PC";
+    private const string PLAY_GAMES_SERVICES_MENU_NAME =
+        "TrivialKart/BuildOptions/Build with Google Play Games Services";
+    private const string PLAY_INTEGRITY_MENU_NAME =
+        "TrivialKart/BuildOptions/Build with Play Integrity";
 
     private static BuildMenuItem _iapItem;
     private static BuildMenuItem _playGamesPCItem;
+    private static BuildMenuItem _playGamesServicesItem;
+    private static BuildMenuItem _playIntegrityItem;
 
     private static IList<BuildMenuItem> _buildItems;
 
@@ -36,11 +42,17 @@ public static class EditorMenuBuildOptions
             EditorPrefs.GetBool(IAP_MENU_NAME, false), "USE_IAP", "NO_IAP");
         _playGamesPCItem = new BuildMenuItem(PLAY_GAMES_MENU_NAME,
             EditorPrefs.GetBool(PLAY_GAMES_MENU_NAME, false), "PLAY_GAMES_PC");
+        _playGamesServicesItem = new BuildMenuItem(PLAY_GAMES_SERVICES_MENU_NAME,
+            EditorPrefs.GetBool(PLAY_GAMES_SERVICES_MENU_NAME, false), "PLAY_GAMES_SERVICES");
+        _playIntegrityItem = new BuildMenuItem(PLAY_INTEGRITY_MENU_NAME,
+            EditorPrefs.GetBool(PLAY_INTEGRITY_MENU_NAME, false), "PLAY_INTEGRITY");
 
         _buildItems = new List<BuildMenuItem>()
         {
             _iapItem,
-            _playGamesPCItem
+            _playGamesPCItem,
+            _playGamesServicesItem,
+            _playIntegrityItem
         };
 
         foreach (BuildMenuItem buildItem in _buildItems)
@@ -76,6 +88,20 @@ public static class EditorMenuBuildOptions
         PerformAction(_playGamesPCItem);
     }
 
+    [MenuItem(PLAY_GAMES_SERVICES_MENU_NAME)]
+    private static void TogglePlayGamesServicesAction()
+    {
+        // Toggling action
+        PerformAction(_playGamesServicesItem);
+    }
+
+    [MenuItem(PLAY_INTEGRITY_MENU_NAME)]
+    private static void TogglePlayIntegrityAction()
+    {
+        // Toggling action
+        PerformAction(_playIntegrityItem);
+    }
+
     private static void PerformAction(BuildMenuItem buildItem)
     {
         buildItem.IsEnabled = !buildItem.IsEnabled;
@@ -85,16 +111,22 @@ public static class EditorMenuBuildOptions
 
     private static void SetBuildDirectives()
     {
-        IList<string> buildDirectives = new List<string>();
+        int defineCount = 0;
+        string defineString = "";
         foreach (BuildMenuItem buildItem in _buildItems)
         {
             if (!string.IsNullOrEmpty(buildItem.GetDirective))
             {
+                if (defineCount > 0)
+                {
+                    defineString += ";";
+                }
                 Debug.Log(buildItem.GetDirective);
-                buildDirectives.Add(buildItem.GetDirective);
+                defineString += buildItem.GetDirective;
+                ++defineCount;
             }
         }
         PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.Android,
-            buildDirectives.ToArray());
+            defineString);
     }
 }
