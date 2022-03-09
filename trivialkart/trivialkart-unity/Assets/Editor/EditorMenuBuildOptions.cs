@@ -55,15 +55,18 @@ public static class EditorMenuBuildOptions
             _playIntegrityItem
         };
 
-        foreach (BuildMenuItem buildItem in _buildItems)
-        {
-            UpdateMenu(buildItem);
-        }
-
         // Delaying until first editor tick so that the menu
         // will be populated before setting check state, and
         // re-apply correct action
-        EditorApplication.delayCall += () => { SetBuildDirectives(); };
+        EditorApplication.delayCall += () =>
+        {
+            foreach (BuildMenuItem buildItem in _buildItems)
+            {
+                UpdateMenu(buildItem);
+            }
+
+            SetBuildDirectives();
+        };
     }
 
     private static void UpdateMenu(BuildMenuItem buildItem)

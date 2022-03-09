@@ -30,6 +30,7 @@ public class GameManager : MonoBehaviour
     public GameObject playPageCanvas;
     public GameObject storePageCanvas;
     public GameObject garagePageCanvas;
+    public GameObject pgsPageCanvas;
     public GameObject waitCanvas;
     public GameObject storeItemFiveCoinGameObject;
     public GameObject storeItemTenCoinGameObject;
@@ -53,7 +54,7 @@ public class GameManager : MonoBehaviour
     public GameObject goldenVipSubscribeButtonGameObj;
 
     private List<GameObject> _canvasPagesList;
-    private bool _purchasingMessageActive;
+    private bool _waitMessageActive;
 
 #if PLAY_GAMES_PC
     private readonly InputSDKMappingProvider _inputMapProvider = new InputSDKMappingProvider();
@@ -62,7 +63,7 @@ public class GameManager : MonoBehaviour
     // Init the game.
     public void Awake()
     {
-        _purchasingMessageActive = false;
+        _waitMessageActive = false;
 #if USE_SERVER
         NetworkRequestController.RegisterUserDevice();
 #endif
@@ -78,7 +79,7 @@ public class GameManager : MonoBehaviour
 
 #if PLAY_GAMES_PC
         // On a PC, some Android features available on a mobile phone or tablet
-        // will be inaccessible. If your game requests access to an unsupported 
+        // will be inaccessible. If your game requests access to an unsupported
         // permission, the request automatically fails or has unknown behavior.
 #elif PLATFORM_ANDROID
        if (!Permission.HasUserAuthorizedPermission(Permission.Camera)) {
@@ -88,36 +89,42 @@ public class GameManager : MonoBehaviour
 
     }
 
-    public bool GetPurchasingMessageActive()
+    public bool GetWaitMessageActive()
     {
-        return _purchasingMessageActive;
+        return _waitMessageActive;
     }
 
-    public void SetPurchasingMessageActive(bool active)
+    public void SetWaitMessageActive(bool active)
     {
-        if (active != _purchasingMessageActive)
+        if (active != _waitMessageActive)
         {
-            _purchasingMessageActive = active;
+            _waitMessageActive = active;
             waitCanvas.SetActive(active);
         }
     }
 
-    // Switch pages when enter the store.
+    // Switch pages when entering the store.
     public void OnEnterStoreButtonClicked()
     {
         SetCanvas(storePageCanvas);
     }
 
-    // Switch pages when enter the play.
+    // Switch pages when returning to play mode.
     public void OnEnterPlayPageButtonClicked()
     {
         SetCanvas(playPageCanvas);
     }
 
-    // Switch pages when enter the garage.
+    // Switch pages when entering the garage.
     public void OnEnterGaragePageButtonClicked()
     {
         SetCanvas(garagePageCanvas);
+    }
+
+    // Switch pages when entering the play games services page
+    public void OnEnterPGSPageButtonClicked()
+    {
+        SetCanvas(pgsPageCanvas);
     }
 
     private void SetCanvas(GameObject targetCanvasPage)
@@ -145,9 +152,10 @@ public class GameManager : MonoBehaviour
         InitCarList();
         InitBackGroundList();
         InitSubscriptionList();
-        _canvasPagesList = new List<GameObject>() {playPageCanvas, storePageCanvas, garagePageCanvas};
+        _canvasPagesList = new List<GameObject>() {playPageCanvas,
+            storePageCanvas, garagePageCanvas, pgsPageCanvas};
     }
-    
+
     // Link car game object to the car object in carList.
     private void InitCarList()
     {
@@ -165,7 +173,7 @@ public class GameManager : MonoBehaviour
         CarList.CarKart.PlayCarGameObj = playCarKartGameObj;
         CarList.CarKart.StoreItemCarGameObj = storeItemCarKartGameObj;
     }
-    
+
     // Link background game object to the background object in backgroundList.
     private void InitBackGroundList()
     {

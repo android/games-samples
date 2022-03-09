@@ -3,16 +3,21 @@
 A sample game demonstrating use of Google Play technologies on Android
 with the Unity engine.
 
-This verson of TrivialKart demonstrates in-app purchases through Google Play
-using the Unity IAP system.
+This verson of TrivialKart demonstrates:
+
+* In-app purchases through Google Play using the Unity IAP system
+* Play Games Services, for signin, achievements, leaderboards, friends and
+cloud save
+* The Input SDK for Google Play Games for PC
 
 ## Pre-requisites
 
-- Unity 2019 LTS or higher with Android build support
+* Unity 2020 LTS or higher with Android build support (Play plugins are
+compatible with earlier version of Unity, but this project is built using 2020)
 
-### Pre-requsities for enabling IAP
+### Pre-requsities for enabling Google Play features
 
-- Google Play developer account
+* Google Play developer account
 
 ## Getting started
 
@@ -132,6 +137,34 @@ not enabled for in-app billing".
 5. Add tester accounts to your game. This will allow you to test purchases and
 subscriptions without being charged. Test accounts also have greatly reduced
 subscription periods, allowing for easier testing of subscription features.
+
+## Enabling Play Games Services
+
+TODO:
+(link to unity plugin setup)
+
+### Configure Proguard
+
+### Adding the upload key for local build testing
+
+Builds published for testing or distribution on Google Play are resigned
+by Google. When you configure Play Games Services, these keys are used for
+authentication. If you run a locally built APK signed with your upload key,
+Play Games Services won't be able to authenticate. To fix this, you can
+add the upload key to a new OAuth client for your local builds. To do this:
+
+1. In Play Console, go to **Setup->App Integrity**
+2. Select the **App Signing** tab
+3. Find the **Upload key certificate** section and copy the **SHA-1 certificate fingerprint**
+4. Go to **Grow->Play Games Services->Setup** and **Management->Configuration**
+5. Find the **Credentials** section and click on **Add Credentials**
+6. Give the credential a different name from the existing name
+7. Click **Create OAuth Client** and follow the instructions, using the SHA-1 certificate
+fingerprint from the Upload key
+8. Click **Refresh OAuth** clients until the new client is listed in the **OAuth client list**
+9. Select the new client from the list and click **Save changes**
+10. Return to the **Configuration** screen and click **Review and publish**
+11. On the next screen, click **Publish**
 
 ## Building for Google Play Games
 
