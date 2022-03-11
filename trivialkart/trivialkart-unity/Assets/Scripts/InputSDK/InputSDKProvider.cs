@@ -16,7 +16,7 @@
 using Google.Play.InputMapping;
 using System.Collections.Generic;
 
-public class InputSDKMappingProvider : InputMappingProvider
+public class InputSDKMappingProvider : PlayInputMappingProvider
 {
     public enum InputEventIds
     {
@@ -24,136 +24,120 @@ public class InputSDKMappingProvider : InputMappingProvider
         TURBO,
         OPEN_GARAGE,
         OPEN_STORE,
-        CLOSE_GARAGE_OR_STORE,
+        RETURN_TO_ROAD,
         CHANGE_TAB,
         SELECT_NEXT_CAR_OR_BACKGROUND,
         SELECT_PREVIOUS_CAR_OR_BACKGROUND,
     }
 
-    public InputMap OnProvideInputMap()
+    public PlayInputMap OnProvideInputMap()
     {
-        var driveAction = new InputAction
-        {
-            ActionLabel = "Drive",
-            UniqueId = (int)InputEventIds.DRIVE,
-            InputControls = new InputControls
-            {
-                AndroidKeycodes = new[] { AndroidKeyCode.KEYCODE_SPACE }
-            }
-        };
+        var driveAction = PlayInputAction.Create(
+            "Drive",
+            (int)InputEventIds.DRIVE,
+            PlayInputControls.Create(
+                new[] { AndroidKeyCode.KEYCODE_SPACE },
+                null
+            )
+        );
 
-        var turboAction = new InputAction
-        {
-            ActionLabel = "Turbo",
-            UniqueId = (int)InputEventIds.TURBO,
-            InputControls = new InputControls
-            {
-                AndroidKeycodes = new[]
+        var turboAction = PlayInputAction.Create(
+            "Turbo",
+            (int)InputEventIds.TURBO,
+            PlayInputControls.Create(
+                new[] 
                 {
                     AndroidKeyCode.KEYCODE_SHIFT_LEFT,
                     AndroidKeyCode.KEYCODE_SPACE
-                }
-            }
-        };
+                },
+                null
+            )
+        );
 
-        var openGarageAction = new InputAction
-        {
-            ActionLabel = "Open Garage",
-            UniqueId = (int)InputEventIds.OPEN_GARAGE,
-            InputControls = new InputControls
-            {
-                AndroidKeycodes = new[] { AndroidKeyCode.KEYCODE_G }
-            }
-        };
+        var openGarageAction = PlayInputAction.Create(
+            "Open Garage",
+            (int)InputEventIds.OPEN_GARAGE,
+            PlayInputControls.Create(
+                new[] { AndroidKeyCode.KEYCODE_G },
+                null
+            )
+        );
 
-        var openStoreAction = new InputAction
-        {
-            ActionLabel = "Open Store",
-            UniqueId = (int)InputEventIds.OPEN_STORE,
-            InputControls = new InputControls
-            {
-                AndroidKeycodes = new[] { AndroidKeyCode.KEYCODE_S }
-            }
-        };
+        var openStoreAction = PlayInputAction.Create(
+            "Open Store",
+            (int)InputEventIds.OPEN_STORE,
+            PlayInputControls.Create(
+                new[] { AndroidKeyCode.KEYCODE_S },
+                null
+            )
+        );
 
-        var closeGarageOrStoreAction = new InputAction
-        {
-            ActionLabel = "Close garage or store",
-            UniqueId = (int)InputEventIds.CLOSE_GARAGE_OR_STORE,
-            InputControls = new InputControls
-            {
-                AndroidKeycodes = new[] { AndroidKeyCode.KEYCODE_ESCAPE }
-            }
-        };
+        var closeGarageOrStoreAction = PlayInputAction.Create(
+            "Return to the road",
+            (int)InputEventIds.RETURN_TO_ROAD,
+            PlayInputControls.Create(
+                new[] { AndroidKeyCode.KEYCODE_ESCAPE },
+                null
+            )
+        );
 
-        var changeTabAction = new InputAction
-        {
-            ActionLabel = "Change tab",
-            UniqueId = (int)InputEventIds.CHANGE_TAB,
-            InputControls = new InputControls
-            {
-                AndroidKeycodes = new[] { AndroidKeyCode.KEYCODE_TAB }
-            }
-        };
+        var changeTabAction = PlayInputAction.Create(
+            "Change tab",
+            (int)InputEventIds.CHANGE_TAB,
+            PlayInputControls.Create(
+                new[] { AndroidKeyCode.KEYCODE_TAB },
+                null
+            )
+        );
 
-        var nextItemAction = new InputAction
-        {
-            ActionLabel = "Select next car/background",
-            UniqueId = (int)InputEventIds.CHANGE_TAB,
-            InputControls = new InputControls
-            {
-                AndroidKeycodes = new[] { AndroidKeyCode.KEYCODE_DPAD_RIGHT }
-            }
-        };
+        var nextItemAction = PlayInputAction.Create(
+            "Select next car/background",
+            (int)InputEventIds.SELECT_NEXT_CAR_OR_BACKGROUND,
+            PlayInputControls.Create(
+                new[] { AndroidKeyCode.KEYCODE_DPAD_RIGHT },
+                null
+            )
+        );
 
-        var previousItemAction = new InputAction
-        {
-            ActionLabel = "Select previous car/background",
-            UniqueId = (int)InputEventIds.CHANGE_TAB,
-            InputControls = new InputControls
-            {
-                AndroidKeycodes = new[] { AndroidKeyCode.KEYCODE_DPAD_LEFT }
-            }
-        };
+        var previousItemAction = PlayInputAction.Create(
+            "Select previous car/background",
+            (int)InputEventIds.SELECT_PREVIOUS_CAR_OR_BACKGROUND,
+            PlayInputControls.Create(
+                new[] { AndroidKeyCode.KEYCODE_DPAD_LEFT },
+                null
+            )
+        );
 
-        var gameInputGroup = new InputGroup
-        {
-            GroupLabel = "Game controls",
-            InputActions = new List<InputAction>
+        var gameInputGroup = PlayInputGroup.Create(
+            "Game controls",
+            new List<PlayInputAction>
             {
                 driveAction,
                 turboAction,
                 openGarageAction,
                 openStoreAction
             }
-        };
+        );
 
-        var menuInputGroup = new InputGroup
-        {
-            GroupLabel = "Garage and store controls",
-            InputActions = new List<InputAction>
+        var menuInputGroup = PlayInputGroup.Create(
+            "Garage and store controls",
+            new List<PlayInputAction>
             {
                 changeTabAction,
                 nextItemAction,
                 previousItemAction,
                 closeGarageOrStoreAction
             }
-        };
+        );
 
-        return new InputMap
-        {
-            InputGroups = new List<InputGroup>
+        return PlayInputMap.Create(
+            new List<PlayInputGroup>
             {
                 gameInputGroup,
                 menuInputGroup
             },
-            MouseSettings = new MouseSettings
-            {
-                AllowMouseSensitivityAdjustment = false,
-                InvertMouseMovement = false
-            }
-        };
-
+            PlayMouseSettings.Create(false, false)
+        );
     }
 }
 #endif

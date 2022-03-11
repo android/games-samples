@@ -72,9 +72,9 @@ public class GameManager : MonoBehaviour
         SetCanvas(playPageCanvas);
 
 #if PLAY_GAMES_PC
-        InputMappingClient inputMappingClient =
-            Google.Play.InputMapping.Input.GetInputMappingClient();
-        inputMappingClient.RegisterInputMappingProvider(_inputMapProvider);
+        PlayInputMappingClient inputMappingClient =
+            Google.Play.InputMapping.PlayInput.GetInputMappingClient();
+        inputMappingClient.SetInputMappingProvider(_inputMapProvider);
 #endif
 
 #if PLAY_GAMES_PC
@@ -208,9 +208,9 @@ public class GameManager : MonoBehaviour
         GameDataController.SaveGameData();
 
 #if PLAY_GAMES_PC
-        InputMappingClient inputMappingClient =
-            Google.Play.InputMapping.Input.GetInputMappingClient();
-        inputMappingClient.UnregisterInputMappingProvider(_inputMapProvider);
+        PlayInputMappingClient inputMappingClient =
+            Google.Play.InputMapping.PlayInput.GetInputMappingClient();
+        inputMappingClient.ClearInputMappingProvider();
 #endif
     }
 }
