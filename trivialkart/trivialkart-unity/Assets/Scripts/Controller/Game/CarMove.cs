@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Globalization;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
 /// A component script for a specific car game object.
@@ -21,13 +23,16 @@ using UnityEngine;
 /// </summary>
 public class CarMove : MonoBehaviour
 {
+    public GameObject odometerLabel;
     public GameObject tapToDriveText;
     public CarName carName;
 
     private Rigidbody2D _rigidbody2D;
     private GameManager _gameManger;
+    private PGSController _pgsController;
     private CarList.Car _carObj;
     private Gas _gas;
+    private Text _odometerText;
     private const float NoVelocity = 0.01f;
     private const float TurboVelocity = 1.5f;
 
@@ -38,23 +43,63 @@ public class CarMove : MonoBehaviour
     private const int NORMAL_SPEED = 1;
     private const int TURBO_SPEED = 2;
 
+    // Achievement for going this far
+    private const float ACHIEVEMENT_DISTANCE = 100.0f;
+
     private void Start()
     {
         _clickCounter = 0;
         _firstClickTime = 0f;
         _gameManger = FindObjectOfType<GameManager>();
+        _pgsController = FindObjectOfType<PGSController>();
         // Get the carObj corresponding to the car game object the script attached to.
         _carObj = CarList.GetCarByName(carName);
         _rigidbody2D = GetComponent<Rigidbody2D>();
         _gas = transform.parent.gameObject.GetComponent<Gas>();
+        _odometerText = odometerLabel.GetComponent<Text>();
     }
+
+    private void FixedUpdate()
+    {
+        float newDistance = _rigidbody2D.velocity.x * Time.deltaTime;
+        newDistance += GameDataController.GetGameData().distanceTraveled;
+        GameDataController.GetGameData().distanceTraveled = newDistance;
+#if PLAY_GAMES_SERVICES
+        CheckDistanceAchievement(newDistance);
+#endif
+        _odometerText.text = newDistance.ToString("N1", CultureInfo.CurrentCulture);
+    }
+
+#if PLAY_GAMES_SERVICES
+    private void CheckDistanceAchievement(float newDistance)
+    {
+        var achievementManager = _pgsController.AchievementManager;
+        if (achievementManager.GetAchievementUnlocked(
+                PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Distance) == false)
+        {
+            if (newDistance >= ACHIEVEMENT_DISTANCE)
+            {
+                achievementManager.UnlockAchievement(
+                    PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Distance);
+            }
+        }
+    }
+#endif
 
     private void Update()
     {
+#if PLAY_GAMES_SERVICES
+        // Checks to see if we are due to update the distance traveled leaderboard
+        _pgsController.UpdateLeaderboard();
+#endif
         // Use keys to control menu/gameplay
         if (Input.GetKeyUp(KeyCode.G))
         {
             _gameManger.OnEnterGaragePageButtonClicked();
+        }
+        if (Input.GetKeyUp(KeyCode.P))
+        {
+            _gameManger.OnEnterPGSPageButtonClicked();
         }
         if (Input.GetKeyUp(KeyCode.S))
         {

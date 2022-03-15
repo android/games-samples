@@ -21,9 +21,10 @@ using Google.Play.InputMapping;
 #endif
 
 /// <summary>
-/// GameManager inits the game when the game starts and controls the play canvas.
-/// It inits constant data, requests for game data load;
-/// It controls canvas switches among play, store and garage;
+/// GameManager initializes the game on startup and controls the 'play' canvas.
+/// GameManager initializes constant data and requests the load of savegame data.
+/// Canvas switches between the 'play' 'store' 'garage' and 'pgs' canvases are
+/// controlled through GameManager.
 /// </summary>
 public class GameManager : MonoBehaviour
 {
@@ -69,6 +70,12 @@ public class GameManager : MonoBehaviour
 #endif
         InitConstantData();
         GameDataController.LoadGameData();
+#if PLAY_GAMES_SERVICES
+        // TODO: cloud save, in the meantime just immediately
+        // set save data ready after loading/creating the local file
+        var pgsController = FindObjectOfType<PGSController>();
+        pgsController.SetSaveDataReady();
+#endif
         SetCanvas(playPageCanvas);
 
 #if PLAY_GAMES_PC

@@ -22,15 +22,14 @@ public class SigninPageController : MonoBehaviour
     public Text signInText;
     public GameObject signInButton;
 
-    public string CurrentUserName { get; set; }
+    private string _currentUserName = "";
+    public string CurrentUserName
+    {
+        get { return _currentUserName; }
+        set { _currentUserName = value; }
+    }
 
     public PGSController.PgsSigninStatus CurrentSignInStatus { get; set; }
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        CurrentUserName = "";
-    }
 
     // Refresh the page when it becomes active
     private void OnEnable()

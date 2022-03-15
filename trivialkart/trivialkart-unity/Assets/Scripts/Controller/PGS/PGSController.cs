@@ -19,6 +19,7 @@ using UnityEngine;
 #if PLAY_GAMES_SERVICES
 using GooglePlayGames;
 using GooglePlayGames.BasicApi;
+using UnityEngine.SocialPlatforms;
 #endif
 
 public class PGSController : MonoBehaviour
@@ -33,20 +34,35 @@ public class PGSController : MonoBehaviour
     public bool PgsEnabled { get; private set; }
     public PgsSigninStatus CurrentSignInStatus { get; set; }
 
-    // Sign-in
+    public PGSAchievementManager AchievementManager
+    {
+        get { return _achievementManager; }
+        private set { _achievementManager = value; }
+    }
+
+    // References to UI page objects in the PGS UI
+    public GameObject friendsPage;
+    public GameObject leaderboardPage;
     public GameObject signinPage;
 
 #if PLAY_GAMES_SERVICES
+    private FriendsPageController _friendsPageController;
+    private LeaderboardPageController _leaderboardPageController;
     private SigninPageController _signinPageController;
-    private bool _launchedStartupSignin;
+    private PGSAchievementManager _achievementManager;
+    private bool _initializedServices = false;
+    private bool _launchedStartupSignin = false;
+    private bool _saveDataReady = false;
 #endif
 
     // Start is called before the first frame update
     void Start()
     {
 #if PLAY_GAMES_SERVICES
+        _friendsPageController = friendsPage.GetComponent<FriendsPageController>();
+        _leaderboardPageController = leaderboardPage.GetComponent<LeaderboardPageController>();
         _signinPageController = signinPage.GetComponent<SigninPageController>();
-        _launchedStartupSignin = false;
+        AchievementManager = GetComponent<PGSAchievementManager>();
         CurrentSignInStatus = PgsSigninStatus.PgsSigninNotLoggedIn;
         PgsEnabled = true;
 #else
@@ -62,8 +78,36 @@ public class PGSController : MonoBehaviour
         if (!_launchedStartupSignin)
         {
             _launchedStartupSignin = true;
+            PlayGamesPlatform.DebugLogEnabled = true;
+            // Activate the Google Play Games platform
+            PlayGamesPlatform.Activate();
             RunStartupSignin();
         }
+
+        if (!_initializedServices)
+        {
+            // Don't initialize the achievements and leaderboards until save data
+            // has been loaded/created and the user is signed in.
+            if (_saveDataReady && CurrentSignInStatus == PgsSigninStatus.PgsSigninLoggedIn)
+            {
+                _leaderboardPageController.EnableLeaderboardReporting();
+                AchievementManager.LoadAchievements();
+                _initializedServices = true;
+            }
+
+        }
+    }
+
+    public void UpdateLeaderboard()
+    {
+#if PLAY_GAMES_SERVICES
+        _leaderboardPageController.UpdateLeaderboard();
+#endif
+    }
+
+    public void SetSaveDataReady()
+    {
+        _saveDataReady = true;
     }
 
     public void RunStartupSignin()
@@ -85,6 +129,7 @@ public class PGSController : MonoBehaviour
             CurrentSignInStatus = PgsSigninStatus.PgsSigninLoggedIn;
             _signinPageController.CurrentSignInStatus = CurrentSignInStatus;
             _signinPageController.RefreshPage();
+            _friendsPageController.InitializeFriendsPage();
         }
         else
         {

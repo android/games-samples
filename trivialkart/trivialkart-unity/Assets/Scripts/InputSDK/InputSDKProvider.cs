@@ -23,6 +23,7 @@ public class InputSDKMappingProvider : PlayInputMappingProvider
         DRIVE,
         TURBO,
         OPEN_GARAGE,
+        OPEN_PGS,
         OPEN_STORE,
         RETURN_TO_ROAD,
         CHANGE_TAB,
@@ -45,7 +46,7 @@ public class InputSDKMappingProvider : PlayInputMappingProvider
             "Turbo",
             (int)InputEventIds.TURBO,
             PlayInputControls.Create(
-                new[] 
+                new[]
                 {
                     AndroidKeyCode.KEYCODE_SHIFT_LEFT,
                     AndroidKeyCode.KEYCODE_SPACE
@@ -59,6 +60,15 @@ public class InputSDKMappingProvider : PlayInputMappingProvider
             (int)InputEventIds.OPEN_GARAGE,
             PlayInputControls.Create(
                 new[] { AndroidKeyCode.KEYCODE_G },
+                null
+            )
+        );
+
+        var openPgsAction = PlayInputAction.Create(
+            "Open PGS",
+            (int)InputEventIds.OPEN_PGS,
+            PlayInputControls.Create(
+                new[] { AndroidKeyCode.KEYCODE_P },
                 null
             )
         );
@@ -115,6 +125,7 @@ public class InputSDKMappingProvider : PlayInputMappingProvider
                 driveAction,
                 turboAction,
                 openGarageAction,
+                openPgsAction,
                 openStoreAction
             }
         );

@@ -140,6 +140,38 @@ subscription periods, allowing for easier testing of subscription features.
 
 ## Enabling Play Games Services
 
+### Enable Play Games Services in Play Console
+
+TODO: link to setup
+
+### Defining the leaderboard and achievements
+
+In the Play Games Services section of your Play Console entry
+for your app, access the **Achievements** and **Leaderboard**
+sections to add the following achievements and leaderboard:
+
+**Achievements**
+Name: `tk_achievement_drive`
+Description: `Drive a while`
+Initial State: `Revealed`
+Incremental: `Unchecked`
+Points: `5`
+
+Name: `tk_achievement_truck`
+Description: `Unlock the truck`
+Initial State: `Revealed`
+Incremental: `Unchecked`
+Points: `5`
+
+**Leaderboards**
+Name: `tk_leaderboard_distance`
+Format: `Number`
+Number of decimals `2`
+Sort order: `Largest first`
+
+Make sure to publish your achievements and leaderboard after creation.
+
+### Setup the Unity plugin
 TODO:
 (link to unity plugin setup)
 

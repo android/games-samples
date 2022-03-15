@@ -15,20 +15,16 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class AchievementsPageController : MonoBehaviour
 {
-    // TODO: Stub file, achievement code coming in a future CL
-    // Start is called before the first frame update
-    void Start()
+    public GameObject achievementText;
+    private PGSController _pgsController;
+
+    void Awake()
     {
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
+        _pgsController = FindObjectOfType<PGSController>();
     }
 
     // Refresh the page when it becomes active
@@ -37,7 +33,27 @@ public class AchievementsPageController : MonoBehaviour
         RefreshPage();
     }
 
+#if PLAY_GAMES_SERVICES
+    private string GenerateAchievementString(PGSAchievementManager.TrivialKartAchievements id)
+    {
+        var achievementManager = _pgsController.AchievementManager;
+        bool unlocked = achievementManager.GetAchievementUnlocked(id);
+        string achievementName = achievementManager.GetAchievementName(id);
+        string achievementString = achievementName + " " + (unlocked ? "unlocked\n" : "locked\n");
+        return achievementString;
+    }
+#endif
+
     private void RefreshPage()
     {
+#if PLAY_GAMES_SERVICES
+        string achievementString = "Achievements\n";
+        achievementString += GenerateAchievementString(
+            PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Distance);
+        achievementString += GenerateAchievementString(
+            PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Truck);
+        Text achievementText = this.achievementText.GetComponent<Text>();
+        achievementText.text = achievementString;
+#endif
     }
 }
