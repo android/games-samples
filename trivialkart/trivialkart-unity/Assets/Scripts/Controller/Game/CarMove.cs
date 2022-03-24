@@ -73,11 +73,12 @@ public class CarMove : MonoBehaviour
 #if PLAY_GAMES_SERVICES
     private void CheckDistanceAchievement(float newDistance)
     {
-        var achievementManager = _pgsController.AchievementManager;
-        if (achievementManager.GetAchievementUnlocked(
-                PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Distance) == false)
+        if (_pgsController.CurrentSignInStatus == PGSController.PgsSigninStatus.PgsSigninLoggedIn)
         {
-            if (newDistance >= ACHIEVEMENT_DISTANCE)
+            var achievementManager = _pgsController.AchievementManager;
+            if (!achievementManager.GetAchievementUnlocked(
+                    PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Distance) &&
+                newDistance >= ACHIEVEMENT_DISTANCE)
             {
                 achievementManager.UnlockAchievement(
                     PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Distance);

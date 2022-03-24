@@ -100,6 +100,12 @@ public class GameData
 
     public int CoinsOwned => coinsOwned;
 
+    // Return the distance travel formatted as a TimeSpan for the cloud save metadata
+    public TimeSpan DistanceTraveledAsTimespan()
+    {
+        return GameDataController.ConvertDistanceToTimespan(distanceTraveled);
+    }
+
     // Return possible discount on in store items.
     public float Discount => subscriptionType == SubscriptionType.GoldenSubscription ? 0.6f : 1;
 
@@ -152,12 +158,17 @@ public class GameData
         if (carName == CarName.Truck)
         {
             var pgsController = Object.FindObjectOfType<PGSController>();
-            var achievementManager = pgsController.AchievementManager;
-            if (achievementManager.GetAchievementUnlocked(
-                    PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Truck) == false)
+            if (pgsController.CurrentSignInStatus ==
+                PGSController.PgsSigninStatus.PgsSigninLoggedIn)
             {
-                achievementManager.UnlockAchievement(
-                    PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Truck);
+                var achievementManager = pgsController.AchievementManager;
+                if (achievementManager.GetAchievementUnlocked(
+                        PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Truck) ==
+                    false)
+                {
+                    achievementManager.UnlockAchievement(
+                        PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Truck);
+                }
             }
         }
 

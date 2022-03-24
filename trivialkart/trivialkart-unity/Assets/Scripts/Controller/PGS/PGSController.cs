@@ -34,12 +34,6 @@ public class PGSController : MonoBehaviour
     public bool PgsEnabled { get; private set; }
     public PgsSigninStatus CurrentSignInStatus { get; set; }
 
-    public PGSAchievementManager AchievementManager
-    {
-        get { return _achievementManager; }
-        private set { _achievementManager = value; }
-    }
-
     // References to UI page objects in the PGS UI
     public GameObject friendsPage;
     public GameObject leaderboardPage;
@@ -50,9 +44,14 @@ public class PGSController : MonoBehaviour
     private LeaderboardPageController _leaderboardPageController;
     private SigninPageController _signinPageController;
     private PGSAchievementManager _achievementManager;
+    private PGSCloudSaveManager _cloudSaveManager;
     private bool _initializedServices = false;
     private bool _launchedStartupSignin = false;
-    private bool _saveDataReady = false;
+    private bool _localSaveDataReady = false;
+
+    public PGSAchievementManager AchievementManager { get; private set; }
+
+    public PGSCloudSaveManager CloudSaveManager { get; private set; }
 #endif
 
     // Start is called before the first frame update
@@ -63,6 +62,7 @@ public class PGSController : MonoBehaviour
         _leaderboardPageController = leaderboardPage.GetComponent<LeaderboardPageController>();
         _signinPageController = signinPage.GetComponent<SigninPageController>();
         AchievementManager = GetComponent<PGSAchievementManager>();
+        CloudSaveManager = GetComponent<PGSCloudSaveManager>();
         CurrentSignInStatus = PgsSigninStatus.PgsSigninNotLoggedIn;
         PgsEnabled = true;
 #else
@@ -88,13 +88,13 @@ public class PGSController : MonoBehaviour
         {
             // Don't initialize the achievements and leaderboards until save data
             // has been loaded/created and the user is signed in.
-            if (_saveDataReady && CurrentSignInStatus == PgsSigninStatus.PgsSigninLoggedIn)
+            if (_localSaveDataReady && CurrentSignInStatus == PgsSigninStatus.PgsSigninLoggedIn)
             {
                 _leaderboardPageController.EnableLeaderboardReporting();
                 AchievementManager.LoadAchievements();
+                CloudSaveManager.RetrieveCloudMetadata();
                 _initializedServices = true;
             }
-
         }
     }
 
@@ -105,9 +105,9 @@ public class PGSController : MonoBehaviour
 #endif
     }
 
-    public void SetSaveDataReady()
+    public void SetLocalSaveDataReady()
     {
-        _saveDataReady = true;
+        _localSaveDataReady = true;
     }
 
     public void RunStartupSignin()

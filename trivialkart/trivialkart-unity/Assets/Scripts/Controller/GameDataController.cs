@@ -28,9 +28,17 @@ public class GameDataController
 
     private static GameData _gameData;
 
+    private static bool _gameDataUpdated;
+
+    public static bool GetGameDataUpdated()
+    {
+        return _gameDataUpdated;
+    }
+
     public static void SaveGameData()
     {
         SaveGameDataOffline();
+        _gameDataUpdated = false;
     }
 
     public static void LoadGameData()
@@ -38,9 +46,20 @@ public class GameDataController
         LoadGameOffline();
     }
 
+    public static string ExportGameDataJson()
+    {
+        return JsonUtility.ToJson(_gameData, true);
+    }
+
+    public static void LoadGameDataFromJson(string gameDataJson)
+    {
+        _gameData = JsonUtility.FromJson<GameData>(gameDataJson);
+        Debug.Log(gameDataJson);
+    }
+
     private static void SaveGameDataOffline()
     {
-        File.WriteAllText(DataPath, JsonUtility.ToJson(_gameData, true));
+        File.WriteAllText(DataPath, ExportGameDataJson());
     }
 
     private static void LoadGameOffline()
@@ -80,7 +99,7 @@ public class GameDataController
     {
         _gameData = gameData;
     }
-    
+
     public static void UnlockInGameContent(string productId)
     {
         // Check if a consumable (coins) has been purchased by this user.
@@ -88,6 +107,7 @@ public class GameDataController
                      string.Equals(productId, coin.ProductId, StringComparison.Ordinal)))
         {
             _gameData.UpdateCoins(coin);
+            _gameDataUpdated = true;
             return;
         }
 
@@ -96,6 +116,7 @@ public class GameDataController
                      StringComparison.Ordinal)))
         {
             _gameData.PurchaseCar(car);
+            _gameDataUpdated = true;
             return;
         }
 
@@ -105,11 +126,26 @@ public class GameDataController
                      StringComparison.Ordinal)))
         {
             _gameData.UpdateSubscription(subscription);
+            _gameDataUpdated = true;
             return;
         }
 
-        
+
         // Pop up window
         Debug.LogError("PurchaseController: Product ID doesn't match any existing products.");
+    }
+
+    // Play Games Services cloud save uses a TimeSpan for metadata indicating time played. The
+    // meaning of this value is left for the game to determine. We convert our distance
+    // traveled to and from a timespan as the metric for gameplay progression
+    public static TimeSpan ConvertDistanceToTimespan(float distanceTraveled)
+    {
+        return new TimeSpan(0, 0, 0, 0, (Int32)(distanceTraveled * 100f));
+    }
+
+    // Convert back to distance from timespan, see ConvertDistanceToTimespan for details
+    public static float ConvertTimespanToDistance(TimeSpan timeSpan)
+    {
+        return  (float)timeSpan.TotalMilliseconds / 100f;
     }
 }

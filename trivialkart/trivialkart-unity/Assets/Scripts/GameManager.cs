@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.Android;
+using UnityEngine.UI;
 
 #if PLAY_GAMES_PC
 using Google.Play.InputMapping;
@@ -33,6 +36,9 @@ public class GameManager : MonoBehaviour
     public GameObject garagePageCanvas;
     public GameObject pgsPageCanvas;
     public GameObject waitCanvas;
+    public GameObject gamePlayCanvasController;
+    public GameObject cloudLoadCanvas;
+    public GameObject cloudLoadTextGameObject;
     public GameObject storeItemFiveCoinGameObject;
     public GameObject storeItemTenCoinGameObject;
     public GameObject storeItemTwentyCoinGameObject;
@@ -55,7 +61,28 @@ public class GameManager : MonoBehaviour
     public GameObject goldenVipSubscribeButtonGameObj;
 
     private List<GameObject> _canvasPagesList;
+    private bool _cloudLoadMessageActive;
     private bool _waitMessageActive;
+
+#if PLAY_GAMES_SERVICES
+    private enum CloudStatus
+    {
+        // Waiting for initialization of cloud save to finish
+        CloudStatus_WaitingForInit = 0,
+        // Cloud save is disabled
+        CloudStatus_Disabled,
+        // Waiting for a load from a cloud save to complete
+        CloudStatus_WaitingForLoad,
+        // Cloud save is initialized and idle
+        CloudStatus_Idle,
+        // Prompting if the user wishes to load a later cloud
+        // save following the game returning to the foreground
+        CloudStatus_UserPrompt,
+    }
+
+    private CloudStatus _cloudStatus;
+    private PGSController _pgsController = null;
+#endif
 
 #if PLAY_GAMES_PC
     private readonly InputSDKMappingProvider _inputMapProvider = new InputSDKMappingProvider();
@@ -64,17 +91,18 @@ public class GameManager : MonoBehaviour
     // Init the game.
     public void Awake()
     {
-        _waitMessageActive = false;
-#if USE_SERVER
-        NetworkRequestController.RegisterUserDevice();
-#endif
         InitConstantData();
         GameDataController.LoadGameData();
+        _cloudLoadMessageActive = false;
 #if PLAY_GAMES_SERVICES
-        // TODO: cloud save, in the meantime just immediately
-        // set save data ready after loading/creating the local file
-        var pgsController = FindObjectOfType<PGSController>();
-        pgsController.SetSaveDataReady();
+        _pgsController = FindObjectOfType<PGSController>();
+        _pgsController.SetLocalSaveDataReady();
+        _cloudStatus = CloudStatus.CloudStatus_WaitingForInit;
+        // Display a please wait message while PGS signin and cloud save
+        // resolution happens
+        SetWaitMessageActive(true);
+#else
+        SetWaitMessageActive(false);
 #endif
         SetCanvas(playPageCanvas);
 
@@ -96,15 +124,154 @@ public class GameManager : MonoBehaviour
 
     }
 
+#if PLAY_GAMES_SERVICES
+    // Only used if PGS is active to monitor cloud save operations
+    public void Update()
+    {
+        if (_cloudStatus == CloudStatus.CloudStatus_WaitingForInit)
+        {
+            UpdateCloudWaitingForInit();
+        }
+        else if (_cloudStatus == CloudStatus.CloudStatus_WaitingForLoad)
+        {
+            UpdateCloudWaitingForLoad();
+        }
+        else if (_cloudStatus == CloudStatus.CloudStatus_Idle)
+        {
+            CheckForUpdatedCloudSave();
+        }
+    }
+
+    private void UpdateCloudWaitingForInit()
+    {
+        var cloudSaveManager = _pgsController.CloudSaveManager;
+        if (cloudSaveManager.CloudSaveStatus == PGSCloudSaveManager.PgsCloudSaveStatus.PgsCloudDisabled)
+        {
+            Debug.Log("Cloud save not available");
+            _cloudStatus = CloudStatus.CloudStatus_Disabled;
+            SetWaitMessageActive(false);
+        }
+        else if (cloudSaveManager.CloudSaveStatus == PGSCloudSaveManager.PgsCloudSaveStatus.PgsCloudReady)
+        {
+            if (cloudSaveManager.HasCloudSave)
+            {
+                cloudSaveManager.LoadCloudSave();
+                _cloudStatus = CloudStatus.CloudStatus_WaitingForLoad;
+            }
+            else
+            {
+                // If no cloud save exists, create one using the current local game data
+                DoSaveGame();
+                SetWaitMessageActive(false);
+                _cloudStatus = CloudStatus.CloudStatus_Idle;
+            }
+        }
+    }
+
+    private void UpdateCloudWaitingForLoad()
+    {
+        var cloudSaveManager = _pgsController.CloudSaveManager;
+        if (cloudSaveManager.CloudSaveStatus ==
+            PGSCloudSaveManager.PgsCloudSaveStatus.PgsCloudDisabled)
+        {
+            Debug.Log("Cloud load not available");
+            _cloudStatus = CloudStatus.CloudStatus_Disabled;
+            SetWaitMessageActive(false);
+        }
+        else if (cloudSaveManager.CloudSaveStatus ==
+                 PGSCloudSaveManager.PgsCloudSaveStatus.PgsCloudReady)
+        {
+            Debug.Log("Updating local save file from cloud");
+            string saveData = cloudSaveManager.CloudSaveData;
+            GameDataController.LoadGameDataFromJson(saveData);
+            SetWaitMessageActive(false);
+            _cloudStatus = CloudStatus.CloudStatus_Idle;
+            // Refresh the coin counter on screen
+            var playController = gamePlayCanvasController.GetComponent<GamePlayCanvasController>();
+            playController.RefreshPage();
+        }
+    }
+
+    // Check to see if the cloud save manager is reporting a later save, this can happen
+    // when we resume gameplay after the user was playing on a different device
+    // Also check if game data is marked as updated (i.e. we purchased something from
+    // the store) and trigger a save if so.
+    private void CheckForUpdatedCloudSave()
+    {
+        var cloudSaveManager = _pgsController.CloudSaveManager;
+        if (cloudSaveManager.CloudSaveStatus ==
+            PGSCloudSaveManager.PgsCloudSaveStatus.PgsCloudLaterSaveAvailable)
+        {
+            Debug.Log("Later cloud save available");
+            _cloudStatus = CloudStatus.CloudStatus_UserPrompt;
+            // Convert the timespan 'time played' to its original distance traveled
+            // value and use it to prompt the user whether they would like to load
+            // the cloud save
+            var laterTimespan = cloudSaveManager.GetLaterCloudSaveTimespan();
+            var laterDistance = GameDataController.ConvertTimespanToDistance(laterTimespan);
+            SetCloudLoadMessageText(laterDistance);
+            SetCloudLoadMessageActive(true);
+        }
+        else if (cloudSaveManager.CloudSaveStatus ==
+                 PGSCloudSaveManager.PgsCloudSaveStatus.PgsCloudReady &&
+                 GameDataController.GetGameDataUpdated())
+        {
+            DoSaveGame();
+        }
+    }
+#endif
+
+    public void OnConfirmCloudLoadButtonClicked()
+    {
+#if PLAY_GAMES_SERVICES
+        _pgsController.CloudSaveManager.LoadLaterCloudSave();
+        SetCloudLoadMessageActive(false);
+        _cloudStatus = CloudStatus.CloudStatus_WaitingForLoad;
+#endif
+    }
+
+    public void OnDeclineCloudLoadButtonClicked()
+    {
+#if PLAY_GAMES_SERVICES
+        _pgsController.CloudSaveManager.IgnoreLaterCloudSave();
+        SetCloudLoadMessageActive(false);
+        _cloudStatus = CloudStatus.CloudStatus_Idle;
+#endif
+    }
+
+    public bool GetCloudLoadMessageActive()
+    {
+        return _cloudLoadMessageActive;
+    }
+
     public bool GetWaitMessageActive()
     {
         return _waitMessageActive;
+    }
+
+    public void SetCloudLoadMessageActive(bool active)
+    {
+        if (active != _cloudLoadMessageActive)
+        {
+            _cloudLoadMessageActive = active;
+            cloudLoadCanvas.SetActive(active);
+        }
+    }
+
+    public void SetCloudLoadMessageText(float distance)
+    {
+        string distanceString = distance.ToString("N1", CultureInfo.CurrentCulture);
+        string cloudString = String.Format("Load the cloud save with {0} distance traveled?",
+            distanceString);
+        Text cloudText = cloudLoadTextGameObject.GetComponent<Text>();
+        cloudText.text = cloudString;
     }
 
     public void SetWaitMessageActive(bool active)
     {
         if (active != _waitMessageActive)
         {
+            Debug.Log("SetWaitMessageActive: " + active);
             _waitMessageActive = active;
             waitCanvas.SetActive(active);
         }
@@ -205,15 +372,60 @@ public class GameManager : MonoBehaviour
         CoinList.FiftyCoins.StoreItemCoinGameObj = storeItemFiftyCoinGameObject;
     }
 
-    private void OnApplicationPause(bool pauseStatus)
+    private void DoSaveGame()
     {
         GameDataController.SaveGameData();
+#if PLAY_GAMES_SERVICES
+        if (_pgsController != null)
+        {
+            if (_pgsController.CurrentSignInStatus ==
+                PGSController.PgsSigninStatus.PgsSigninLoggedIn)
+            {
+                var cloudSaveManager = _pgsController.CloudSaveManager;
+                if (cloudSaveManager.CloudSaveStatus ==
+                    PGSCloudSaveManager.PgsCloudSaveStatus.PgsCloudReady &&
+                    _cloudStatus == CloudStatus.CloudStatus_Idle)
+                {
+                    // Convert 'distance traveled' to be our 'time spent playing' metric
+                    // and pass it in the expected TimeSpan format
+                    cloudSaveManager.SaveToCloud(GameDataController.ExportGameDataJson(),
+                        GameDataController.GetGameData().DistanceTraveledAsTimespan());
+                }
+            }
+        }
+#endif
     }
+
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (!hasFocus)
+        {
+            // Save when focus is lost
+            DoSaveGame();
+        }
+    }
+
+#if PLAY_GAMES_SERVICES
+    private void OnApplicationPause(bool pauseStatus)
+    {
+        if (!pauseStatus && _pgsController != null)
+        {
+            Debug.Log("OnApplicationPause, resuming : " + _pgsController.CurrentSignInStatus);
+            if (_pgsController.CurrentSignInStatus ==
+                PGSController.PgsSigninStatus.PgsSigninLoggedIn)
+            {
+                // Check for cloud save updates when we resume
+                var cloudSaveManager = _pgsController.CloudSaveManager;
+                cloudSaveManager.CheckForCloudUpdates();
+            }
+        }
+    }
+#endif
 
     private void OnApplicationQuit()
     {
-        GameDataController.SaveGameData();
-
+        // Save before exiting
+        DoSaveGame();
 #if PLAY_GAMES_PC
         PlayInputMappingClient inputMappingClient =
             Google.Play.InputMapping.PlayInput.GetInputMappingClient();

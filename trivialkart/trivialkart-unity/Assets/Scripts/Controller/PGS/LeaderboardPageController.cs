@@ -16,12 +16,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using GooglePlayGames.BasicApi;
 using UnityEngine;
 using UnityEngine.UI;
 
 #if PLAY_GAMES_SERVICES
 using GooglePlayGames;
+using GooglePlayGames.BasicApi;
 using UnityEngine.SocialPlatforms;
 #endif
 
