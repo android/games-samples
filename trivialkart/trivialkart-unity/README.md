@@ -8,6 +8,8 @@ This verson of TrivialKart demonstrates:
 * In-app purchases through Google Play using the Unity IAP system
 * Play Games Services, for signin, achievements, leaderboards, friends and
 cloud save
+* Play Integrity for receiving integrity signals about device integrity
+and Play license status
 * The Input SDK for Google Play Games for PC
 
 ## Pre-requisites
@@ -142,7 +144,13 @@ subscription periods, allowing for easier testing of subscription features.
 
 ### Enable Play Games Services in Play Console
 
-TODO: link to setup
+Follow the
+[instructions](https://developers.google.com/games/services/console/enabling)
+for setting up Play Games Services for your app in the Play Console.
+
+You will also need to
+[enable save games](https://developers.google.com/games/services/console/configuring#enabling_saved_games)
+since TrivialKart uses the Cloud Save feature.
 
 ### Defining the leaderboard and achievements
 
@@ -172,10 +180,25 @@ Sort order: `Largest first`
 Make sure to publish your achievements and leaderboard after creation.
 
 ### Setup the Unity plugin
-TODO:
-(link to unity plugin setup)
+
+1. Download version 11.0 or later of the Play Games Services for Unity plugin
+from its [GitHub releases page](https://github.com/playgameservices/play-games-plugin-for-unity/releases).
+2. Extract the `.zip` file.
+3. Install the `.unitypackage` file located in the `current-build` directory of
+the extracted archive using `Assets > Import Package > Custom Package`.
 
 ### Configure Proguard
+
+1. Go to **File > Build Settings > Player Settings** and click **Publishing Settings** section.
+2. Choose **Proguard for Minify > Release**. Then, enable User Proguard File.
+3. If you want the plugin to be proguarded for debug apks as well, you can repeat for **Proguard for Minify > Debug.**
+4. Copy the contents of the proguard configuration file at
+`Assets/GooglePlaygames/com.google.play.games/Proguard/games.txt` into `Assets/Plugins/Android/proguard-user.txt`.
+
+### Enable in the Play Games Services feature in the Unity Editor
+
+From the Unity menu bar, select
+`TrivialKart -> BuildOptions -> Build with Google Play Games Services`
 
 ### Adding the upload key for local build testing
 
@@ -198,27 +221,76 @@ fingerprint from the Upload key
 10. Return to the **Configuration** screen and click **Review and publish**
 11. On the next screen, click **Publish**
 
+## Enabling Play Integrity
+
+### Play Console setup
+
+See the [Play Integrity guide](https://developer.android.com/google/play/integrity/setup)
+for information on configuring Play Integrity in the Google Play Console.
+
+### Downloading the plugin
+
+You will need to download the `unitypackage` file for Play Integrity from the
+[Google Play Unity plugins releases page](https://github.com/google/play-unity-plugins/releases).
+
+After downloading the plugin, install it using using `Assets > Import Package > Custom Package`.
+
+### Server specifications
+
+The Play Integrity code requires communication with a backend server to:
+
+* Generate a nonce
+* Decrypt the integrity verdict
+
+You can find implementation details for these tasks in the
+[Work with integrity verdicts](https://developer.android.com/google/play/integrity/verdict) guide.
+
+A server implementation is not included with this sample. You can build and
+deploy a server using the framework and platform of your choice. TrivialKart expects the
+server to define two endpoints accessed via HTTP requests:
+
+A `getNonce` endpoint, accessed via a GET request. This URL returns a json payload containing
+the nonce value. The JSON payload containts a single key/value pair with the key being `nonce`.
+
+A `processToken` endpoint, accessed via a POST request. The URL expects a JSON payload containing
+the encrypted integrity token returned by the Play Integrity plugin. The JSON payload
+contains a single key/value pair with the key being `tokenString`. The POST request returns a
+JSON payload containing the integrity verdict information. This is serialized into the structures
+defined in the `IntegrityVerdict.cs` source file.
+
+### Configuring server URLs
+
+You will need to customize the following lines in `PlayIntegrityController.cs`
+to point to the URLs for your server:
+
+`private readonly string URL_GETNONCE = "https://your-play-integrity-server.com/getNonce";`
+`private readonly string URL_PROCESSTOKEN = "https://your-play-integrity-server.com/processToken";`
+
+### Enable the Play Integrity feature in the Unity Editor
+
+From the Unity menu bar, select
+`TrivialKart -> BuildOptions -> Build with Play Integrity`
+
+### Verdict display in game
+
+An integrity verdict is requested when opening the store page. A verdict will only be requested
+once per play session. The summary results string is displayed near the top of the store page.
+
+Note that in a real game, you would not directly return the decrypted verdict information,
+but communicate the results in a way that makes sense for your game. For simplicity, this
+sample expects the raw verdict json.
+
 ## Building for Google Play Games
 
-TODO(b/217769153): Verify setup instructions across supported Unity versions and frame pacing guidance.
-
 1. Enable x86 ABI architecture. This can be activated using `Player Settings > Other Settings > Target Architectures` and enabling both x86 (Chrome OS) and x86-64 (Chrome OS).
-
-   *Note:* You can only enable x86 support when using the IL2CPP Scripting Backend. This can be done from `Player Settings > Configuration > Scripting Backend > IL2CPP`.
-
+*Note:* You can only enable x86 support when using the IL2CPP Scripting Backend. This can be done from `Player Settings > Configuration > Scripting Backend > IL2CPP`.
 2. Disable unsupported android features and permissions. This can be done by adding custom build logic to your `AndroidManifest.xml`. To do this, open `Player Settings > Publishing Settings` and find the `Build` section. Then, enable the `Custom Main Manifest` or corresponding manifest for the feature or permission you need to disable.
-
 At this point, you can find that manifest and add `android:required="false"` to the `<uses-feature>` or `uses-permission` declaration for all features that Google Play Games does not support.
-
 For more information, see the [unity documention on Android Manifests](https://docs.unity3d.com/Manual/android-manifest.html).
-
 You should also disable any lines requesting permissions in your unity code. See the unity documentation on [requestion permissions](https://docs.unity3d.com/Manual/android-RequestingPermissions.html) for more details.
-
 3. Install the Input SDK Unity package using `Assets > Import Package > Custom Package`.
-
 4. From the Unity menu bar, select
 `TrivialKart > BuildOptions > Build for Google Play Games PC`.
-
 
 ## Support
 
@@ -227,18 +299,19 @@ If you've found any errors or bugs in this sample game, please
 
 This is not an officially supported Google product.
 
-#### Build versions workarounds
+### Build version workarounds
 
-If you forget to select properly the version you want to build before closing Unity, you may be unable to see the `TrivialKart > BuildOptions` menu.
+If you forget to select the version you want to build before closing Unity, you may be unable to see the `TrivialKart > BuildOptions` menu.
 To fix it, delete the directives under `Edit > Project Settings > Player > Other Settings > Script Compilation` and restart Unity.
-
 
 ## Further reading
 
-- [Unity IAP](https://docs.unity3d.com/Manual/UnityIAP.html)
+* [Unity IAP](https://docs.unity3d.com/Manual/UnityIAP.html)
 
 ## CHANGELOG
 
+2022-04-01: 1.1.0 - Added Play Games Services, Play Integrity and Google
+Play Games for PC features.
 2022-01-27: 1.0.0 - Initial release.
 
 ## Graphical asset credits and license
