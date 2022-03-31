@@ -53,6 +53,10 @@ if("${USE_ASSET_PACKS}" STREQUAL "false")
     add_definitions("-DNO_ASSET_PACKS")
 endif()
 
+if("${USE_APT}" STREQUAL "true")
+    add_definitions("-DUSE_APT")
+endif()
+
 set(THIRD_PARTY_DIR ../../../../../third_party)
 # Import the CMakeLists.txt for the glm library
 add_subdirectory(${THIRD_PARTY_DIR}/glm ${CMAKE_CURRENT_BINARY_DIR}/glm)

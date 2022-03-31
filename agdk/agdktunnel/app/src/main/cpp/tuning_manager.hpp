@@ -18,8 +18,12 @@
 #define agdktunnel_tuning_manager_hpp
 
 #include "common.hpp"
+
+#if defined(USE_APT)
+// Generated protobuf headers
 #include "nano/dev_tuningfork.pb.h"
 #include "nano/tuningfork.pb.h"
+#endif
 
 struct AConfiguration;
 
@@ -38,7 +42,9 @@ public:
 
     void PostFrameTick(const uint16_t frameKey);
 
+#if defined(USE_APT)
     void SetCurrentAnnotation(const _com_google_tuningfork_Annotation *annotation);
+#endif
 
     void StartLoading();
 
