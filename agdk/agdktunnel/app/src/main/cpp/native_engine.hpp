@@ -19,6 +19,7 @@
 
 #include "common.hpp"
 #include "game_asset_manager.hpp"
+#include "memory_consumer.hpp"
 #include "texture_manager.hpp"
 #include "tuning_manager.hpp"
 
@@ -50,6 +51,9 @@ public:
 
     // returns the tuning manager instance
     TuningManager *GetTuningManager() { return mTuningManager; }
+
+    // returns the memory consumer instance
+    MemoryConsumer *GetMemoryConsumer() { return mMemoryConsumer; }
 
     // returns the (singleton) instance
     static NativeEngine *GetInstance();
@@ -102,6 +106,9 @@ private:
 
     // Tuning manager instance
     TuningManager *mTuningManager;
+
+    // Memory consumer instance
+    MemoryConsumer *mMemoryConsumer;
 
     // is this the first frame we're drawing?
     bool mIsFirstFrame;

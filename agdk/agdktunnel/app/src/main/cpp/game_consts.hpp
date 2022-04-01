@@ -83,6 +83,10 @@
 #define SCORE_POS_Y 0.92f
 #define SCORE_FONT_SCALE 0.8f
 
+// settings for rendering memory stats to the screen
+#define MEMORY_POS_X 0.45f
+#define MEMORY_POS_Y 0.80f
+#define MEMORY_FONT_SCALE 0.4f
 
 // scale of the signs that appear onscreen
 #define SIGN_FONT_SCALE 0.9f

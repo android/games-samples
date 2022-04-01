@@ -56,6 +56,7 @@
 
 // position of each side button (the buttons on the sides of the PLAY button)
 #define BUTTON_STORY_POS 0.1f + 0.5f * BUTTON_SIDEBUTTON_WIDTH, 0.5f
+#define BUTTON_MEMORY_POS 0.1f + 0.5f * BUTTON_SIDEBUTTON_WIDTH, 0.25f
 #define BUTTON_ABOUT_POS center + 0.3f + 0.5f * BUTTON_SIDEBUTTON_WIDTH, 0.5f
 #define BUTTON_TEST_POS center + 0.3f + 0.5f * BUTTON_SIDEBUTTON_WIDTH, 0.75f
 #define BUTTON_QUIT_POS center + 0.3f + 0.5f * BUTTON_SIDEBUTTON_WIDTH, 0.25f
@@ -152,6 +153,8 @@ void WelcomeScene::OnButtonClicked(int id) {
     } else if (id == mQuitButtonId) {
         auto activity = NativeEngine::GetInstance()->GetAndroidApp()->activity;
         GameActivity_finish(activity);
+    } else if (id == mMemoryButtonId) {
+        NativeEngine::GetInstance()->GetMemoryConsumer()->SetActive(true);
     }
 }
 
@@ -187,7 +190,8 @@ void WelcomeScene::UpdateWidgetStates() {
     AddNav(mPlayButtonId, UI_DIR_LEFT, mStoryButtonId);
     AddNav(mPlayButtonId, UI_DIR_RIGHT, mAboutButtonId);
 
-    AddNav(mStoryButtonId, UI_DIR_RIGHT, mPlayButtonId);
+    AddNav(mStoryButtonId, UI_DIR_RIGHT, mMemoryButtonId);
+    AddNav(mMemoryButtonId, UI_DIR_RIGHT, mPlayButtonId);
 
     AddNav(mAboutButtonId, UI_DIR_LEFT, mPlayButtonId);
 
@@ -216,6 +220,12 @@ void WelcomeScene::OnCreateWidgets() {
     // story button
     mStoryButtonId = NewWidget()->SetTextColor(BUTTON_COLOR)->SetText(S_STORY)
             ->SetCenter(BUTTON_STORY_POS)->SetSize(BUTTON_SIDEBUTTON_SIZE)
+            ->SetFontScale(BUTTON_FONT_SCALE)->SetIsButton(true)
+            ->SetTransition(UiWidget::TRANS_FROM_RIGHT)->GetId();
+
+    // memory button
+    mMemoryButtonId = NewWidget()->SetTextColor(BUTTON_COLOR)->SetText(S_MEMORY)
+            ->SetCenter(BUTTON_MEMORY_POS)->SetSize(BUTTON_SIDEBUTTON_SIZE)
             ->SetFontScale(BUTTON_FONT_SCALE)->SetIsButton(true)
             ->SetTransition(UiWidget::TRANS_FROM_RIGHT)->GetId();
 

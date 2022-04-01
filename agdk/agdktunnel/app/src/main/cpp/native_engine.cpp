@@ -22,6 +22,7 @@
 #include "native_engine.hpp"
 
 #include "game-activity/GameActivity.h"
+#include "memory_advice/memory_advice.h"
 #include "paddleboat/paddleboat.h"
 #include "swappy/swappyGL.h"
 #include "welcome_scene.hpp"
@@ -104,6 +105,18 @@ NativeEngine::NativeEngine(struct android_app *app) {
 
     Paddleboat_init(GetJniEnv(), app->activity->javaGameActivity);
     Paddleboat_setControllerStatusCallback(_GameControllerStatusCallback, NULL);
+
+    const MemoryAdvice_ErrorCode memoryError = MemoryAdvice_init(GetJniEnv(),
+                                                                 app->activity->javaGameActivity);
+    if (memoryError != MEMORYADVICE_ERROR_OK) {
+        ALOGE("MemoryAdvice_init failed with error: %d", memoryError);
+    } else {
+        ALOGI("Initialized MemoryAdvice");
+    }
+
+    // Initialize the memory consumer, used to exercise the
+    // Memory Advice library. Off by default.
+    mMemoryConsumer = new MemoryConsumer(false);
 
     ALOGI("Calling SwappyGL_init");
     SwappyGL_init(GetJniEnv(), mApp->activity->javaGameActivity);
@@ -230,6 +243,7 @@ void NativeEngine::GameLoop() {
             }
         }
 
+        mMemoryConsumer->Update();
         mGameAssetManager->UpdateGameAssetManager();
         Paddleboat_update(GetJniEnv());
         HandleGameActivityInput();

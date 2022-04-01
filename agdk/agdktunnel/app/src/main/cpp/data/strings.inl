@@ -40,6 +40,7 @@
 #define S_STORY "Story"
 #define S_ABOUT "About"
 #define S_TEST "Run tests"
+#define S_MEMORY "Consume Memory"
 
 #define S_OK "OK"
 
