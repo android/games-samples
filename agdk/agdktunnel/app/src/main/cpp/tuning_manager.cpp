@@ -38,6 +38,7 @@ extern "C" void TuningFork_CProtobufSerialization_Dealloc(
 
 /** @endcond */
 
+#if defined(USE_APT)
 namespace {
     constexpr TuningFork_InstrumentKey TFTICK_CHOREOGRAPHER = TFTICK_USERDEFINED_BASE;
 
@@ -80,10 +81,12 @@ namespace {
         return success;
     }
 }
+#endif
 
 TuningManager::TuningManager(JNIEnv *env, jobject activity, AConfiguration *config) {
     mTFInitialized = false;
 
+#if defined(USE_APT)
     TuningFork_Settings settings{};
 
     // Performance Tuner can work with the Frame Pacing library to automatically
@@ -132,18 +135,22 @@ TuningManager::TuningManager(JNIEnv *env, jobject activity, AConfiguration *conf
     TuningFork_CProtobufSerialization_free(&fps);
 
     InitializeChoreographerCallback(config);
+#endif
 }
 
 TuningManager::~TuningManager() {
+#if defined(USE_APT)
     if (mTFInitialized) {
         TuningFork_ErrorCode tfError = TuningFork_destroy();
         if (tfError != TUNINGFORK_ERROR_OK) {
             ALOGE("Error destroying TuningFork: %d", tfError);
         }
     }
+#endif
 }
 
 void TuningManager::InitializeChoreographerCallback(AConfiguration *config) {
+#if defined(USE_APT)
     int32_t sdkVersion = AConfiguration_getSdkVersion(config);
     if (sdkVersion >= 29) {
         // The original postFrameCallback is deprecated in 29 and later, try and
@@ -167,9 +174,11 @@ void TuningManager::InitializeChoreographerCallback(AConfiguration *config) {
         AChoreographer_postFrameCallback(AChoreographer_getInstance(),
                                          choreographer_callback, this);
     }
+#endif
 }
 
 void TuningManager::HandleChoreographerFrame() {
+#if defined(USE_APT)
     PostFrameTick(TFTICK_CHOREOGRAPHER);
 
     if (pAChoreographer_postFrameCallback64 != nullptr) {
@@ -179,6 +188,7 @@ void TuningManager::HandleChoreographerFrame() {
         AChoreographer_postFrameCallback(AChoreographer_getInstance(),
                                          choreographer_callback, this);
     }
+#endif
 }
 
 void TuningManager::PostFrameTick(const TuningFork_InstrumentKey frameKey) {
@@ -190,6 +200,7 @@ void TuningManager::PostFrameTick(const TuningFork_InstrumentKey frameKey) {
     }
 }
 
+#if defined(USE_APT)
 void TuningManager::SetCurrentAnnotation(const _com_google_tuningfork_Annotation *annotation) {
     TuningFork_CProtobufSerialization cser;
     if (serialize_annotation(cser, annotation)) {
@@ -201,8 +212,10 @@ void TuningManager::SetCurrentAnnotation(const _com_google_tuningfork_Annotation
         ALOGE("Failed to calculate annotation encode size");
     }
 }
+#endif
 
 void TuningManager::StartLoading() {
+#if defined(USE_APT)
     // Initial annotation of our state
     _com_google_tuningfork_Annotation annotation;
     annotation.loading = com_google_tuningfork_LoadingState_LOADING;
@@ -221,13 +234,16 @@ void TuningManager::StartLoading() {
                                              &startupLoadingHandle);
         TuningFork_CProtobufSerialization_free(&cser);
     }
+#endif
 }
 
 void TuningManager::FinishLoading() {
+#if defined(USE_APT)
     TuningFork_stopRecordingLoadingTime(startupLoadingHandle);
 
     _com_google_tuningfork_Annotation annotation;
     annotation.loading = com_google_tuningfork_LoadingState_NOT_LOADING;
     annotation.level = com_google_tuningfork_Level_LEVEL_1;
     SetCurrentAnnotation(&annotation);
+#endif
 }

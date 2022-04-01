@@ -18,6 +18,9 @@ import org.gradle.internal.os.OperatingSystem;
 
 apply plugin: 'com.android.application'
 
+// See README for details on enabling APT
+def useApt = APTEnabled
+
 android {
     compileSdkVersion 30
     ndkVersion '21.4.7075529'
@@ -37,7 +40,8 @@ android {
             externalNativeBuild {
                 cmake {
                     arguments "-DANDROID_STL=c++_shared",
-                            "-DUSE_ASSET_PACKS=false"
+                              "-DUSE_ASSET_PACKS=false",
+                              "-DUSE_APT=$useApt"
                 }
             }
         }
@@ -48,7 +52,8 @@ android {
                         'proguard-rules.pro'
                 cmake {
                     arguments "-DANDROID_STL=c++_shared",
-                            "-DUSE_ASSET_PACKS=false"
+                              "-DUSE_ASSET_PACKS=false",
+                              "-DUSE_APT=$useApt"
                 }
             }
             multiDexEnabled true
@@ -72,10 +77,10 @@ dependencies {
     implementation "androidx.constraintlayout:constraintlayout:2.0.4"
     implementation 'androidx.fragment:fragment:1.2.5'
     implementation 'com.google.oboe:oboe:1.5.0'
-    implementation "androidx.games:games-frame-pacing:1.10.0-alpha01"
-    implementation "androidx.games:games-performance-tuner:1.5.0-beta02"
-    implementation "androidx.games:games-activity:1.1.0-beta02"
-    implementation "androidx.games:games-controller:1.1.0-alpha01"
+    implementation "androidx.games:games-frame-pacing:1.10.0"
+    implementation "androidx.games:games-performance-tuner:1.5.0"
+    implementation "androidx.games:games-activity:1.1.0"
+    implementation "androidx.games:games-controller:1.1.0"
 
     // Example of using local .aar files in libs/ directory.
     // Comment out the androidx.games implementation lines if
@@ -83,7 +88,7 @@ dependencies {
     //implementation fileTree(dir: 'libs', include: ['GameActivity.aar',
     //                                               'GameController.aar',
     //                                               'games-frame-pacing-1.9.0.aar',
-    //                                               'games-performance-tuner-1.4.3.aar'])
+    //                                               'games-performance-tuner-1.5.0.aar'])
 }
 
 android.lintOptions {
@@ -115,4 +120,6 @@ task buildTuningForkBinFiles(type: Exec) {
             getProtocPath()
 }
 
-tasks.preBuild.dependsOn("buildTuningForkBinFiles")
+if (APTEnabled.toBoolean()) {
+    tasks.preBuild.dependsOn("buildTuningForkBinFiles")
+}
