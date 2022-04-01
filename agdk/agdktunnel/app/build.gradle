@@ -23,7 +23,7 @@ def useApt = APTEnabled
 
 android {
     compileSdkVersion 30
-    ndkVersion '21.4.7075529'
+    ndkVersion '23.1.7779620'
 
     defaultConfig {
         applicationId 'com.google.sample.agdktunnel'
@@ -81,6 +81,7 @@ dependencies {
     implementation "androidx.games:games-performance-tuner:1.5.0"
     implementation "androidx.games:games-activity:1.1.0"
     implementation "androidx.games:games-controller:1.1.0"
+    implementation "androidx.games:games-memory-advice:1.0.0-beta01"
 
     // Example of using local .aar files in libs/ directory.
     // Comment out the androidx.games implementation lines if

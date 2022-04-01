@@ -146,6 +146,10 @@ void UiScene::DoFrame() {
                             (mFocusWidget == i) ? UiWidget::FOCUS_YES : UiWidget::FOCUS_NO, tf);
     }
 
+    // Render memory statistics
+    NativeEngine::GetInstance()->GetMemoryConsumer()->RenderMemoryStatistics(
+        mTextRenderer);
+
     glEnable(GL_DEPTH_TEST);
 }
 

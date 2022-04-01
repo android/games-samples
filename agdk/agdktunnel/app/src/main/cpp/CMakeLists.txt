@@ -20,6 +20,7 @@ find_package(oboe REQUIRED CONFIG)
 find_package(game-activity REQUIRED CONFIG)
 find_package(games-controller REQUIRED CONFIG)
 find_package(games-frame-pacing REQUIRED CONFIG)
+find_package(games-memory-advice REQUIRED CONFIG)
 find_package(games-performance-tuner REQUIRED CONFIG)
 
 # Set the base dir
@@ -79,6 +80,7 @@ add_library(game SHARED
      jni_util.cpp
      loader_scene.cpp
      loading_thread.cpp
+     memory_consumer.cpp
      native_app_glue_included.c
      native_engine.cpp
      obstacle.cpp
@@ -118,6 +120,7 @@ target_link_libraries(game
      games-controller::paddleboat_static
      games-frame-pacing::swappy_static
      games-performance-tuner::tuningfork_static
+     games-memory-advice::memory_advice
      GLESv3
      glm
      log)
