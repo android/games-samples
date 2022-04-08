@@ -55,6 +55,7 @@ public class GameData
     public Ownership[] carIndexToOwnership;
     public Ownership[] backgroundNameToOwnership;
     public int coinsOwned;
+    public float distanceTraveled;
     public SubscriptionType subscriptionType;
     public BackgroundName backgroundInUseName;
 
@@ -68,6 +69,7 @@ public class GameData
     public GameData()
     {
         coinsOwned = InitialCoinAmount;
+        distanceTraveled = 0f;
         carIndexToOwnership = new Ownership[TotalCarCount];
         foreach (var car in CarList.List)
         {
@@ -97,6 +99,12 @@ public class GameData
         SubscriptionList.GetSubscriptionByType(subscriptionType);
 
     public int CoinsOwned => coinsOwned;
+
+    // Return the distance travel formatted as a TimeSpan for the cloud save metadata
+    public TimeSpan DistanceTraveledAsTimespan()
+    {
+        return GameDataController.ConvertDistanceToTimespan(distanceTraveled);
+    }
 
     // Return possible discount on in store items.
     public float Discount => subscriptionType == SubscriptionType.GoldenSubscription ? 0.6f : 1;
@@ -133,11 +141,39 @@ public class GameData
         if (!car.IsRealMoneyPurchase)
         {
             ReduceCoinsOwned((int) (car.Price * Discount));
+#if PLAY_GAMES_SERVICES
+            CheckTruckAchievement(car.Name);
+#endif
         }
 
         carIndexToOwnership[(int) car.Name] = Ownership.Owned;
         Object.FindObjectOfType<CarStorePageController>()?.RefreshPage();
     }
+
+#if PLAY_GAMES_SERVICES
+    // Check for the achievement unlock of owning the truck vehicle.
+    // Called any time a new vehicle is purchased.
+    private void CheckTruckAchievement(CarName carName)
+    {
+        if (carName == CarName.Truck)
+        {
+            var pgsController = Object.FindObjectOfType<PGSController>();
+            if (pgsController.CurrentSignInStatus ==
+                PGSController.PgsSigninStatus.PgsSigninLoggedIn)
+            {
+                var achievementManager = pgsController.AchievementManager;
+                if (achievementManager.GetAchievementUnlocked(
+                        PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Truck) ==
+                    false)
+                {
+                    achievementManager.UnlockAchievement(
+                        PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Truck);
+                }
+            }
+        }
+
+    }
+#endif
 
     // Check if the user owns a specific car.
     // Return true if the user owns it; Otherwise return false.

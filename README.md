@@ -28,4 +28,9 @@ Demonstrates use of Google Play Billing for in-app purchases.
 
 * **[trivialkart/trivialkart-unity](trivialkart/trivialkart-unity)**
 
-Demonstrates use of Google Play Billing for in-app purchases using Unity IAP.
+Demonstrates use of multiple Google Play technologies:
+
+* Google Play Billing for in-app purchases using Unity IAP
+* Google Play Games Services
+* Google Play Games for PC
+* Play Integrity

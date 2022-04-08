@@ -74,11 +74,12 @@ public class Gas : MonoBehaviour
     // Set the gas level bar length and color according to the distance the car has traveled.
     public void SetGasLevel(float curTotalDistanceDriven)
     {
-        // Return if no gas left.
-        if (GasLevel <= 0) return;
-        var consumedGas = (curTotalDistanceDriven - _totalDistanceDriven) * Mpg;
-        _gasLevel = GasLevel - consumedGas;
-        SetGasLevelHelper(_gasLevelImage, gasLevelImageObj);
+        if (GasLevel > 0)
+        {
+            var consumedGas = (curTotalDistanceDriven - _totalDistanceDriven) * Mpg;
+            _gasLevel = GasLevel - consumedGas;
+            SetGasLevelHelper(_gasLevelImage, gasLevelImageObj);
+        }
         // Update the total distance driven.
         _totalDistanceDriven = curTotalDistanceDriven;
     }

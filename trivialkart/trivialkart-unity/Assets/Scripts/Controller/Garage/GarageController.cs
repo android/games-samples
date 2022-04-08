@@ -53,6 +53,15 @@ public class GarageController : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        // Use tab key to switch between garage pages
+        if (Input.GetKeyUp(KeyCode.Tab))
+        {
+            OnSwitchPageTabClicked((_currentTabIndex + 1) % _garagePages.Count);
+        }
+    }
+
     private void OnEnable()
     {
         RefreshPage();

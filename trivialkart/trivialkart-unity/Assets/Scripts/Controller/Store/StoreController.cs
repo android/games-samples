@@ -49,8 +49,26 @@ public class StoreController : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        // Use tab key to switch between store pages
+        if (Input.GetKeyUp(KeyCode.Tab))
+        {
+            OnSwitchPageTabClicked((_currentTabIndex + 1) % _storePages.Count);
+        }
+    }
+
     private void OnEnable()
     {
+        // Start an integrity request when the store page is opened. Note that
+        // the controller will only perform the check once per game session.
+        // See the Play Integrity guide for guidance on how to determine
+        // when to check integrity and how often to do so:
+        // https://developer.android.com/google/play/integrity/overview
+#if PLAY_INTEGRITY
+        var integrityController = GetComponent<PlayIntegrityController>();
+        integrityController.StartIntegrityCheck();
+#endif
         // Update Coin text when entering the store.
         SetCoinsBasedOnGameData();
         OnSwitchPageTabClicked(_currentTabIndex);
