@@ -43,7 +43,7 @@ public class GamePlayCanvasController : MonoBehaviour
         }
     }
 
-    private void RefreshPage()
+    public void RefreshPage()
     {
         SetCoinsBasedOnGameData();
     }

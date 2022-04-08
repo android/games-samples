@@ -16,12 +16,14 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Controller for 'Purchasing' wait model canvas
-/// Displayed while waiting for results of purchase transaction
+/// Controller for 'Please Wait/Purchasing' wait model canvas
+/// Displayed while waiting for results of startup initialization
+/// or a purchase transaction
 /// </summary>
 public class WaitController : MonoBehaviour
 {
-    public Text purchasingText;
+    public string WaitString { get; set; }
+    public Text waitText;
 
     private int _periodCount;
     private string _periodString;
@@ -29,6 +31,7 @@ public class WaitController : MonoBehaviour
 
     private void OnEnable()
     {
+        WaitString = "Please wait";
         _periodCount = 0;
         _periodString = "";
         _timeElapsed = 0.0f;
@@ -36,21 +39,25 @@ public class WaitController : MonoBehaviour
 
     private void Update()
     {
-        _timeElapsed += Time.deltaTime;
-        if (_timeElapsed > 1.0f)
+        if (waitText != null)
         {
-            _timeElapsed -= Mathf.Floor(_timeElapsed);
-            _periodCount += 1;
-            if (_periodCount == 4 )
+            _timeElapsed += Time.deltaTime;
+            if (_timeElapsed > 1.0f)
             {
-                _periodCount = 0;
-                _periodString = "";
+                _timeElapsed -= Mathf.Floor(_timeElapsed);
+                _periodCount += 1;
+                if (_periodCount == 4)
+                {
+                    _periodCount = 0;
+                    _periodString = "";
+                }
+                else
+                {
+                    _periodString += ".";
+                }
+
+                waitText.text = string.Format("{0}{1}", WaitString, _periodString);
             }
-            else
-            {
-                _periodString += ".";
-            }
-            purchasingText.text = string.Format("Purchasing{0}", _periodString);
         }
     }
 }
