@@ -426,6 +426,10 @@ public class GameManager : MonoBehaviour
     {
         // Save before exiting
         DoSaveGame();
+    }
+
+    private void OnDestroy()
+    {
 #if PLAY_GAMES_PC
         PlayInputMappingClient inputMappingClient =
             Google.Play.InputMapping.PlayInput.GetInputMappingClient();

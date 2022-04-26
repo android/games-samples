@@ -38,7 +38,7 @@ public class InputSDKMappingProvider : PlayInputMappingProvider
             (int)InputEventIds.DRIVE,
             PlayInputControls.Create(
                 new[] { AndroidKeyCode.KEYCODE_SPACE },
-                null
+                new List<PlayMouseAction>()
             )
         );
 
@@ -51,7 +51,7 @@ public class InputSDKMappingProvider : PlayInputMappingProvider
                     AndroidKeyCode.KEYCODE_SHIFT_LEFT,
                     AndroidKeyCode.KEYCODE_SPACE
                 },
-                null
+                new List<PlayMouseAction>()
             )
         );
 
@@ -60,7 +60,7 @@ public class InputSDKMappingProvider : PlayInputMappingProvider
             (int)InputEventIds.OPEN_GARAGE,
             PlayInputControls.Create(
                 new[] { AndroidKeyCode.KEYCODE_G },
-                null
+                new List<PlayMouseAction>()
             )
         );
 
@@ -78,7 +78,7 @@ public class InputSDKMappingProvider : PlayInputMappingProvider
             (int)InputEventIds.OPEN_STORE,
             PlayInputControls.Create(
                 new[] { AndroidKeyCode.KEYCODE_S },
-                null
+                new List<PlayMouseAction>()
             )
         );
 
@@ -87,7 +87,7 @@ public class InputSDKMappingProvider : PlayInputMappingProvider
             (int)InputEventIds.RETURN_TO_ROAD,
             PlayInputControls.Create(
                 new[] { AndroidKeyCode.KEYCODE_ESCAPE },
-                null
+                new List<PlayMouseAction>()
             )
         );
 
@@ -96,7 +96,7 @@ public class InputSDKMappingProvider : PlayInputMappingProvider
             (int)InputEventIds.CHANGE_TAB,
             PlayInputControls.Create(
                 new[] { AndroidKeyCode.KEYCODE_TAB },
-                null
+                new List<PlayMouseAction>()
             )
         );
 
@@ -105,7 +105,7 @@ public class InputSDKMappingProvider : PlayInputMappingProvider
             (int)InputEventIds.SELECT_NEXT_CAR_OR_BACKGROUND,
             PlayInputControls.Create(
                 new[] { AndroidKeyCode.KEYCODE_DPAD_RIGHT },
-                null
+                new List<PlayMouseAction>()
             )
         );
 
@@ -114,7 +114,7 @@ public class InputSDKMappingProvider : PlayInputMappingProvider
             (int)InputEventIds.SELECT_PREVIOUS_CAR_OR_BACKGROUND,
             PlayInputControls.Create(
                 new[] { AndroidKeyCode.KEYCODE_DPAD_LEFT },
-                null
+                new List<PlayMouseAction>()
             )
         );
 
