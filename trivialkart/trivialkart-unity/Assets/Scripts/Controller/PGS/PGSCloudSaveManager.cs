@@ -15,7 +15,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using GooglePlayGames.BasicApi.SavedGame;
 using UnityEngine;
 
 #if PLAY_GAMES_SERVICES
@@ -25,6 +24,7 @@ using System.Text;
 using GooglePlayGames;
 using GooglePlayGames.BasicApi;
 using UnityEditor;
+using GooglePlayGames.BasicApi.SavedGame;
 #endif
 
 public class PGSCloudSaveManager : MonoBehaviour

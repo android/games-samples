@@ -53,8 +53,10 @@ public class PGSAchievementManager : MonoBehaviour
     {
         _achievementInfo = new AchievementInfo[]
             {
+#if PLAY_GAMES_SERVICES
                 new AchievementInfo(GPGSIds.achievement_tk_achievement_drive),
                 new AchievementInfo(GPGSIds.achievement_tk_achievement_truck)
+#endif
             };
     }
 
