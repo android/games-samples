@@ -1,0 +1,3 @@
+[submodule "agdk/adpf/kubric"]
+	path = agdk/adpf/kubric
+	url = https://github.com/google-research/kubric
