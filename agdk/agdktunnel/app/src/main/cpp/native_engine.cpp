@@ -234,7 +234,7 @@ void NativeEngine::GameLoop() {
 
             // process event
             if (source != NULL) {
-                source->process(mApp, source);
+                source->process(source->app, source);
             }
 
             // are we exiting?
