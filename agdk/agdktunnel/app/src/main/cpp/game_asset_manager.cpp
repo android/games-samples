@@ -217,6 +217,8 @@ uint64_t GameAssetManagerInternals::GetInternalGameAssetSize(const char *assetNa
     if (asset != NULL) {
         assetSize = AAsset_getLength(asset);
         AAsset_close(asset);
+    } else {
+        ALOGI("GameAssetManager: asset %s found to be NULL", assetName);
     }
     return assetSize;
 }
@@ -362,10 +364,10 @@ bool GameAssetManagerInternals::RequestAssetPackDownload(const char *assetPackNa
 
     if (success) {
         ChangeAssetPackStatus(GetAssetPackByName(assetPackName),
-                              GameAssetManager::GAMEASSET_DOWNLOADING);
+                GameAssetManager::GAMEASSET_DOWNLOADING);
     } else {
         SetAssetPackErrorStatus(assetPackErrorCode, GetAssetPackByName(assetPackName),
-                                "GameAssetManager: requestDownload");
+                "GameAssetManager: requestDownload");
     }
     return success;
 }

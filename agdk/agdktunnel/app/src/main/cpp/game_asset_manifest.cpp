@@ -25,12 +25,21 @@ namespace {
      * This is a rudimentary 'asset manifest' embedded in the source code for simplicity.
      * A real world project might generate a manifest file as part of the asset pipeline.
      */
-
-    const char *InstallFileList[] = {"textures/wall1.tex", "textures/wall2.tex"};
-    const char *OnDemandFileList[] = {"textures/wall3.tex", "textures/wall4.tex",
-                                      "textures/wall5.tex", "textures/wall6.tex",
-                                      "textures/wall7.tex", "textures/wall8.tex"};
-
+#if defined(NO_ASSET_PACKS)
+    const char *InstallFileList[] = {"no_asset_packs_textures/wall1.ktx",
+                                     "no_asset_packs_textures/wall2.ktx"};
+    const char *OnDemandFileList[] = {"no_asset_packs_textures/wall3.ktx",
+                                      "no_asset_packs_textures/wall4.ktx",
+                                      "no_asset_packs_textures/wall5.ktx",
+                                      "no_asset_packs_textures/wall6.ktx",
+                                      "no_asset_packs_textures/wall7.ktx",
+                                      "no_asset_packs_textures/wall8.ktx"};
+#else // !NO_ASSET_PACKS
+    const char *InstallFileList[] = {"textures/wall1.ktx", "textures/wall2.ktx"};
+    const char *OnDemandFileList[] = {"textures/wall3.ktx", "textures/wall4.ktx",
+                                      "textures/wall5.ktx", "textures/wall6.ktx",
+                                      "textures/wall7.ktx", "textures/wall8.ktx"};
+#endif // NO_ASSET_PACKS
     const GameAssetManifest::AssetPackDefinition AssetPacks[] = {
             {
                     GameAssetManager::GAMEASSET_PACKTYPE_INTERNAL,

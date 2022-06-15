@@ -77,6 +77,13 @@ static int32_t _checkControllerButton(const uint32_t buttonsDown, const InputAct
     return 0;
 }
 
+bool isMovementKey(const int32_t keyCode) {
+    return keyCode == KEYCODE_W ||
+           keyCode == KEYCODE_A ||
+           keyCode == KEYCODE_S ||
+           keyCode == KEYCODE_D;
+}
+
 bool CookGameActivityKeyEvent(GameActivityKeyEvent *keyEvent, CookedEventCallback callback) {
     if (keyEvent->keyCode == AKEYCODE_BACK && 0 == keyEvent->action) {
         // back key was pressed
@@ -84,6 +91,19 @@ bool CookGameActivityKeyEvent(GameActivityKeyEvent *keyEvent, CookedEventCallbac
         memset(&ev, 0, sizeof(ev));
         ev.type = COOKED_EVENT_TYPE_BACK;
         return callback(&ev);
+    } else if (isMovementKey(keyEvent->keyCode)) {
+        // cook movement key events
+        struct CookedEvent ev;
+        memset(&ev, 0, sizeof(ev));
+        ev.keyCode = keyEvent->keyCode;
+
+        if (keyEvent->action == KEY_ACTION_DOWN) {
+            ev.type = COOKED_EVENT_TYPE_KEY_DOWN;
+            return callback(&ev);
+        } else if (keyEvent->action == KEY_ACTION_UP) {
+            ev.type = COOKED_EVENT_TYPE_KEY_UP;
+            return callback(&ev);
+        }
     }
     return false;
 }
@@ -93,7 +113,7 @@ CookGameActivityMotionEvent(GameActivityMotionEvent *motionEvent, CookedEventCal
     if (motionEvent->pointerCount > 0) {
         int action = motionEvent->action;
         int actionMasked = action & AMOTION_EVENT_ACTION_MASK;
-        int ptrIndex = (action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >>
+        uint32_t ptrIndex = (action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >>
                                  AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
 
         if (ptrIndex < motionEvent->pointerCount) {

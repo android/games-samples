@@ -20,6 +20,8 @@
 #include "engine.hpp"
 #include "ui_scene.hpp"
 
+#define DATA_LOAD_DELTA 0.5f
+
 /* Loader Scene, displays load progress at startup */
 class LoaderScene : public UiScene {
  private:
@@ -43,6 +45,8 @@ class LoaderScene : public UiScene {
 
     virtual void RenderBackground() override;
 
+    DataLoaderStateMachine *mDataStateMachine;
+
 public:
 
     LoaderScene();
@@ -55,6 +59,7 @@ public:
         mLoadingText = text;
         return this;
     }
+
 };
 
 #endif

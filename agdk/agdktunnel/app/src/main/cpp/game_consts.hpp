@@ -17,6 +17,12 @@
 #ifndef agdktunnel_game_consts_h
 #define agdktunnel_game_consts_h
 
+// Cheats and test settings
+// #define GHOST_MODE
+// #define GOD_MODE
+// #define TOUCH_INDICATOR_MODE
+// #define SWAPPY_OFF_MODE
+
 // Render settings
 #define RENDER_FOV 45.0f
 #define RENDER_NEAR_CLIP 0.1f
@@ -155,11 +161,5 @@
 // menu item pulse animation settings
 #define MENUITEM_PULSE_AMOUNT 1.1f
 #define MENUITEM_PULSE_PERIOD 0.5f
-
-// save file name
-#define SAVE_FILE_NAME "tunnel.dat"
-
-// checkpoint (save progress) every how many levels?
-#define LEVELS_PER_CHECKPOINT 4
 
 #endif
