@@ -265,7 +265,7 @@ public:
         return this;
     }
 
-    UiWidget *SetTransparent(bool transp) {
+    UiWidget *SetTransparent(bool /*transp*/) {
         mTransparent = true;
         return this;
     }

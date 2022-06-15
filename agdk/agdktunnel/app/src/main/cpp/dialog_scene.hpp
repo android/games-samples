@@ -19,7 +19,7 @@
 
 #include "engine.hpp"
 #include "ui_scene.hpp"
-#include "welcome_scene.hpp"
+#include "loader_scene.hpp"
 
 /* Dialog Scene. Shows a message and buttons. When a button is clicked, performs
  * a given action. */

@@ -18,6 +18,7 @@
 #define agdktunnel_scene_manager_h
 
 #include "our_key_codes.hpp"
+#include "input_util.hpp"
 
 class Scene;
 

@@ -52,10 +52,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++14 -Wall -Werror")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
 add_definitions("-DGLM_FORCE_SIZE_T_LENGTH -DGLM_FORCE_RADIANS")
 
-if("${USE_ASSET_PACKS}" STREQUAL "false")
-    add_definitions("-DNO_ASSET_PACKS")
-endif()
-
 if("${USE_APT}" STREQUAL "true")
     add_definitions("-DUSE_APT")
 endif()
@@ -73,7 +69,7 @@ else()
 endif()
 
 # now build app's shared lib
-add_library(game SHARED
+add_library(${CMAKE_PROJECT_NAME} SHARED
      ${PROTOBUF_NANO_SRCS}
      ${PROTOGEN_SRCS}
      android_main.cpp
@@ -90,6 +86,7 @@ add_library(game SHARED
      loader_scene.cpp
      loading_thread.cpp
      memory_consumer.cpp
+     data_loader_machine.cpp
      native_app_glue_included.c
      native_engine.cpp
      obstacle.cpp
@@ -113,14 +110,14 @@ add_library(game SHARED
      ${COMMON_SRC_DIR}/Versions.cpp
      )
 
-target_include_directories(game PRIVATE
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
      ${THIRD_PARTY_DIR}/glm/glm
      ${COMMON_INCLUDE_DIR}
      ${CMAKE_CURRENT_SOURCE_DIR}
      ${CMAKE_CURRENT_SOURCE_DIR}/data)
 
 # add lib dependencies
-target_link_libraries(game
+target_link_libraries(${CMAKE_PROJECT_NAME}
      android
      atomic
      EGL
@@ -133,3 +130,14 @@ target_link_libraries(game
      GLESv3
      glm
      log)
+
+if("${USE_ASSET_PACKS}" STREQUAL "false")
+    add_definitions("-DNO_ASSET_PACKS")
+else()
+    # Add a static library called “playcore” built with the c++_static STL.
+    include(${PLAYCORE_LOCATION}/playcore.cmake)
+    add_playcore_static_library()
+    target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${PLAYCORE_LOCATION}/include)
+
+    target_link_libraries(${CMAKE_PROJECT_NAME} playcore)
+endif()

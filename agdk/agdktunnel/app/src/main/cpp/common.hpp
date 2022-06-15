@@ -41,7 +41,7 @@
 #define MY_ASSERT(cond) { if (!(cond)) { ALOGE("ASSERTION FAILED: %s", #cond); \
    ABORT_GAME; } }
 
-#define BUFFER_OFFSET(i) ((char*)NULL + (i))
+#define BUFFER_OFFSET(i) ((void*)((size_t)i))
 
 #include "our_key_codes.hpp"
 

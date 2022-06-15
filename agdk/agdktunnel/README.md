@@ -13,6 +13,12 @@ AGDKTunnel uses the following AGDK libraries:
 * Memory Advice
 * Oboe
 
+AGDKTunnel can optionally use the following Play libraries:
+
+* Play Games Services for Play identity and cloud save
+* Play Asset Delivery (via Play core libraries)
+* Input SDK for Google Play Games for PC
+
 ## Building
 
 Open the `agdktunnel' directory in Android Studio 4.2 or higher.
@@ -90,3 +96,65 @@ The runtime data files for Android Performance Tuner are compiled using the
 This executable is not codesigned or notarized. You may need to allow execution of the relevant
 files using the **System Preferences -> Security & Privacy** control panel, adjust your
 Gatekeeper settings or compile your own protoc from the [protobuf](https://github.com/protocolbuffers) repo.
+
+## Google Play Games for PC (optional)
+
+Build variants are used to differentiate between the default (mobile) platform
+and the PC platform. To build AGDKTunnel to run in Google Play Games for PC follow these steps:
+
+1. Go to **Build > Select Build Variant** and select the `playGamesPC` [build variant](https://developer.android.com/studio/build/build-variants).
+2. (Optional) Enable Play Games Services to turn-on cloud save on mobile and PC.
+3. (Optional) Enable Play Asset Delivery API to delivery DXT1 compressed texture assets.
+
+## Google Play Games Services (optional)
+
+Play Games Services (PGS) is used for sign-in and cloud save. To enable these features, follow these steps:
+
+1. Rename the package of AGDK Tunnel to a name of your choosing.
+2. Create an application on the [Google Play Console](https://play.google.com/console/about/?) and follow the steps to set up Play Games Services using your package name.
+3. Replace the **game_services_project_id** string value in `app/src/main/res/values/strings.xml` with the id of your project in the Google Play Console.
+
+## Google Play Asset Delivery (optional)
+
+The Play Asset Delivery (PAD) API with Texture Compression Format Targeting (TCFT) is used to
+deliver optimal compressed textures (ETC2 by default and DXT1 for Google Play Games for PC). To
+enable PAD, follow these steps:
+
+1. Edit the `gradle.properties` file and change: `PADEnabled=false` to `PADEnabled=true`.
+2. [Download the Play Core API into the project](https://developer.android.com/guide/playcore#native)
+   and copy the `play-core-native-sdk` directory into the `apps/libs` directory.
+3. Play Asset Delivery requires building an Android App Bundle instead of an APK. Bundletool will
+   help you to test your Android App Bundle locally, download bundletool by visiting the
+   [bundletool releases page](https://github.com/google/bundletool/releases) and install it in the
+   root of the project.
+4. Using Android Studio build an App Bundle **Build > Build bundle(s)/APK(s) > Build bundle(s)**
+5. Install from the Android App Bundle file to your device using bundletool:
+
+For the mobile variant in debug:
+
+```
+   java -jar bundletool-all-1.9.1.jar build-apks
+      --bundle=app/build/outputs/bundle/mobileDebug/app-mobile-debug.aab
+      --output=agdktunnel.apks
+      --local-testing
+   
+   java -jar bundletool-all-1.9.1.jar install-apks --apks=agdktunnel.apks
+```
+
+For the Google Play Games for PC variant in debug:
+
+```
+   java -jar bundletool-all-1.9.1.jar build-apks
+      --bundle=app/build/outputs/bundle/playGamesPCDebug/app-playGamesPC-debug.aab
+      --output=agdktunnel.apks
+      --local-testing
+   
+   java -jar bundletool-all-1.9.1.jar install-apks --apks=agdktunnel.apks
+```
+
+For more information see the codelab: [Using Play Asset Delivery in native games](https://developer.android.com/codelabs/native-gamepad#0)
+
+## Version history
+
+1.0.4 - Merged Play integrations from AOSP. Play Asset Delivery,
+        Input SDK, PGS sign in.

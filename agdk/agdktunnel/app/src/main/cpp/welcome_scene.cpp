@@ -128,7 +128,9 @@ void WelcomeScene::OnButtonClicked(int id) {
     SceneManager *mgr = SceneManager::GetInstance();
 
     if (id == mPlayButtonId) {
-        mgr->RequestNewScene(new PlayScene());
+        DataLoaderStateMachine *dataStateMachine =
+                NativeEngine::GetInstance()->GetDataStateMachine();
+        mgr->RequestNewScene(new PlayScene(dataStateMachine->getLevelLoaded()));
     } else if (id == mStoryButtonId) {
         mgr->RequestNewScene((new DialogScene())->SetText(BLURB_STORY)->SetSingleButton(S_OK,
                 DialogScene::ACTION_RETURN));

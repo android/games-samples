@@ -82,7 +82,7 @@ static const char *_parseInt(const char *s, int *result) {
     return s;
 }
 
-static int _synth(int frequency, int duration, float amplitude, int16_t *sample_buf, int samples) {
+static int _synth(int frequency, int /*duration*/, float amplitude, int16_t *sample_buf, int samples) {
     int i;
 
     for (i = 0; i < samples; i++) {
@@ -194,7 +194,7 @@ void SfxMan::PlayTone(const char *tone) {
 }
 
 oboe::DataCallbackResult
-SfxMan::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
+SfxMan::onAudioReady(oboe::AudioStream */*audioStream*/, void *audioData, int32_t numFrames) {
     if (_frameCount > 0) {
         const int32_t remainingFrames = _frameCount - _frameCursor;
         if (numFrames < remainingFrames) {
