@@ -1,7 +1,7 @@
 # Google Play Games Unity Package
 A tool for your unity project to automate routines for Google Play Games development with Unity.
 
-![Preview](/Images/preview.jpg)
+![Preview](https://raw.githubusercontent.com/natetrost/games-samples/main/googleplaygamesforpc/unity_projects/platform_utils_package/Images/preview.jpg)
 
 ### Features:
  * GPG platform define script, that will add `UNITY_ANDROID_x86_64` define to the list of custom defines withing Player settings
