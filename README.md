@@ -34,3 +34,13 @@ Demonstrates use of multiple Google Play technologies:
 * Google Play Games Services
 * Google Play Games for PC
 * Play Integrity
+
+## Google Play Games for PC samples
+
+The **[googleplaygamesforpc/](googleplaygamesforpc)** directory contains
+samples and tools specific to Google Play Games for PC.
+
+* **[googleplaygamesforpc/unity_projects/platform_utils_package](googleplaygamesforpc/unity_projects/platform_utils_package)**
+
+Example tooling to help automate configuring a Unity engine project to target
+Google Play Games for PC.
