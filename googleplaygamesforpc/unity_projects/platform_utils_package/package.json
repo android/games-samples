@@ -1,0 +1,21 @@
+{
+  "name": "com.google.play-games-pc",
+  "version": "0.1.0",
+  "displayName": "Google Play Games for PC Platform Utils",
+  "description": "Google Play Games for PC Platform Utils",
+  "unity": "2020.3.34f1",
+  "unityRelease": "34f1",
+  "documentationUrl": "https://developer.android.com/games/playgames/",
+  "licensesUrl": "https://www.apache.org/licenses/LICENSE-2.0",
+  "dependencies": {
+ },
+ "keywords": [
+    "Google",
+    "Play",
+    "Games"
+  ],
+  "author": {
+    "name": "Android Open Source Project",
+    "url": "https://developer.android.com/games/playgames/"
+  }
+}
