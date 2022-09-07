@@ -21,6 +21,7 @@
 
 #include "Log.h"
 #include "adpf_manager.h"
+#include "game_mode_manager.h"
 #include "imgui.h"
 #include "imgui_manager.h"
 #include "native_engine.h"
@@ -96,26 +97,6 @@ void DemoScene::DoFrame() {
 
   // Update ADPF status.
   ADPFManager::getInstance().Monitor();
-
-  // Update target frame  rate based on the ADPF status.
-  auto current_thermal_status = ADPFManager::getInstance().GetThermalStatus();
-
-  // Set target frame rate to 30 FPS when the thermal status is 'moderate' or
-  // worse.
-  auto constexpr kThrottlingThreshold = 2;
-  if (current_thermal_status >= kThrottlingThreshold) {
-    target_frame_period_ = SWAPPY_SWAP_30FPS;
-  } else {
-    target_frame_period_ = SWAPPY_SWAP_60FPS;
-  }
-
-  // Set FPS in Swappy.
-  if (current_frame_period_ != target_frame_period_) {
-    if (SwappyGL_isEnabled()) {
-      SwappyGL_setSwapIntervalNS(target_frame_period_);
-    }
-    current_frame_period_ = target_frame_period_;
-  }
 
   UpdatePhysics();
 
@@ -215,26 +196,37 @@ void DemoScene::SetupUIWindow() {
 
   ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 32.0f);
   char titleString[64];
-  snprintf(titleString, 64, "ADPF Sample");
+  snprintf(titleString, 64, "Game Mode Sample");
   ImGui::Begin(titleString, NULL, windowFlags);
 
   RenderPanel();
 }
 
 void DemoScene::RenderPanel() {
+  NativeEngine* native_engine = NativeEngine::GetInstance();
+  SceneManager* scene_manager = SceneManager::GetInstance();
+  GameModeManager& game_mode_manager = GameModeManager::getInstance();
+  int32_t swap_interval = scene_manager->GetPreferredSwapInterval();
   int32_t thermal_state = ADPFManager::getInstance().GetThermalStatus();
   assert(thermal_state >= 0 &&
          thermal_state <
              sizeof(thermal_state_label) / sizeof(thermal_state_label[0]));
 
-  // Show current FPS target.
-  ImGui::Text("FPS target:%s",
-              target_frame_period_ == SWAPPY_SWAP_60FPS ? "60" : "30");
-
   // Show current thermal state on screen.
+  // In this sample, no dynamic performance adjustment based on Thermal State
+  // To see dynamic performance adjustment based on Thermal State see the ADPF
+  // Sample
   ImGui::Text("Thermal State:%s", thermal_state_label[thermal_state]);
   ImGui::Text("Thermal Headroom:%f",
               ADPFManager::getInstance().GetThermalHeadroom());
+
+  // Show the stat changes according to selected Game Mode
+  ImGui::Text("Game Mode: %s", game_mode_manager.GetGameModeString());
+  ImGui::Text("FPS target: %s", game_mode_manager.GetFPSString(swap_interval));
+  ImGui::Text("Surface size: %d x %d", native_engine->GetSurfaceWidth(),
+              native_engine->GetSurfaceHeight());
+  ImGui::Text("Preferred size: %d x %d", scene_manager->GetPreferredWidth(),
+              scene_manager->GetPreferredHeight());
 }
 
 void DemoScene::OnButtonClicked(int buttonId) {

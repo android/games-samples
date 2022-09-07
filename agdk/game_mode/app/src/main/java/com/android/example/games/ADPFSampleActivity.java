@@ -15,8 +15,6 @@
  */
 package com.android.example.games;
 
-import android.content.Context;
-import android.os.Build;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
@@ -28,8 +26,6 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.google.androidgamesdk.GameActivity;
-
-import com.android.example.games.ADPFManager;
 
 // A minimal extension of GameActivity. For this sample, it is used to invoke
 // a workaround for loading the runtime shared library on old Android versions.
@@ -68,6 +64,8 @@ public class ADPFSampleActivity extends GameActivity {
     }
 
     private ADPFManager adpfManager;
+    private GameModeManager gameModeManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // When true, the app will fit inside any system UI windows.
@@ -77,6 +75,7 @@ public class ADPFSampleActivity extends GameActivity {
 
         // Instantiate ADPF manager.
         this.adpfManager = new ADPFManager();
+        this.gameModeManager = new GameModeManager();
 
         super.onCreate(savedInstanceState);
     }
@@ -86,6 +85,8 @@ public class ADPFSampleActivity extends GameActivity {
     protected void onResume() {
         // Register ADPF thermal status listener on resume.
         this.adpfManager.registerListener(getApplicationContext());
+        this.gameModeManager.initialize(getApplicationContext());
+
         super.onResume();
     }
 

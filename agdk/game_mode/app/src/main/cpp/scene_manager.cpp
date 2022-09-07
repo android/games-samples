@@ -18,15 +18,18 @@
 
 #include "common.h"
 #include "scene.h"
+#include "swappy/swappyGL.h"
+#include "swappy/swappyGL_extra.h"
 
-static SceneManager _sceneManager;
+static SceneManager scene_manager_;
 
 SceneManager::SceneManager() {
   mCurScene = NULL;
 
   // start with non-bogus (though not accurate) values
-  mScreenWidth = 320;
-  mScreenHeight = 240;
+  mScreenWidth = mPreferredWidth = 640;
+  mScreenHeight = mPreferredHeight = 480;
+  mPreferredSwapInterval = SWAPPY_SWAP_60FPS;
 
   mSceneToInstall = NULL;
 
@@ -111,7 +114,24 @@ void SceneManager::SetScreenSize(int width, int height) {
   }
 }
 
-SceneManager *SceneManager::GetInstance() { return &_sceneManager; }
+void SceneManager::SetPreferredSize(int width, int height) {
+  ALOGI("GameMode SetPreferredSize %d, %d => %d, %d", mPreferredWidth,
+        mPreferredHeight, width, height);
+  mPreferredWidth = width;
+  mPreferredHeight = height;
+}
+
+void SceneManager::SetPreferredSwapInterval(int32_t preferred_interval) {
+  if (preferred_interval != mPreferredSwapInterval) {
+    SwappyGL_setAutoSwapInterval(false);
+    if (SwappyGL_isEnabled()) {
+      SwappyGL_setSwapIntervalNS(preferred_interval);
+    }
+  }
+  mPreferredSwapInterval = preferred_interval;
+}
+
+SceneManager *SceneManager::GetInstance() { return &scene_manager_; }
 
 void SceneManager::OnPointerDown(int pointerId,
                                  const struct PointerCoords *coords) {

@@ -48,6 +48,12 @@ class NativeEngine {
   // returns the (singleton) instance
   static NativeEngine *GetInstance();
 
+  int GetSurfaceWidth() { return mSurfWidth; }
+  int GetSurfaceHeight() { return mSurfHeight; }
+
+  int GetNativeWidth() { return mSurfNativeWidth; }
+  int GetNativeHeight() { return mSurfNativeHeight; }
+
   // This is the env for the app thread. It's different to the main thread.
   JNIEnv *GetAppJniEnv();
 
@@ -75,6 +81,11 @@ class NativeEngine {
 
   // known surface size
   int mSurfWidth, mSurfHeight;
+
+  // surface native size
+  int mSurfNativeWidth, mSurfNativeHeight;
+
+  int mGameMode;
 
   // system bar offset
   int mSystemBarOffset;
@@ -127,6 +138,9 @@ class NativeEngine {
   bool PrepareToRender();
 
   void DoFrame();
+
+  void CheckGameMode();
+  void SwitchToPreferredDisplaySize();
 
   bool IsAnimating();
 

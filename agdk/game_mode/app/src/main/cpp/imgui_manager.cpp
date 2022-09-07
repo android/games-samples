@@ -25,7 +25,7 @@ extern "C" {
 
 namespace {
 const float GUI_LOWDPI_FONT_SCALE = 2.0f;
-const float GUI_DEFAULT_FONT_SCALE = 5.0f;
+const float GUI_DEFAULT_FONT_SCALE = 3.0f;
 const float GUI_MINIMUM_FRAME_TIME = (1.0f / 60.0f);
 float currentFontScale = 1.0f;
 bool overrideFontScale = false;

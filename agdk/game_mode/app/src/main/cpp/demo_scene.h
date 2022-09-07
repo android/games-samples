@@ -26,6 +26,7 @@
 #include "box_renderer.h"
 #include "engine.h"
 #include "swappy/swappyGL.h"
+#include "swappy/swappyGL_extra.h"
 #include "util.h"
 
 class GameAssetManager;
@@ -98,7 +99,6 @@ class DemoScene : public Scene {
 
   static constexpr size_t MOTION_AXIS_COUNT = 3;
 
- protected:
   // Did we simulate a click for ImGui?
   SimulatedClickState simulated_click_state_;
 

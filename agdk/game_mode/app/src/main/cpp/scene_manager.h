@@ -17,6 +17,8 @@
 #ifndef SCENE_MANAGER_H_
 #define SCENE_MANAGER_H_
 
+#include <cstdint>
+
 class Scene;
 
 struct PointerCoords {
@@ -37,6 +39,8 @@ class SceneManager {
  private:
   Scene *mCurScene;
   int mScreenWidth, mScreenHeight;
+  int mPreferredWidth, mPreferredHeight;
+  int mPreferredSwapInterval;
   bool mHasGraphics;
   Scene *mSceneToInstall;
 
@@ -46,16 +50,27 @@ class SceneManager {
   SceneManager();
 
   void SetScreenSize(int width, int height);
+  void SetPreferredSize(int width, int height);
+  void SetPreferredSwapInterval(int32_t preferred_interval);
 
   void KillGraphics();
 
   void StartGraphics();
 
-  // Returns screen width in pixels
+  // Returns screen width in pixels, this is the actual screen width in pixels
   int GetScreenWidth() { return mScreenWidth; }
 
-  // Returns screen height in pixels
+  // Returns screen height in pixels, this is the actual screen height in pixels
   int GetScreenHeight() { return mScreenHeight; }
+
+  // These are the preferred screen resolution to switch to but will not be guaranteed to be able to switch to:
+  // Returns preferred width in pixels
+  int GetPreferredWidth() { return mPreferredWidth; }
+
+  // Returns preferred height in pixels
+  int GetPreferredHeight() { return mPreferredHeight; }
+
+  int GetPreferredSwapInterval() { return mPreferredSwapInterval; }
 
   // Returns screen's aspect ratio
   float GetScreenAspect() { return (float)mScreenWidth / mScreenHeight; }
