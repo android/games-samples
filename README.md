@@ -12,6 +12,8 @@ See the [agdk/README.md](agdk/README.md) file for descriptions of individual sam
 the [Android Game Development Kit libraries](https://developer.android.com/games/agdk/libraries-overview).
 * **[agdk/agde](agdk/agde)** (C/C++) - These samples demonstrate use of the
 [Android Game Development Extension](https://developer.android.com/games/agde).
+* **[agdk/adpf](agdk/adpf)** (C/C++) - This sample demonstrate the use of [Thermal API](https://developer.android.com/ndk/reference/group/thermal) to limit CPU/GPU usage to prevent device from overheating which may trigger hardware throttling. Checkout [Thermal Mitigation](https://source.android.com/docs/core/architecture/hidl/thermal-mitigation) for more information.
+* **[agdk/game_mode](agdk/game_mode)** (C/C++) - This sample demonstrate the use of [Game Mode API](https://developer.android.com/games/gamemode/gamemode-api) to adjust game's graphic fidelity according to user's preference.
 
 ## TrivialKart sample
 
