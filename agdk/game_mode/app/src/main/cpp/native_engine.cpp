@@ -19,6 +19,7 @@
 
 #include "common.h"
 #include "demo_scene.h"
+#include "game_mode_manager.h"
 #include "imgui_manager.h"
 #include "input_util.h"
 #include "scene_manager.h"
@@ -55,6 +56,8 @@ NativeEngine::NativeEngine(struct android_app *app) {
   mEglContext = EGL_NO_CONTEXT;
   mEglConfig = 0;
   mSurfWidth = mSurfHeight = 0;
+  mSurfNativeWidth = mSurfNativeHeight = 0;
+  mGameMode = 0;
   mApiVersion = 0;
   mScreenDensity = AConfiguration_getDensity(app->config);
   mActiveAxisIds = 0;
@@ -401,6 +404,7 @@ bool NativeEngine::InitDisplay() {
     ALOGE("NativeEngine: failed to init display, error %d", eglGetError());
     return false;
   }
+
   return true;
 }
 
@@ -443,6 +447,12 @@ bool NativeEngine::InitSurface() {
     ALOGE("Failed to create EGL surface, EGL error %d", eglGetError());
     return false;
   }
+
+  // keep the original surface size as native size
+  eglQuerySurface(mEglDisplay, mEglSurface, EGL_WIDTH, &mSurfNativeWidth);
+  eglQuerySurface(mEglDisplay, mEglSurface, EGL_HEIGHT, &mSurfNativeHeight);
+  ALOGI("NativeEngine: native display size: %d x %d", mSurfNativeWidth,
+        mSurfNativeHeight);
 
   ALOGI("NativeEngine: successfully initialized surface.");
   return true;
@@ -636,15 +646,74 @@ static void _log_opengl_error(GLenum err) {
   }
 }
 
-void NativeEngine::DoFrame() {
-  // prepare to render (create context, surfaces, etc, if needed)
-  if (!PrepareToRender()) {
-    // not ready
-    VLOGD("NativeEngine: preparation to render failed.");
-    return;
+void NativeEngine::CheckGameMode() {
+  GameModeManager &gameModeManager = GameModeManager::getInstance();
+  int game_mode = gameModeManager.GetGameMode();
+  if (game_mode != mGameMode) {
+    // game mode changed, make necessary adjustments to the game
+    // in this sample, we are capping the frame rate and the resolution
+    SceneManager *sceneManager = SceneManager::GetInstance();
+    NativeEngine *nativeEngine = NativeEngine::GetInstance();
+    int native_width = nativeEngine->GetNativeWidth();
+    int native_height = nativeEngine->GetNativeHeight();
+    int preferred_width;
+    int preferred_height;
+    int32_t preferredSwapInterval = SWAPPY_SWAP_30FPS;
+    if (game_mode == GAME_MODE_STANDARD) {
+      // GAME_MODE_STANDARD : fps: 30, res: 1/2
+      preferredSwapInterval = SWAPPY_SWAP_30FPS;
+      preferred_width = native_width / 2;
+      preferred_height = native_height / 2;
+    } else if (game_mode == GAME_MODE_PERFORMANCE) {
+      // GAME_MODE_PERFORMANCE : fps: 60, res: 1/1
+      preferredSwapInterval = SWAPPY_SWAP_60FPS;
+      preferred_width = native_width;
+      preferred_height = native_height;
+    } else if (game_mode == GAME_MODE_BATTERY) {
+      // GAME_MODE_BATTERY : fps: 30, res: 1/4
+      preferred_height = SWAPPY_SWAP_30FPS;
+      preferred_width = native_width / 4;
+      preferred_height = native_height / 4;
+    } else {  // game_mode == 0 : fps: 30, res: 1/2
+      // GAME_MODE_UNSUPPORTED
+      preferredSwapInterval = SWAPPY_SWAP_30FPS;
+      preferred_width = native_width / 2;
+      preferred_height = native_height / 2;
+    }
+    ALOGI("GameMode SetPreferredSizeAndFPS: %d, %d, %d", preferred_width,
+          preferred_height, preferredSwapInterval);
+    sceneManager->SetPreferredSize(preferred_width, preferred_height);
+    sceneManager->SetPreferredSwapInterval(preferredSwapInterval);
+    mGameMode = game_mode;
   }
+}
 
+void NativeEngine::SwitchToPreferredDisplaySize() {
   SceneManager *mgr = SceneManager::GetInstance();
+  ImGuiManager *gui_mgr = NativeEngine::GetInstance()->GetImGuiManager();
+
+  int preferred_width = mgr->GetPreferredWidth();
+  int preferred_height = mgr->GetPreferredHeight();
+  bool bCanSwitch = preferred_width <= mSurfNativeWidth &&
+                    preferred_height <= mSurfNativeHeight;
+  bool bNeedSwitch =
+      preferred_width != mSurfWidth && preferred_height != mSurfHeight;
+  if (bCanSwitch && bNeedSwitch) {
+    ALOGI(
+        "GameMode canSwitch: %d needSwitch: %d, (%f) size: %d x %d, preferred: "
+        "%d x %d",
+        bCanSwitch, bNeedSwitch, gui_mgr->GetFontScale(), mSurfWidth,
+        mSurfHeight, preferred_width, preferred_height);
+    ANativeWindow_setBuffersGeometry(mApp->window, preferred_width,
+                                     preferred_height, 0);
+
+    int width, height;
+    eglQuerySurface(mEglDisplay, mEglSurface, EGL_WIDTH, &width);
+    eglQuerySurface(mEglDisplay, mEglSurface, EGL_HEIGHT, &height);
+
+    ALOGI("GameMode switched (%d, %d) preferred: %d x %d", width, height,
+          preferred_width, preferred_height);
+  }
 
   // how big is the surface? We query every frame because it's cheap, and some
   // strange devices out there change the surface size without calling any
@@ -662,10 +731,26 @@ void NativeEngine::DoFrame() {
     mgr->SetScreenSize(mSurfWidth, mSurfHeight);
     glViewport(0, 0, mSurfWidth, mSurfHeight);
   }
+}
+
+void NativeEngine::DoFrame() {
+  // prepare to render (create context, surfaces, etc, if needed)
+  if (!PrepareToRender()) {
+    // not ready
+    VLOGD("NativeEngine: preparation to render failed.");
+    return;
+  }
+
+  SceneManager *mgr = SceneManager::GetInstance();
+  //  ImGuiManager *guiManager = NativeEngine::GetInstance()->GetImGuiManager();
+
+  CheckGameMode();
+  SwitchToPreferredDisplaySize();
 
   // if this is the first frame, install the demo scene
   if (mIsFirstFrame) {
     mIsFirstFrame = false;
+    ALOGI("GameMode first frame");
     mgr->RequestNewScene(new DemoScene());
   }
 

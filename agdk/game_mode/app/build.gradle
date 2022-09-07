@@ -17,15 +17,15 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 31
-    ndkVersion '23.2.8568313'
+    compileSdkVersion 33
+    ndkVersion '25.0.8775105'
 
     defaultConfig {
-        applicationId 'com.android.example.games.adpf'
-        minSdkVersion 31
-        targetSdkVersion 31
-        versionCode     2
-        versionName    '1.1'
+        applicationId 'com.android.example.games.game_mode_sample'
+        minSdkVersion 33
+        targetSdkVersion 33
+        versionCode     1
+        versionName    '1.0'
         externalNativeBuild {
             cmake {
                 arguments '-DANDROID_STL=c++_shared'
@@ -41,7 +41,6 @@ android {
     }
     externalNativeBuild {
         cmake {
-            version '3.10.2'
             path 'src/main/cpp/CMakeLists.txt'
         }
     }

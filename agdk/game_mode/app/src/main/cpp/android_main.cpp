@@ -16,6 +16,7 @@
 
 #include "NDKHelper.h"
 #include "adpf_manager.h"
+#include "game_mode_manager.h"
 #include "native_engine.h"
 
 extern "C" {
@@ -45,6 +46,7 @@ jint JNI_OnLoad(JavaVM *vm, void * /* reserved */) {
   };
   int rc = env->RegisterNatives(c, methods,
                                 sizeof(methods) / sizeof(JNINativeMethod));
+
   if (rc != JNI_OK) return rc;
 
   return JNI_VERSION_1_6;

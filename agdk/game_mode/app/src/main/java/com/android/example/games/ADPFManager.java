@@ -17,27 +17,13 @@ package com.android.example.games;
 
 import android.content.Context;
 import android.os.Build;
-import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
-import android.os.Bundle;
 import android.os.PowerManager;
-import android.view.View;
-import android.view.WindowManager.LayoutParams;
-
-import android.os.PerformanceHintManager;
-import android.os.PerformanceHintManager.Session;
-
-import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
-import androidx.core.view.WindowInsetsControllerCompat;
-
-import com.google.androidgamesdk.GameActivity;
 
 // A manager class that managers ADPF APIs in Java code.
 // The class managers thermal throttle status listener and other ADPF related tasks.
 public class ADPFManager implements PowerManager.OnThermalStatusChangedListener {
     // Native methods to receive thermal status.
-    @SuppressWarnings("JniMissingFunction")
     protected native void nativeThermalStatusChanged(int i);
     protected native void nativeRegisterThermalStatusListener();
     protected native void nativeUnregisterThermalStatusListener();

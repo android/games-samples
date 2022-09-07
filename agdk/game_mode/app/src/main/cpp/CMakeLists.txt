@@ -112,6 +112,7 @@ add_library(game SHARED
         demo_scene.cpp
         ${game-activity-include}/game-activity/GameActivity.cpp
         ${game-activity-include}/game-text-input/gametextinput.cpp
+        game_mode_manager.cpp
         imgui_manager.cpp
         input_util.cpp
         ${game-activity-include}/game-activity/native_app_glue/android_native_app_glue.c
