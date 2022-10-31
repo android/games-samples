@@ -37,7 +37,7 @@ To switch between the game modes, you can use the Game Dashboard (Available on P
 
 If you are using Game Dashboard and the icon is not showing upon launching the game, you may need to upload your application to Google Play Console and install it via Play Store (you can start an [internal test track](https://support.google.com/googleplay/android-developer/answer/9844679?hl=en) and allowlist your own account to access it)
 
-![Game Dashboard Activity](/docs/gamedashboardactivity.png)
+![Game Dashboard Activity](/agdk/game_mode/docs/gamedashboardactivity.png?raw=true "Game Dashboard Activity")
 
 During development, if you are using device without Game Dashboard and the manufacturer do not provide any way to set Game Mode for each application, you can change the Game Mode status via [adb](https://developer.android.com/studio/command-line/adb)
 
