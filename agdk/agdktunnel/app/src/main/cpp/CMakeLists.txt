@@ -76,10 +76,8 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
      anim.cpp
      ascii_to_geom.cpp
      dialog_scene.cpp
-     game_activity_included.cpp
      game_asset_manager.cpp
      game_asset_manifest.cpp
-     game_text_input_included.cpp
      indexbuf.cpp
      input_util.cpp
      jni_util.cpp
@@ -87,7 +85,6 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
      loading_thread.cpp
      memory_consumer.cpp
      data_loader_machine.cpp
-     native_app_glue_included.c
      native_engine.cpp
      obstacle.cpp
      obstacle_generator.cpp
@@ -121,7 +118,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
      android
      atomic
      EGL
-     game-activity::game-activity
+     game-activity::game-activity_static
      oboe::oboe
      games-controller::paddleboat_static
      games-frame-pacing::swappy_static

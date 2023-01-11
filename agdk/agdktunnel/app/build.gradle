@@ -119,10 +119,10 @@ dependencies {
     implementation "androidx.constraintlayout:constraintlayout:2.0.4"
     implementation 'androidx.fragment:fragment:1.2.5'
     implementation 'com.google.oboe:oboe:1.5.0'
-    implementation "androidx.games:games-frame-pacing:1.10.0"
+    implementation "androidx.games:games-frame-pacing:2.0.0-alpha01"
     implementation "androidx.games:games-performance-tuner:1.5.0"
-    implementation "androidx.games:games-activity:1.1.0"
-    implementation "androidx.games:games-controller:1.1.0"
+    implementation "androidx.games:games-activity:2.0.0-alpha01"
+    implementation "androidx.games:games-controller:2.0.0-alpha01"
     implementation "androidx.games:games-memory-advice:1.0.0-beta01"
 
     // Google Play Games dependencies
