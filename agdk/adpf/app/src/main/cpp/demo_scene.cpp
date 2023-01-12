@@ -29,13 +29,6 @@ extern "C" {
 #include <GLES2/gl2.h>
 }
 
-namespace {
-const ImVec4 TEXTCOLOR_WHITE = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-const ImVec4 TEXTCOLOR_GREY = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
-const ImVec4 TEXTCOLOR_RED = ImVec4(1.0f, 0.2f, 0.2f, 1.0f);
-const ImVec4 TEXTCOLOR_GREEN = ImVec4(0.2f, 1.0f, 0.2f, 1.0f);
-}  // namespace
-
 // String labels that represents thermal states.
 const char* thermal_state_label[] = {
     "THERMAL_STATUS_NONE",     "THERMAL_STATUS_LIGHT",
