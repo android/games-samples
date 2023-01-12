@@ -25,11 +25,6 @@ find_package(games-frame-pacing REQUIRED CONFIG)
 # Retrieve module passes.
 get_target_property(game-activity-include game-activity::game-activity INTERFACE_INCLUDE_DIRECTORIES)
 
-# Set compiler flags. Those options won't be necessary as prefabs will be updated.
-set_source_files_properties(${game-activity-include}/game-activity/native_app_glue/android_native_app_glue.c PROPERTIES COMPILE_FLAGS -Wno-unused-variable)
-set_source_files_properties(${game-activity-include}/game-text-input/gametextinput.cpp PROPERTIES COMPILE_FLAGS -Wno-return-type)
-set_source_files_properties(${game-activity-include}/game-activity/GameActivity.cpp PROPERTIES COMPILE_FLAGS "-Wno-shadow-field -Wno-return-type -Wno-format")
-
 # Export GameActivity_onCreate(),
 # Refer to: https://github.com/android-ndk/ndk/issues/381.
 set(CMAKE_SHARED_LINKER_FLAGS
@@ -110,11 +105,8 @@ add_library(game SHARED
         android_main.cpp
         box_renderer.cpp
         demo_scene.cpp
-        ${game-activity-include}/game-activity/GameActivity.cpp
-        ${game-activity-include}/game-text-input/gametextinput.cpp
         imgui_manager.cpp
         input_util.cpp
-        ${game-activity-include}/game-activity/native_app_glue/android_native_app_glue.c
         native_engine.cpp
         ndk_helper/JNIHelper.cpp
         ndk_helper/Shader.cpp
@@ -146,7 +138,7 @@ target_link_libraries(game
         android
         bullet3
         imgui
-        game-activity::game-activity
+        game-activity::game-activity_static
         games-frame-pacing::swappy_static
         atomic
         EGL
