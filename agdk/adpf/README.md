@@ -28,7 +28,7 @@ required for the performance hint APIs working.
 ### 3rd part libraries
 
 1. Open a terminal and set the working directory to `agdk/third_party/`
-2. `git clone -b v1.80 https://github.com/ocornut/imgui`
+2. `git clone https://github.com/ocornut/imgui`
 3. `git clone https://github.com/bulletphysics/bullet3`
 
 

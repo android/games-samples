@@ -24,7 +24,7 @@ Minimum API level of 33 (Android 13) and supported devices (such as Pixel 6~) ar
 This sample utilizes 3rd party libraries such as IMGui and BulletPhysics. Here are the steps to setup the required libraries:
 
 1. Open a terminal and set the working directory to `agdk/thirdparty/`
-2. Run: `git clone -b v1.80 https://github.com/ocornut/imgui`
+2. Run: `git clone https://github.com/ocornut/imgui`
 3. Run: `git clone https://github.com/bulletphysics/bullet3`
 
 ## Building

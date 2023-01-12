@@ -19,7 +19,7 @@ performed:
 ### ImGui
 
 1. Open a terminal and set the working directory to `agdk/third_party/`
-2. `git clone -b v1.80 https://github.com/ocornut/imgui`
+2. `git clone https://github.com/ocornut/imgui`
 
 ## Building
 
