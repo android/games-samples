@@ -7,6 +7,8 @@ library. The sample:
 * Displays information about connected controllers
 * Provides an interface to test optional extended controller features,
 such as vibration
+* Displays integrated motion sensor data from the device if available
+* Displays hardware keyboard connection status
 
 There are two versions of the sample. One uses NativeActivity, the other
 uses GameActivity.
@@ -24,7 +26,7 @@ performed:
 ## Building
 
 Once the prerequisites are complete, open the `nativeactivity` or
-`gameactivity` directories in Android Studio 4.2 or higher. You can
+`gameactivity` directories in Android Studio 2021.2 or higher. You can
 then build and run the samples from Android Studio.
 
 ## License

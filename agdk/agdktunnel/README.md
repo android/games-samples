@@ -21,7 +21,7 @@ AGDKTunnel can optionally use the following Play libraries:
 
 ## Building
 
-Open the `agdktunnel' directory in Android Studio 4.2 or higher.
+Open the `agdktunnel' directory in Android Studio 2021.2 or higher.
 
 ## Memory Advice
 
