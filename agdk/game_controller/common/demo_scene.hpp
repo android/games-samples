@@ -83,6 +83,9 @@ protected:
     // Current mouse data timestamp delta
     uint64_t mMouseDataTimestampDelta;
 
+    // Which integrated sensors are present
+    Paddleboat_Integrated_Motion_Sensor_Flags mIntegratedSensorFlags;
+
     // Accelerometer data previous timestamp and delta
     uint64_t mPreviousAccelerometerTimestamp;
     uint32_t mAccelerometerTimestampDelta;
@@ -91,11 +94,25 @@ protected:
     uint64_t mPreviousGyroscopeTimestamp;
     uint32_t mGyroscopeTimestampDelta;
 
+    // Integrated accelerometer data previous timestamp and delta
+    uint64_t mPreviousIntegratedAccelerometerTimestamp;
+    uint32_t mIntegratedAccelerometerTimestampDelta;
+
+    // Integrated gyroscope data previous timestamp and delta
+    uint64_t mPreviousIntegratedGyroscopeTimestamp;
+    uint32_t mIntegratedGyroscopeTimestampDelta;
+
     // Most recently reported accelerometer data
     float mAccelerometerData[MOTION_AXIS_COUNT];
 
     // Most recently reported gyroscope data
     float mGyroscopeData[MOTION_AXIS_COUNT];
+
+    // Most recently reported integrated accelerometer data
+    float mIntegratedAccelerometerData[MOTION_AXIS_COUNT];
+
+    // Most recently reported integrated gyroscope data
+    float mIntegratedGyroscopeData[MOTION_AXIS_COUNT];
 
     // Preferences display is active
     bool mPreferencesActive;
@@ -105,6 +122,9 @@ protected:
 
     // Registered controller status callback
     bool mRegisteredStatusCallback;
+
+    // Keyboard is connected
+    bool mKeyboardConnected;
 
     // must be implemented by subclass
     virtual void OnButtonClicked(int buttonId);
@@ -122,9 +142,22 @@ protected:
 
     bool RenderPreferences();
 
+    void RenderKeyboardData();
+
     void RenderMouseData();
 
+    void RenderIntegratedMotionData();
+
+    void RenderMotionTableData(const float *motionData,
+                               const uint32_t accelTimestampDelta,
+                               const uint32_t gyroTimestampDelta,
+                               bool hasAccel, bool hasGyro);
+
     void RenderControllerTabs();
+
+    void RenderIntegratedTab();
+
+    void RenderIntegratedPanel();
 
     void RenderPanel(const int32_t controllerIndex);
 
@@ -161,6 +194,8 @@ public:
 
     void GameControllerStatusEvent(const int32_t controllerIndex,
                                    const Paddleboat_ControllerStatus status);
+
+    void KeyboardStatusEvent(const bool keyboardConnected);
 
     void MotionDataEvent(const int32_t controllerIndex,
                          const Paddleboat_Motion_Data *motionData);
