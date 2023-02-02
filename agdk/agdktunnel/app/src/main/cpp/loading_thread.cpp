@@ -20,6 +20,10 @@
 #include "common.hpp"
 #include "loading_thread.hpp"
 
+namespace {
+
+}
+
 LoadingThread::LoadingThread(AAssetManager *assetManager) {
     mAssetManager = assetManager;
     LaunchThread();
@@ -33,7 +37,8 @@ LoadingThread::~LoadingThread() {
 void
 LoadingThread::StartAssetLoad(const char *assetName, const char *assetPath,
                               const size_t bufferSize, void *loadBuffer,
-                              LoadingCompleteCallback callback, bool useAssetManager) {
+                              LoadingCompleteCallback callback, bool useAssetManager,
+                              void* userData) {
     std::lock_guard<std::mutex> workLock(mWorkMutex);
     LoadingJob *loadingJob = new LoadingJob();
     loadingJob->assetName = assetName;
@@ -42,6 +47,7 @@ LoadingThread::StartAssetLoad(const char *assetName, const char *assetPath,
     loadingJob->loadBuffer = loadBuffer;
     loadingJob->callback = callback;
     loadingJob->useAssetManager = useAssetManager;
+    loadingJob->userData = userData;
     mWorkQueue.emplace(loadingJob);
     mWorkCondition.notify_all();
 }
@@ -85,6 +91,7 @@ void LoadingThread::ThreadMain() {
             loadingCompleteMessage.bytesRead = 0;
             loadingCompleteMessage.loadBuffer = loadingJob->loadBuffer;
             loadingCompleteMessage.loadSuccessful = false;
+            loadingCompleteMessage.userData = loadingJob->userData;
 
             if (loadingJob->useAssetManager) {
                 AAsset *asset = AAssetManager_open(mAssetManager, loadingJob->assetName,

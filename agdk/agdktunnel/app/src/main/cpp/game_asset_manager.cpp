@@ -45,7 +45,7 @@ public:
 
     void LoadGameAssetAsync(const char *assetName, const uint64_t bufferSize,
                             void *loadBuffer, LoadingCompleteCallback callback,
-                            AssetPackInfo *packInfo, bool isInternal);
+                            AssetPackInfo *packInfo, bool isInternal, void* userData);
 
     bool LoadExternalGameAsset(const char *assetName, const uint64_t bufferSize, void *loadBuffer,
                                AssetPackInfo *packInfo);
@@ -217,6 +217,8 @@ uint64_t GameAssetManagerInternals::GetInternalGameAssetSize(const char *assetNa
     if (asset != NULL) {
         assetSize = AAsset_getLength(asset);
         AAsset_close(asset);
+    } else {
+        ALOGI("GameAssetManager: asset %s found to be NULL", assetName);
     }
     return assetSize;
 }
@@ -225,7 +227,8 @@ void
 GameAssetManagerInternals::LoadGameAssetAsync(const char *assetName, const uint64_t bufferSize,
                                               void *loadBuffer, LoadingCompleteCallback callback,
                                               AssetPackInfo *packInfo,
-                                              bool isInternal) {
+                                              bool isInternal,
+                                              void* userData) {
 
     char *assetPath = NULL;
     if (packInfo->mAssetPackBasePath == NULL) {
@@ -239,7 +242,7 @@ GameAssetManagerInternals::LoadGameAssetAsync(const char *assetName, const uint6
         GenerateFullAssetPath(assetName, packInfo, assetPath, MAX_ASSET_PATH_LENGTH);
     }
     mLoadingThread->StartAssetLoad(assetName, assetPath, bufferSize, loadBuffer, callback,
-                                   isInternal);
+                                   isInternal, userData);
 }
 
 bool
@@ -361,10 +364,10 @@ bool GameAssetManagerInternals::RequestAssetPackDownload(const char *assetPackNa
 
     if (success) {
         ChangeAssetPackStatus(GetAssetPackByName(assetPackName),
-                              GameAssetManager::GAMEASSET_DOWNLOADING);
+                GameAssetManager::GAMEASSET_DOWNLOADING);
     } else {
         SetAssetPackErrorStatus(assetPackErrorCode, GetAssetPackByName(assetPackName),
-                                "GameAssetManager: requestDownload");
+                "GameAssetManager: requestDownload");
     }
     return success;
 }
@@ -720,7 +723,8 @@ GameAssetManager::LoadGameAsset(const char *assetName, const size_t bufferSize, 
 bool
 GameAssetManager::LoadGameAssetAsync(const char *assetName, const size_t bufferSize,
                                      void *loadBuffer,
-                                     LoadingCompleteCallback callback) {
+                                     LoadingCompleteCallback callback,
+                                     void* userData) {
     bool startSuccess = false;
 
     if (assetName != NULL) {
@@ -741,7 +745,7 @@ GameAssetManager::LoadGameAssetAsync(const char *assetName, const size_t bufferS
                 }
 #endif
                 mInternals->LoadGameAssetAsync(assetName, bufferSize, loadBuffer, callback,
-                                               packInfo, isInternal);
+                                               packInfo, isInternal, userData);
                 startSuccess = true;
             }
         }

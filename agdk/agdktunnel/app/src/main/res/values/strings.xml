@@ -17,5 +17,7 @@
 
 <resources>
     <string name="app_name">AGDKTunnel</string>
+    <!-- Replace 0000000000 with your game’s project id. -->
+    <string translatable="false"  name="game_services_project_id"> 0000000000 </string>
 </resources>
 

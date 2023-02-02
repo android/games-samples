@@ -29,7 +29,7 @@ public class PurchaseController : MonoBehaviour
         const float currentPrice = 0.01f;
         const string priceString = "$0.01";
         var uiPriceChangeController = FindObjectOfType<UIPriceChangeController>();
-        if (uiPriceChangeController != null) 
+        if (uiPriceChangeController != null)
         {
             foreach (var coin in CoinList.List)
             {
@@ -53,7 +53,7 @@ public class PurchaseController : MonoBehaviour
             }
         }
     }
-    
+
     public static void BuyProductId(string productId)
     {
         // Unlock the appropriate content.
@@ -77,7 +77,7 @@ using UnityEngine.Purchasing.Security;
 
 /// <summary>
 /// Controller for the dollar item purchase flow in the game.
-/// It uses Unity IAP and the Google Play Billing Library plugin 
+/// It uses Unity IAP and the Google Play Billing Library plugin
 /// to do purchasing, order verification, and order restore.
 /// </summary>
 public class PurchaseController : MonoBehaviour, IStoreListener
@@ -87,7 +87,7 @@ public class PurchaseController : MonoBehaviour, IStoreListener
     private static IGooglePlayStoreExtensions _playStoreExtensions;
     private static GameManager _gameManager;
     private static UIPriceChangeController _uiPriceChangeController;
-    
+
     private static bool IsInitialized()
     {
         // Only say we are initialized if both the Purchasing references are set.
@@ -164,7 +164,7 @@ public class PurchaseController : MonoBehaviour, IStoreListener
             if (product != null && product.availableToPurchase)
             {
                 // Bring up the 'Purchasing' modal message
-                _gameManager.SetPurchasingMessageActive(true);
+                _gameManager.SetWaitMessageActive(true);
 
                 Debug.Log(string.Format("PurchaseController: Purchasing product asynchronously: '{0}'", product.definition.id));
                 // ... buy the product. Expect a response either through ProcessPurchase or OnPurchaseFailed
@@ -221,7 +221,7 @@ public class PurchaseController : MonoBehaviour, IStoreListener
         // Set play store extensions.
         _playStoreExtensions =
             _storeExtensionProvider.GetExtension<IGooglePlayStoreExtensions>();
-        
+
         CheckSubscriptionsAvailabilityBasedOnReceipt(controller);
     }
 
@@ -238,7 +238,7 @@ public class PurchaseController : MonoBehaviour, IStoreListener
         // This is a very basic loop through all the items, updating the
         // default price information with the current localized price
         // supplied by the store.
-        foreach (var product in _storeController.products.all) 
+        foreach (var product in _storeController.products.all)
         {
             float currentPrice = Convert.ToSingle(product.metadata.localizedPrice);
             string productId = product.definition.storeSpecificId;
@@ -323,7 +323,7 @@ public class PurchaseController : MonoBehaviour, IStoreListener
 
     public PurchaseProcessingResult ProcessPurchase(PurchaseEventArgs args)
     {
-        
+
         Debug.Log($"PurchaseController: ProcessPurchase: PASS. Product: '{args.purchasedProduct.definition.id}'");
         if (args.purchasedProduct.hasReceipt)
         {
@@ -337,7 +337,7 @@ public class PurchaseController : MonoBehaviour, IStoreListener
         Debug.Log("Calling VerifyAndSaveUserPurchase");
         NetworkRequestController.VerifyAndSaveUserPurchase(args.purchasedProduct);
         // Make sure the 'Purchasing' modal message is dismissed
-        _gameManager.SetPurchasingMessageActive(false);
+        _gameManager.SetWaitMessageActive(false);
         return PurchaseProcessingResult.Pending;
 #else
         if (ClientSideReceiptValidation(args.purchasedProduct.receipt))
@@ -347,7 +347,7 @@ public class PurchaseController : MonoBehaviour, IStoreListener
         }
 
         // Make sure the 'Purchasing' modal message is dismissed
-        _gameManager.SetPurchasingMessageActive(false);
+        _gameManager.SetWaitMessageActive(false);
 
         // Return a flag indicating whether this product has completely been received, or if the application needs
         // to be reminded of this purchase at next app launch. Use PurchaseProcessingResult.Pending when still
@@ -422,8 +422,8 @@ public class PurchaseController : MonoBehaviour, IStoreListener
     public void OnPurchaseFailed(Product product, PurchaseFailureReason failureReason)
     {
         // Make sure the 'Purchasing' modal message is dismissed
-        _gameManager.SetPurchasingMessageActive(false);
-            
+        _gameManager.SetWaitMessageActive(false);
+
         // A product purchase attempt did not succeed. Check failureReason for more detail. Consider sharing
         // this reason with the user to guide their troubleshooting actions.
         Debug.Log(

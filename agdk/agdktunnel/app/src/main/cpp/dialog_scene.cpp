@@ -27,8 +27,8 @@
 #define BUTTON_SIZE BUTTON_WIDTH, BUTTON_HEIGHT
 #define BUTTON_COLOR 0.0f, 1.0f, 0.0f
 #define BUTTON_DISCOURAGE_COLOR 0.0f, 0.4f, 0.0f
-#define LEFT_X (center * 2 * 0.33f)
-#define RIGHT_X (center * 2 * 0.67f)
+#define LEFT_X center * 2 * 0.33f
+#define RIGHT_X center * 2 * 0.67f
 #define TEXT_Y 0.6f
 
 DialogScene::DialogScene() {
@@ -36,14 +36,15 @@ DialogScene::DialogScene() {
     mTextBoxId = -1;
     mLeftButtonAction = mRightButtonAction = ACTION_RETURN;
     mButtonY = 0.5f;
-    mText = mLeftButtonText = mRightButtonText = NULL;
+    mLeftButtonText = mRightButtonText = NULL;
 }
 
 DialogScene::~DialogScene() {
 }
 
 void DialogScene::CreateWidgetsSetText() {
-    const char *text = mText;
+    std::lock_guard<std::mutex> lock(mTextMutex);
+    const char *text = mText.c_str();
     float center = 0.5f * SceneManager::GetInstance()->GetScreenAspect();
 
     if (mTextBoxId < 0) {
@@ -114,7 +115,7 @@ void DialogScene::RenderBackground() {
 
 bool DialogScene::OnBackKeyPressed() {
     SceneManager *mgr = SceneManager::GetInstance();
-    mgr->RequestNewScene(new WelcomeScene());
+    mgr->RequestNewScene(new LoaderScene());
     return true;
 }
 
@@ -132,19 +133,19 @@ void DialogScene::OnButtonClicked(int id) {
 
     switch (action) {
         case ACTION_RETURN:
-            mgr->RequestNewScene(new WelcomeScene());
+            mgr->RequestNewScene(new LoaderScene());
             break;
         case ACTION_SIGN_IN:
             // note: we can't start playing directly because PlayScene expects the cloud
             // results to be ready when it constructs itself; therefore, WelcomeScene
             // has to make sure of that. So we can't jump directly to PlayScene from here.
-            mgr->RequestNewScene(new WelcomeScene());
+            mgr->RequestNewScene(new LoaderScene());
             break;
         case ACTION_PLAY_WITHOUT_SIGNIN:
-            mgr->RequestNewScene(new PlayScene());
+            mgr->RequestNewScene(new PlayScene(/*savedCheckpoint=*/ 0));
             break;
         case ACTION_SIGN_OUT:
-            mgr->RequestNewScene(new WelcomeScene());
+            mgr->RequestNewScene(new LoaderScene());
             break;
         default:
             // do nothing.

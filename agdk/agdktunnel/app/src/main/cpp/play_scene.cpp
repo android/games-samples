@@ -59,17 +59,23 @@ static const char *TONE_BONUS[] = {
         "d70 f550. f650. f750. f850."
 };
 
-PlayScene::PlayScene() : Scene() {
+PlayScene::PlayScene(int savedLevel) : Scene() {
+    mSavedLevel = (savedLevel / LEVELS_PER_CHECKPOINT) * LEVELS_PER_CHECKPOINT;
+    ALOGI("Normalized check-point: level %d", mSavedLevel);
     mOurShader = NULL;
     mTrivialShader = NULL;
     mTextRenderer = NULL;
     mShapeRenderer = NULL;
+#ifdef TOUCH_INDICATOR_MODE
+    mRectRenderer = NULL;
+#endif // TOUCH_INDICATOR_MODE
     mShipSteerX = mShipSteerZ = 0.0f;
     mFilteredSteerX = mFilteredSteerZ = 0.0f;
+    mMotionKeyBitmask = 0;
 
+    mPlayerPos = glm::vec3(0.0f, 0.0f, 0.0f); // center
     mPlayerDir = glm::vec3(0.0f, 1.0f, 0.0f); // forward
     mDifficulty = 0;
-    mUseCloudSave = false;
 
     mCubeGeom = NULL;
     mTunnelGeom = NULL;
@@ -86,10 +92,11 @@ PlayScene::PlayScene() : Scene() {
     }
 
     memset(mMenuItemText, 0, sizeof(mMenuItemText));
-    mMenuItemText[MENUITEM_UNPAUSE] = S_UNPAUSE;
-    mMenuItemText[MENUITEM_QUIT] = S_QUIT;
-    mMenuItemText[MENUITEM_START_OVER] = S_START_OVER;
-    mMenuItemText[MENUITEM_RESUME] = S_RESUME;
+    mMenuItemText[MENUITEM_UNPAUSE] = (char *)S_UNPAUSE;
+    mMenuItemText[MENUITEM_QUIT] = (char *)S_QUIT;
+    mMenuItemText[MENUITEM_START_OVER] = (char *)S_START_OVER;
+    mMenuItemText[MENUITEM_RESUME] = (char *)S_RESUME;
+    mMenuItemText[MENUITEM_LOADING] = new char[64];
 
     memset(mMenuItems, 0, sizeof(mMenuItems));
     mMenuItemCount = 0;
@@ -120,109 +127,15 @@ PlayScene::PlayScene() : Scene() {
 
     mCheckpointSignPending = false;
 
+    mActiveWallTextureCount = 0;
+
     SetScore(0);
 
-    /*
-     * where do I put the program???
-     */
-    const char *savePath = "/mnt/sdcard/com.google.example.games.tunnel.fix";
-    int len = strlen(savePath) + strlen(SAVE_FILE_NAME) + 3;
-    mSaveFileName = new char[len];
-    strcpy(mSaveFileName, savePath);
-    strcat(mSaveFileName, "/");
-    strcat(mSaveFileName, SAVE_FILE_NAME);
-    ALOGI("Save file name: %s", mSaveFileName);
-    LoadProgress();
-
-    if (mSavedCheckpoint) {
+    if (mSavedLevel > 0) {
         // start with the menu that asks whether or not to start from the saved level
         // or start over from scratch
         ShowMenu(MENU_LEVEL);
     }
-}
-
-void PlayScene::LoadProgress() {
-    // try to load save file
-    mSavedCheckpoint = 0;
-
-    ALOGI("Attempting to load: %s", mSaveFileName);
-    FILE *f = fopen(mSaveFileName, "r");
-    bool hasLocalFile = false;
-    if (f) {
-        hasLocalFile = true;
-        ALOGI("File found. Loading data.");
-        if (1 != fscanf(f, "v1 %d", &mSavedCheckpoint)) {
-            ALOGE("Error parsing save file.");
-            mSavedCheckpoint = 0;
-        } else {
-            ALOGI("Loaded. Level = %d", mSavedCheckpoint);
-            mSavedCheckpoint = (mSavedCheckpoint / LEVELS_PER_CHECKPOINT) * LEVELS_PER_CHECKPOINT;
-            ALOGI("Normalized check-point: level %d", mSavedCheckpoint);
-        }
-        fclose(f);
-    } else {
-        ALOGI("Save file not present.");
-    }
-
-    // check cloud save.
-    ALOGI("Checking cloud save data.");
-    if (true) {
-        ALOGI("No cloud save available because we are not signed in.");
-        mUseCloudSave = false;
-    }
-
-    if (mUseCloudSave && hasLocalFile) {
-        // since we're using cloud save, we can delete the local progress file
-        ALOGI("Since we're using cloud save, deleting local progress file %s", mSaveFileName);
-        if (0 != remove(mSaveFileName)) {
-            ALOGW("WARNING: failed to remove local progress file.");
-        }
-    }
-
-    ALOGI("Final decision on starting level: %d", mSavedCheckpoint);
-    ALOGI("Final decision on whether to use cloud: %s", mUseCloudSave ? "USE CLOUD" :
-                                                        "DO NOT USE CLOUD (failed)");
-}
-
-void PlayScene::WriteSaveFile(int level) {
-    ALOGI("Saving progress (level %d) to file: %s", level, mSaveFileName);
-    FILE *f = fopen(mSaveFileName, "w");
-    if (!f) {
-        ALOGE("Error writing to save game file.");
-        return;
-    }
-    fprintf(f, "v1 %d", level);
-    fclose(f);
-    ALOGI("Save file written.");
-}
-
-void PlayScene::SaveProgress() {
-    if (mDifficulty <= mSavedCheckpoint) {
-        // nothing to do
-        ALOGI("No need to save level, current = %d, saved = %d", mDifficulty, mSavedCheckpoint);
-        return;
-    } else if (!IsCheckpointLevel()) {
-        ALOGI("Current level %d is not a checkpoint level. Nothing to save.", mDifficulty);
-        return;
-    }
-
-    mSavedCheckpoint = mDifficulty;
-
-    // Save state locally or to the cloud, depending on configuration:
-    if (mUseCloudSave) {
-        ALOGI("Saving progress to the cloud: level %d", mDifficulty);
-        /*
-         * No where to save
-         */
-    } else {
-        ALOGI("Saving progress to LOCAL FILE: level %d", mDifficulty);
-        WriteSaveFile(mDifficulty);
-    }
-
-    // Show a "checkpoint saved" sign when possible. We don't show it right away
-    // because will already be showing the "Level N" sign, so we just set this flag
-    // to remind us to show it right after.
-    mCheckpointSignPending = true;
 }
 
 static unsigned char *_gen_wall_texture() {
@@ -289,11 +202,17 @@ void PlayScene::OnStartGraphics() {
     // create text renderer and shape renderer
     mTextRenderer = new TextRenderer(mTrivialShader);
     mShapeRenderer = new ShapeRenderer(mTrivialShader);
+#ifdef TOUCH_INDICATOR_MODE
+    mRectRenderer = new ShapeRenderer(mTrivialShader);
+#endif // TOUCH_INDICATOR_MODE
 }
 
 void PlayScene::OnKillGraphics() {
     CleanUp(&mTextRenderer);
     CleanUp(&mShapeRenderer);
+#ifdef TOUCH_INDICATOR_MODE
+    CleanUp(&mRectRenderer);
+#endif // TOUCH_INDICATOR_MODE
     CleanUp(&mOurShader);
     CleanUp(&mTrivialShader);
     CleanUp(&mTunnelGeom);
@@ -301,6 +220,7 @@ void PlayScene::OnKillGraphics() {
     for (int i = 0; i < mActiveWallTextureCount; ++i) {
         CleanUp(&mWallTextures[i]);
     }
+    mActiveWallTextureCount = 0;
     CleanUp(&mLifeGeom);
 }
 
@@ -326,6 +246,20 @@ void PlayScene::DoFrame() {
     RenderObstacles();
 
     if (mMenu) {
+        if (mMenu == MENU_LOADING) {
+            DataLoaderStateMachine *dataStateMachine =
+                    NativeEngine::GetInstance()->GetDataStateMachine();
+            if (dataStateMachine->isLoadingDataCompleted()) {
+                // resume from saved level
+                HandleMenu(mMenu);
+            } else {
+                int loadingPercentage = dataStateMachine->getStepsCompleted()
+                        * 100 / dataStateMachine->getTotalSteps();
+                snprintf(mMenuItemText[MENUITEM_LOADING], 64, "%s... %d%%",
+                        S_LOADING, loadingPercentage);
+            }
+        }
+
         RenderMenu();
         // nothing more to do
         return;
@@ -368,6 +302,11 @@ void PlayScene::DoFrame() {
     }
     mPlayerSpeed = Approach(mPlayerSpeed, targetSpeed, deltaT * accel);
 
+    // apply movement if key is pressed
+    if (mSteering == STEERING_KEY) {
+        OnMovementKey();
+    }
+
     // apply noise filter on steering
     mFilteredSteerX = (mFilteredSteerX * (NOISE_FILTER_SAMPLES - 1) + mShipSteerX)
                       / NOISE_FILTER_SAMPLES;
@@ -385,6 +324,10 @@ void PlayScene::DoFrame() {
             // joystick steering
             mPlayerPos.x += deltaT * steerX;
             mPlayerPos.z += deltaT * steerZ;
+        } else if (mSteering == STEERING_KEY) {
+            // keyboard steering
+            mPlayerPos.x += deltaT * steerX;
+            mPlayerPos.z += deltaT * steerZ;
         }
     }
     mPlayerPos.y += deltaT * mPlayerSpeed;
@@ -399,8 +342,10 @@ void PlayScene::DoFrame() {
     // generate more obstacles!
     GenObstacles();
 
+#ifndef GHOST_MODE
     // detect collisions
     DetectCollisions(previousY);
+#endif // GHOST_MODE
 
     // update ship's roll speed according to level
     static float roll_speeds[] = ROLL_SPEEDS;
@@ -416,8 +361,7 @@ void PlayScene::DoFrame() {
 
     // did the game expire?
     if (mLives <= 0 && Clock() > mGameOverExpire) {
-        SceneManager::GetInstance()->RequestNewScene(new WelcomeScene());
-
+        SceneManager::GetInstance()->RequestNewScene(new LoaderScene());
     }
 
     // produce the ambient sound
@@ -557,7 +501,7 @@ void PlayScene::ShiftIfNeeded() {
     }
 }
 
-void PlayScene::UpdateMenuSelFromTouch(float x, float y) {
+void PlayScene::UpdateMenuSelFromTouch(float /*x*/, float y) {
     float sh = SceneManager::GetInstance()->GetScreenHeight();
     int item = (int) floor((y / sh) * (mMenuItemCount));
     mMenuSel = Clamp(item, 0, mMenuItemCount - 1);
@@ -629,6 +573,10 @@ void PlayScene::RenderHUD() {
     mTextRenderer->SetFontScale(SCORE_FONT_SCALE);
     mTextRenderer->RenderText(score_str, SCORE_POS_X, SCORE_POS_Y);
 
+    // Render memory statistics
+    NativeEngine::GetInstance()->GetMemoryConsumer()->RenderMemoryStatistics(
+            mTextRenderer);
+
     // render current sign
     if (mSignText) {
         modelMat = glm::mat4(1.0f);
@@ -658,6 +606,15 @@ void PlayScene::RenderHUD() {
         mTrivialShader->RenderSimpleGeom(&mat, mLifeGeom);
         modelMat = glm::translate(modelMat, glm::vec3(LIFE_SPACING_X, 0.0f, 0.0f));
     }
+
+#ifdef TOUCH_INDICATOR_MODE
+    if (mSteering == STEERING_TOUCH) {
+        mRectRenderer->SetColor(1.0f, 1.0f, 0.0f);
+    } else {
+        mRectRenderer->SetColor(0.0f, 0.0f, 1.0f);
+    }
+    mRectRenderer->RenderRect(0.18f, 0.18f, 0.3f, 0.3f);
+#endif // TOUCH_INDICATOR_MODE
 
     glEnable(GL_DEPTH_TEST);
 }
@@ -703,6 +660,7 @@ void PlayScene::DetectCollisions(float previousY) {
     int row = o->GetRowAt(mPlayerPos.z);
 
     if (o->grid[col][row]) {
+#ifndef GOD_MODE
         // crashed against obstacle
         mLives--;
         if (mLives > 0) {
@@ -720,7 +678,7 @@ void PlayScene::DetectCollisions(float previousY) {
         mBlinkingHeartExpire = Clock() + BLINKING_HEART_DURATION;
 
         mLastCrashSection = mFirstSection;
-
+#endif // GOD_MODE
     } else if (row == o->bonusRow && col == o->bonusCol) {
         ShowSign(S_GOT_BONUS, SIGN_DURATION_BONUS);
         o->DeleteBonus();
@@ -740,7 +698,12 @@ void PlayScene::DetectCollisions(float previousY) {
             SfxMan::GetInstance()->PlayTone(TONE_LEVEL_UP);
 
             // save progress, if needed
-            SaveProgress();
+            if (NativeEngine::GetInstance()->SaveProgress(mDifficulty)) {
+                // Show a "checkpoint saved" sign when possible. We don't show it right away
+                // because will already be showing the "Level N" sign, so we just set this flag
+                // to remind us to show it right after.
+                mCheckpointSignPending = true;
+            }
         } else {
             int tone = (score % SCORE_PER_LEVEL) / BONUS_POINTS - 1;
             tone = tone < 0 ? 0 :
@@ -806,7 +769,68 @@ void PlayScene::OnJoy(float joyX, float joyY) {
     }
 }
 
+void PlayScene::OnMovementKey() {
+    float deltaX = 0, deltaY = 0;
+    if (mMotionKeyBitmask & UP_MOVEMENT_BIT) {
+        deltaY -= KEY_CONTROL_VERTICAL_SENSIVITY;
+    }
+    if (mMotionKeyBitmask & LEFT_MOVEMENT_BIT) {
+        deltaX -= KEY_CONTROL_HORIZONTAL_SENSIVITY;
+    }
+    if (mMotionKeyBitmask & DOWN_MOVEMENT_BIT) {
+        deltaY += KEY_CONTROL_VERTICAL_SENSIVITY;
+    }
+    if (mMotionKeyBitmask & RIGHT_MOVEMENT_BIT) {
+        deltaX += KEY_CONTROL_HORIZONTAL_SENSIVITY;
+    }
+
+    float rotatedDx = cos(-mRollAngle) * deltaX - sin(-mRollAngle) * deltaY;
+    float rotatedDy = sin(-mRollAngle) * deltaX + cos(-mRollAngle) * deltaY;
+    mShipSteerX = rotatedDx;
+    mShipSteerZ = -rotatedDy;
+
+    // If player is going faster than the reference speed, PLAYER_SPEED, adjust it.
+    // This makes the steering react faster as the ship accelerates in more difficult
+    // levels.
+    if (mPlayerSpeed > PLAYER_SPEED) {
+        mShipSteerX *= mPlayerSpeed / PLAYER_SPEED;
+        mShipSteerZ *= mPlayerSpeed / PLAYER_SPEED;
+    }
+}
+
+void PlayScene::OnKeyUp(int keyCode) {
+    if (isMovementKey(keyCode) && mSteering == STEERING_KEY) {
+        if (keyCode == KEYCODE_W) {
+            mMotionKeyBitmask &= ~UP_MOVEMENT_BIT;
+        } else if (keyCode == KEYCODE_A) {
+            mMotionKeyBitmask &= ~LEFT_MOVEMENT_BIT;
+        } else if (keyCode == KEYCODE_S) {
+            mMotionKeyBitmask &= ~DOWN_MOVEMENT_BIT;
+        } else if (keyCode == KEYCODE_D) {
+            mMotionKeyBitmask &= ~RIGHT_MOVEMENT_BIT;
+        }
+
+        if (!mMotionKeyBitmask) {
+            mSteering = STEERING_NONE;
+        }
+    }
+}
+
 void PlayScene::OnKeyDown(int keyCode) {
+    if (isMovementKey(keyCode)) {
+        mSteering = STEERING_KEY;
+
+        if (keyCode == KEYCODE_W) {
+            mMotionKeyBitmask |= UP_MOVEMENT_BIT;
+        } else if (keyCode == KEYCODE_A) {
+            mMotionKeyBitmask |= LEFT_MOVEMENT_BIT;
+        } else if (keyCode == KEYCODE_S) {
+            mMotionKeyBitmask |= DOWN_MOVEMENT_BIT;
+        } else if (keyCode == KEYCODE_D) {
+            mMotionKeyBitmask |= RIGHT_MOVEMENT_BIT;
+        }
+    }
+
     if (mMenu) {
         if (keyCode == OURKEY_UP) {
             mMenuSel = mMenuSel > 0 ? mMenuSel - 1 : mMenuSel;
@@ -832,6 +856,10 @@ void PlayScene::ShowMenu(int menu) {
             mMenuItems[1] = MENUITEM_START_OVER;
             mMenuItemCount = 2;
             break;
+        case MENU_LOADING:
+            mMenuItems[0] = MENUITEM_LOADING;
+            mMenuItemCount = 1;
+            break;
         default:
             // since we're leaving the menu, reset the frame clock to avoid a skip
             // in the animation
@@ -842,14 +870,14 @@ void PlayScene::ShowMenu(int menu) {
 void PlayScene::HandleMenu(int menuItem) {
     switch (menuItem) {
         case MENUITEM_QUIT:
-            SceneManager::GetInstance()->RequestNewScene(new WelcomeScene());
+            SceneManager::GetInstance()->RequestNewScene(new LoaderScene());
             break;
         case MENUITEM_UNPAUSE:
             ShowMenu(MENU_NONE);
             break;
         case MENUITEM_RESUME:
             // resume from saved level
-            mDifficulty = (mSavedCheckpoint / LEVELS_PER_CHECKPOINT) * LEVELS_PER_CHECKPOINT;
+            mDifficulty = (mSavedLevel / LEVELS_PER_CHECKPOINT) * LEVELS_PER_CHECKPOINT;
             SetScore(SCORE_PER_LEVEL * mDifficulty);
             mObstacleGen.SetDifficulty(mDifficulty);
             ShowLevelSign();
@@ -857,7 +885,22 @@ void PlayScene::HandleMenu(int menuItem) {
             break;
         case MENUITEM_START_OVER:
             // start over from scratch
+            NativeEngine::GetInstance()->SaveProgress(/* level = */0);
             ShowMenu(MENU_NONE);
+            break;
+        case MENUITEM_LOADING:
+            DataLoaderStateMachine *dataStateMachine =
+                    NativeEngine::GetInstance()->GetDataStateMachine();
+            mSavedLevel = (dataStateMachine->getLevelLoaded() / LEVELS_PER_CHECKPOINT)
+                          * LEVELS_PER_CHECKPOINT;
+
+            if (mSavedLevel > mDifficulty) {
+                mDifficulty = mSavedLevel;
+                SetScore(SCORE_PER_LEVEL * mDifficulty);
+                mObstacleGen.SetDifficulty(mDifficulty);
+            }
+            ShowLevelSign();
+            ShowMenu(MENU_PAUSE);
             break;
     }
 }
@@ -877,7 +920,14 @@ void PlayScene::OnPause() {
     }
 }
 
-void PlayScene::OnScreenResized(int width, int height) {
+void PlayScene::OnResume() {
+    if (NativeEngine::GetInstance()->IsCloudSaveEnabled() &&
+            (mMenu == MENU_NONE || mMenu == MENU_PAUSE)) {
+        ShowMenu(MENU_LOADING);
+    }
+}
+
+void PlayScene::OnScreenResized(int /*width*/, int /*height*/) {
     UpdateProjectionMatrix();
 }
 

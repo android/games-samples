@@ -1,18 +1,17 @@
 # ADPF (Android Device Performance Framework) sample
 
-This is a basic sample app that demonstrates use of the ADPF API.
-With ADPF APIs, an application can
-- Monitor device's thermal throttling status and would be able to
-  change it's task load dynamically based on the status.
-  [a relative link](./src/main/cpp/adpf_manager.cpp#L88)
-- Supply the system a performance hint of the process so that
-  the system can allocate applications threads efficiently.
-  [a relative link](./src/main/cpp/adpf_manager.cpp#L175)
+This sample demonstrates use of the [Adaptive performance APIs](https://developer.android.com/games/optimize/adpf).
+
+Using these APIs, a game can:
+
+- Monitor the device's thermal throttling status and [dynamically change its workload in response
+- Give the OS performance hints about critical thead workloads to permit scheduling optimization
 
 The sample:
 
-* Displays device's thermal status using ADPF API.
-* Dynamically change workload based on the API's hint.
+- Displays the device's thermal status using the Thermal API.
+- Reduces the target framerate when the device thermal state changes
+- Provides performance hints about the sample's primary thread work
 
 ## Prerequisites
 
@@ -20,26 +19,32 @@ Before building in Android Studio the following prerequisites must be
 performed:
 
 ## Requirements
-Minimum API level of 30 (R) and supported devices (such as Pixel 4~) are
-required for the thermal headroom APIs working.
-Also minimum API level of 31 (S) and supported devices (such as Pixel 6~) are
-required for the performance hint APIs working.
 
-### 3rd part libraries
+### Thermal API
+
+- Minimum API level of 30 (Android R) and a supported device (such as Pixel 4~)
+
+### Performance Hint Manager API
+
+- Minimum API level of 31 (Android S) and a supported device (such as Pixel 6~)
+
+### 3rd party libraries
 
 1. Open a terminal and set the working directory to `agdk/third_party/`
-2. `git clone -b v1.80 https://github.com/ocornut/imgui`
+2. `git clone https://github.com/ocornut/imgui`
 3. `git clone https://github.com/bulletphysics/bullet3`
-
 
 ## Building
 
-Once the prerequisites are complete, open the folder in Android Studio 4.2
+Once the prerequisites are complete, open the folder in Android Studio 2021.2
 or higher. You can then build and run the samples from Android Studio.
 
 ## Reference
+
 https://developer.android.com/reference/android/os/PerformanceHintManager
+
 https://developer.android.com/reference/android/os/PowerManager
+
 https://developer.android.com/ndk/reference/group/thermal
 
 ## License

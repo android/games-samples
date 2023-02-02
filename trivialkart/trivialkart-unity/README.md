@@ -15,7 +15,8 @@ and Play license status
 ## Pre-requisites
 
 * Unity 2020 LTS or higher with Android build support (Play plugins are
-compatible with earlier version of Unity, but this project is built using 2020)
+compatible with earlier versions of Unity, but the TrivialKart project is
+built using 2020 LTS)
 
 ### Pre-requsities for enabling Google Play features
 
@@ -26,7 +27,7 @@ compatible with earlier version of Unity, but this project is built using 2020)
 Open the project in Unity and open the `TrivialKartScene` file
 from `Assets/Scenes`.
 
-By default, in-app purchase integration is disabled. The scene be run in-editor
+By default, Google Play featues are disabled. The scene be run in-editor
 or exported to device and run. With in-app purchase integration disabled, all
 prices are placeholder and purchasing in-game items automatically succeeds.
 
@@ -80,7 +81,11 @@ Unity IAP available on the Unity Asset Store is not supported.
 
 ### Setting up receipt obfuscation
 
-1. Select `Window -> Unity IAP -> Receipt Validation Obfuscation` from the Unity
+**NOTE** If the Services menu does not appear in your Unity menu bar, try
+uninstalling and reinstalling the In App Purchasing package from the
+Unity Package Manager. 
+
+1. Select `Services -> Unity IAP -> Receipt Validation Obfuscation` from the Unity
 menu bar.
 2. Paste the Base64-encoded public key you retrieved from the Google Play
 Developer console into the text box.
@@ -187,6 +192,16 @@ from its [GitHub releases page](https://github.com/playgameservices/play-games-p
 3. Install the `.unitypackage` file located in the `current-build` directory of
 the extracted archive using `Assets > Import Package > Custom Package`.
 
+### Generate Google Play Games constants
+
+1. From the Play Console entry for your app, select `Play Games Services -> Setup and management -> Achievements`.
+2. Find the **Get resources** button and click it.
+3. Copy the text from the `Android (XML)` tab.
+4. From the Unity menu bar, select `Window -> Google Play Games -> Setup -> Android Setup...`.
+5. Paste the resource text into the **Resources Definition** field.
+6. Click the **Setup** button
+
+
 ### Configure Proguard
 
 1. Go to **File > Build Settings > Player Settings** and click **Publishing Settings** section.
@@ -286,11 +301,13 @@ sample expects the raw verdict json.
 *Note:* You can only enable x86 support when using the IL2CPP Scripting Backend. This can be done from `Player Settings > Configuration > Scripting Backend > IL2CPP`.
 2. Disable unsupported android features and permissions. This can be done by adding custom build logic to your `AndroidManifest.xml`. To do this, open `Player Settings > Publishing Settings` and find the `Build` section. Then, enable the `Custom Main Manifest` or corresponding manifest for the feature or permission you need to disable.
 At this point, you can find that manifest and add `android:required="false"` to the `<uses-feature>` or `uses-permission` declaration for all features that Google Play Games does not support.
-For more information, see the [unity documention on Android Manifests](https://docs.unity3d.com/Manual/android-manifest.html).
-You should also disable any lines requesting permissions in your unity code. See the unity documentation on [requestion permissions](https://docs.unity3d.com/Manual/android-RequestingPermissions.html) for more details.
+For more information, see the [Unity documention on Android Manifests](https://docs.unity3d.com/Manual/android-manifest.html).
+You should also disable any lines requesting permissions in your Unity code. See the Unity documentation on [requestion permissions](https://docs.unity3d.com/Manual/android-RequestingPermissions.html) for more details.
 3. Install the Input SDK Unity package using `Assets > Import Package > Custom Package`.
 4. From the Unity menu bar, select
-`TrivialKart > BuildOptions > Build for Google Play Games PC`.
+`TrivialKart > BuildOptions > Build for Google Play Games PC` to enable the
+appropriate scripting defines.
+5. Create a build using the normal Unity build process.
 
 ## Support
 

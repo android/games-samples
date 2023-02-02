@@ -20,9 +20,14 @@
 #include "engine.hpp"
 #include "ui_scene.hpp"
 
+#define DATA_LOAD_DELTA 0.5f
+
 /* Loader Scene, displays load progress at startup */
 class LoaderScene : public UiScene {
-protected:
+ private:
+  class TextureLoader;
+
+ protected:
     // text to be shown
     const char *mLoadingText;
 
@@ -34,9 +39,13 @@ protected:
 
     uint64_t mStartTime;
 
+    std::unique_ptr<TextureLoader> mTextureLoader;
+
     virtual void OnCreateWidgets() override;
 
     virtual void RenderBackground() override;
+
+    DataLoaderStateMachine *mDataStateMachine;
 
 public:
 
@@ -51,7 +60,6 @@ public:
         return this;
     }
 
-private:
 };
 
 #endif

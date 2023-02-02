@@ -1,0 +1,1990 @@
+[gd_scene load_steps=79 format=2]
+
+[ext_resource path="res://GraphicAssets/Fonts/kenpixel.tres" type="DynamicFont" id=1]
+[ext_resource path="res://GraphicAssets/UI/Buttons/triangle.png" type="Texture" id=2]
+[ext_resource path="res://GraphicAssets/UI/Coins/coinBar.png" type="Texture" id=3]
+[ext_resource path="res://GraphicAssets/UI/Coins/coinGold_small.png" type="Texture" id=4]
+[ext_resource path="res://GraphicAssets/UI/Store/gasIcon.png" type="Texture" id=5]
+[ext_resource path="res://GraphicAssets/UI/Store/StoreTabs/carTab.png" type="Texture" id=6]
+[ext_resource path="res://GraphicAssets/UI/Store/StoreTabs/vipTabUnselected.png" type="Texture" id=7]
+[ext_resource path="res://Scripts/Store/store_page_controller.gd" type="Script" id=8]
+[ext_resource path="res://GraphicAssets/UI/Store/StoreTabs/tabUnselected.png" type="Texture" id=9]
+[ext_resource path="res://GraphicAssets/UI/Store/StoreTabs/tabSelected.png" type="Texture" id=10]
+[ext_resource path="res://GraphicAssets/UI/Store/StoreBackgrounds/storeBg.png" type="Texture" id=11]
+[ext_resource path="res://GraphicAssets/Fonts/kenpixel30.tres" type="DynamicFont" id=12]
+[ext_resource path="res://GraphicAssets/UI/Store/StoreBackgrounds/fillGasBg.png" type="Texture" id=13]
+[ext_resource path="res://GraphicAssets/Items/grassMid.png" type="Texture" id=14]
+[ext_resource path="res://GraphicAssets/UI/Store/StoreCars/storeOffroad.png" type="Texture" id=15]
+[ext_resource path="res://GraphicAssets/UI/Store/StoreCars/storeKart.png" type="Texture" id=16]
+[ext_resource path="res://GraphicAssets/UI/Store/subscription_button.png" type="Texture" id=17]
+[ext_resource path="res://GraphicAssets/UI/Store/StoreBackgrounds/subcriptionBg.png" type="Texture" id=18]
+[ext_resource path="res://GraphicAssets/UI/Store/StoreCars/storeTruck.png" type="Texture" id=19]
+[ext_resource path="res://GraphicAssets/Fonts/kenpixel.ttf" type="DynamicFontData" id=20]
+[ext_resource path="res://GraphicAssets/UI/Store/StoreCars/storeSedan.png" type="Texture" id=21]
+[ext_resource path="res://GraphicAssets/Backgrounds/coloredShroom.png" type="Texture" id=22]
+[ext_resource path="res://GraphicAssets/UI/Store/rectangle.png" type="Texture" id=23]
+[ext_resource path="res://Scripts/Store/store_coin_panel_controller.gd" type="Script" id=24]
+[ext_resource path="res://Scripts/Store/store_gas_panel_controller.gd" type="Script" id=25]
+[ext_resource path="res://Scripts/Store/store_subscription_panel_controller.gd" type="Script" id=26]
+[ext_resource path="res://Scripts/Store/store_car_panel_controller.gd" type="Script" id=27]
+[ext_resource path="res://Scripts/coin_bar_controller.gd" type="Script" id=28]
+
+[sub_resource type="StyleBoxFlat" id=1]
+bg_color = Color( 0.501961, 0.454902, 0.454902, 0.403922 )
+
+[sub_resource type="StyleBoxFlat" id=2]
+bg_color = Color( 0.384314, 0.384314, 0.384314, 1 )
+
+[sub_resource type="DynamicFont" id=50]
+size = 30
+font_data = ExtResource( 20 )
+
+[sub_resource type="StyleBoxTexture" id=3]
+texture = ExtResource( 3 )
+region_rect = Rect2( 0, 0, 110, 54 )
+
+[sub_resource type="DynamicFont" id=49]
+font_data = ExtResource( 20 )
+
+[sub_resource type="StyleBoxEmpty" id=4]
+
+[sub_resource type="StyleBoxTexture" id=5]
+texture = ExtResource( 11 )
+region_rect = Rect2( 0, 0, 833, 359 )
+
+[sub_resource type="StyleBoxTexture" id=6]
+texture = ExtResource( 13 )
+region_rect = Rect2( 0, 0, 198, 296 )
+
+[sub_resource type="StyleBoxEmpty" id=7]
+
+[sub_resource type="StyleBoxEmpty" id=8]
+
+[sub_resource type="StyleBoxEmpty" id=9]
+
+[sub_resource type="StyleBoxEmpty" id=10]
+
+[sub_resource type="StyleBoxEmpty" id=11]
+
+[sub_resource type="StyleBoxFlat" id=12]
+bg_color = Color( 1, 1, 1, 1 )
+
+[sub_resource type="StyleBoxEmpty" id=13]
+
+[sub_resource type="StyleBoxFlat" id=14]
+bg_color = Color( 0.384314, 0.384314, 0.384314, 1 )
+
+[sub_resource type="StyleBoxTexture" id=15]
+texture = ExtResource( 23 )
+region_rect = Rect2( 0, 0, 56, 31 )
+
+[sub_resource type="DynamicFont" id=16]
+size = 36
+font_data = ExtResource( 20 )
+
+[sub_resource type="StyleBoxEmpty" id=17]
+
+[sub_resource type="StyleBoxTexture" id=18]
+texture = ExtResource( 13 )
+region_rect = Rect2( 0, 0, 198, 296 )
+
+[sub_resource type="StyleBoxEmpty" id=19]
+
+[sub_resource type="StyleBoxEmpty" id=20]
+
+[sub_resource type="StyleBoxEmpty" id=21]
+
+[sub_resource type="StyleBoxEmpty" id=22]
+
+[sub_resource type="StyleBoxEmpty" id=23]
+
+[sub_resource type="StyleBoxFlat" id=24]
+bg_color = Color( 0.6, 0.6, 0.6, 0.917647 )
+
+[sub_resource type="StyleBoxEmpty" id=25]
+
+[sub_resource type="StyleBoxTexture" id=26]
+texture = ExtResource( 21 )
+region_rect = Rect2( 0, 0, 198, 300 )
+
+[sub_resource type="StyleBoxEmpty" id=27]
+
+[sub_resource type="StyleBoxEmpty" id=28]
+
+[sub_resource type="StyleBoxEmpty" id=29]
+
+[sub_resource type="StyleBoxEmpty" id=30]
+
+[sub_resource type="StyleBoxEmpty" id=31]
+
+[sub_resource type="StyleBoxTexture" id=32]
+texture = ExtResource( 19 )
+region_rect = Rect2( 0, 0, 198, 300 )
+
+[sub_resource type="StyleBoxTexture" id=33]
+texture = ExtResource( 15 )
+region_rect = Rect2( 0, 0, 198, 300 )
+
+[sub_resource type="StyleBoxTexture" id=34]
+texture = ExtResource( 16 )
+region_rect = Rect2( 0, 0, 198, 300 )
+
+[sub_resource type="StyleBoxEmpty" id=35]
+
+[sub_resource type="StyleBoxTexture" id=36]
+texture = ExtResource( 18 )
+region_rect = Rect2( 0, 0, 306, 202 )
+
+[sub_resource type="StyleBoxEmpty" id=37]
+
+[sub_resource type="StyleBoxEmpty" id=38]
+
+[sub_resource type="StyleBoxEmpty" id=39]
+
+[sub_resource type="StyleBoxEmpty" id=40]
+
+[sub_resource type="StyleBoxEmpty" id=41]
+
+[sub_resource type="DynamicFont" id=47]
+font_data = ExtResource( 20 )
+
+[sub_resource type="StreamTexture" id=42]
+flags = 4
+load_path = "res://.import/subscriptionButton.png-ad86e3695bd426b1920e34f9b1b27a87.stex"
+
+[sub_resource type="StyleBoxTexture" id=43]
+texture = SubResource( 42 )
+region_rect = Rect2( 0, 0, 177, 40 )
+
+[sub_resource type="StyleBoxTexture" id=44]
+texture = SubResource( 42 )
+region_rect = Rect2( 0, 0, 177, 40 )
+
+[sub_resource type="StyleBoxTexture" id=45]
+texture = ExtResource( 17 )
+region_rect = Rect2( 0, 0, 177, 40 )
+
+[sub_resource type="StyleBoxTexture" id=46]
+texture = ExtResource( 17 )
+region_rect = Rect2( 0, 0, 177, 40 )
+
+[sub_resource type="StyleBoxTexture" id=48]
+texture = ExtResource( 18 )
+region_rect = Rect2( 0, 0, 306, 202 )
+
+[node name="StorePage" type="Panel"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -500.0
+margin_top = -300.0
+margin_right = 500.0
+margin_bottom = 300.0
+custom_styles/panel = SubResource( 1 )
+script = ExtResource( 8 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+unselected_tab_bg = ExtResource( 9 )
+selected_tab_bg = ExtResource( 10 )
+
+[node name="MenuBar" type="Panel" parent="."]
+margin_right = 1000.0
+margin_bottom = 80.0
+custom_styles/panel = SubResource( 2 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="StoreText" type="Label" parent="MenuBar"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -56.7462
+margin_top = -19.8867
+margin_right = 58.2538
+margin_bottom = 26.1133
+custom_colors/font_color = Color( 1, 1, 1, 1 )
+custom_fonts/font = SubResource( 50 )
+text = "Store"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="BackButton" type="TextureButton" parent="MenuBar"]
+anchor_top = 0.5
+anchor_bottom = 0.5
+margin_left = 10.0
+margin_top = -28.0
+margin_right = 27.0
+rect_scale = Vector2( 2, 2 )
+texture_normal = ExtResource( 2 )
+texture_pressed = ExtResource( 2 )
+texture_hover = ExtResource( 2 )
+texture_disabled = ExtResource( 2 )
+texture_focused = ExtResource( 2 )
+
+[node name="CoinBar" type="Panel" parent="."]
+margin_left = 4.0
+margin_top = 84.0
+margin_right = 114.0
+margin_bottom = 138.0
+custom_styles/panel = SubResource( 3 )
+script = ExtResource( 28 )
+
+[node name="CoinCount" type="Label" parent="CoinBar"]
+margin_left = 25.0
+margin_top = 13.0
+margin_right = 104.0
+margin_bottom = 37.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = SubResource( 49 )
+text = "20"
+align = 1
+
+[node name="StoreTabs" type="Panel" parent="."]
+margin_left = 286.0
+margin_top = 106.0
+margin_right = 718.0
+margin_bottom = 210.0
+custom_styles/panel = SubResource( 4 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="GasTab" type="TextureButton" parent="StoreTabs"]
+margin_right = 52.0
+margin_bottom = 52.0
+rect_scale = Vector2( 2, 2 )
+texture_normal = ExtResource( 9 )
+texture_pressed = ExtResource( 9 )
+texture_hover = ExtResource( 9 )
+texture_disabled = ExtResource( 9 )
+texture_focused = ExtResource( 9 )
+expand = true
+
+[node name="GasIcon" type="TextureRect" parent="StoreTabs/GasTab"]
+margin_left = 1.0
+margin_top = 1.0
+margin_right = 51.0
+margin_bottom = 51.0
+rect_pivot_offset = Vector2( 96, 96 )
+texture = ExtResource( 5 )
+expand = true
+
+[node name="CoinTab" type="TextureButton" parent="StoreTabs"]
+margin_left = 108.0
+margin_right = 160.0
+margin_bottom = 52.0
+rect_scale = Vector2( 2, 2 )
+texture_normal = ExtResource( 9 )
+texture_pressed = ExtResource( 9 )
+texture_hover = ExtResource( 9 )
+texture_disabled = ExtResource( 9 )
+texture_focused = ExtResource( 9 )
+expand = true
+
+[node name="CoinIcon" type="TextureRect" parent="StoreTabs/CoinTab"]
+margin_left = 3.0
+margin_top = 3.0
+margin_right = 49.0
+margin_bottom = 49.0
+rect_pivot_offset = Vector2( 96, 96 )
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CarTab" type="TextureButton" parent="StoreTabs"]
+margin_left = 216.0
+margin_right = 268.0
+margin_bottom = 52.0
+rect_scale = Vector2( 2, 2 )
+texture_normal = ExtResource( 9 )
+texture_pressed = ExtResource( 9 )
+texture_hover = ExtResource( 9 )
+texture_disabled = ExtResource( 9 )
+texture_focused = ExtResource( 9 )
+expand = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="CarIcon" type="TextureRect" parent="StoreTabs/CarTab"]
+margin_left = 1.0
+margin_top = 12.0
+margin_right = 49.0
+margin_bottom = 49.0
+rect_pivot_offset = Vector2( 96, 96 )
+texture = ExtResource( 6 )
+expand = true
+stretch_mode = 5
+
+[node name="SubscriptionTab" type="TextureButton" parent="StoreTabs"]
+margin_left = 324.0
+margin_right = 376.0
+margin_bottom = 52.0
+rect_scale = Vector2( 2, 2 )
+texture_normal = ExtResource( 9 )
+texture_pressed = ExtResource( 9 )
+texture_hover = ExtResource( 9 )
+texture_disabled = ExtResource( 9 )
+texture_focused = ExtResource( 9 )
+expand = true
+
+[node name="SubscriptionIcon" type="TextureRect" parent="StoreTabs/SubscriptionTab"]
+margin_top = 4.0
+margin_right = 48.0
+margin_bottom = 54.0
+rect_pivot_offset = Vector2( 96, 96 )
+texture = ExtResource( 7 )
+expand = true
+stretch_mode = 5
+
+[node name="StorePanel" type="Panel" parent="."]
+margin_left = 1.0
+margin_top = 212.0
+margin_right = 999.0
+margin_bottom = 576.0
+custom_styles/panel = SubResource( 5 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="GasPanel" type="Panel" parent="StorePanel"]
+visible = false
+anchor_left = 0.5
+anchor_right = 0.5
+margin_left = -108.0
+margin_top = 10.0
+margin_right = 108.0
+margin_bottom = 334.0
+custom_styles/panel = SubResource( 6 )
+script = ExtResource( 25 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="GasIcon" type="TextureRect" parent="StorePanel/GasPanel"]
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+margin_left = -96.0
+margin_top = -192.0
+margin_right = 96.0
+texture = ExtResource( 5 )
+stretch_mode = 5
+
+[node name="FillGasLabel" type="Label" parent="StorePanel/GasPanel"]
+anchor_left = 0.5
+anchor_right = 0.5
+margin_left = -107.5
+margin_top = 12.0
+margin_right = 107.5
+margin_bottom = 24.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "Fill Gas"
+align = 1
+
+[node name="CoinIcon" type="TextureRect" parent="StorePanel/GasPanel"]
+margin_left = 64.0
+margin_top = 50.0
+margin_right = 128.0
+margin_bottom = 114.0
+rect_scale = Vector2( 0.5, 0.5 )
+texture = ExtResource( 4 )
+
+[node name="GasPriceLabel" type="Label" parent="StorePanel/GasPanel"]
+margin_left = 100.0
+margin_top = 46.0
+margin_right = 160.0
+margin_bottom = 92.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "*10"
+
+[node name="GasButton" type="Button" parent="StorePanel/GasPanel"]
+margin_right = 216.0
+margin_bottom = 323.0
+custom_styles/hover = SubResource( 7 )
+custom_styles/pressed = SubResource( 8 )
+custom_styles/focus = SubResource( 9 )
+custom_styles/disabled = SubResource( 10 )
+custom_styles/normal = SubResource( 11 )
+
+[node name="ConfirmGasPanel" type="Panel" parent="StorePanel/GasPanel"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -140.0
+margin_top = -78.0
+margin_right = 140.0
+margin_bottom = 94.0
+custom_styles/panel = SubResource( 12 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="BlockingPanel" type="Panel" parent="StorePanel/GasPanel/ConfirmGasPanel"]
+margin_left = -360.0
+margin_top = -304.0
+margin_right = 640.0
+margin_bottom = 296.0
+custom_styles/panel = SubResource( 13 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="TitlePanel" type="Panel" parent="StorePanel/GasPanel/ConfirmGasPanel"]
+margin_right = 280.0
+margin_bottom = 40.0
+custom_styles/panel = SubResource( 14 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="TitleLabel" type="Label" parent="StorePanel/GasPanel/ConfirmGasPanel/TitlePanel"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -130.0
+margin_top = -19.0
+margin_right = 130.0
+margin_bottom = 19.0
+custom_fonts/font = ExtResource( 1 )
+text = "Fill Gas"
+align = 1
+valign = 1
+
+[node name="MessageLabel" type="Label" parent="StorePanel/GasPanel/ConfirmGasPanel"]
+margin_left = 4.0
+margin_top = 43.0
+margin_right = 273.0
+margin_bottom = 112.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "Fill the gas tank
+using X coins?"
+align = 1
+
+[node name="YesButton" type="Button" parent="StorePanel/GasPanel/ConfirmGasPanel"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+margin_top = -76.0
+margin_right = 136.0
+margin_bottom = -4.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_colors/font_color_pressed = Color( 1, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+custom_styles/normal = SubResource( 15 )
+text = "Yes"
+
+[node name="NoButton" type="Button" parent="StorePanel/GasPanel/ConfirmGasPanel"]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = -136.0
+margin_top = -76.0
+margin_bottom = -4.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_colors/font_color_pressed = Color( 1, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+custom_styles/normal = SubResource( 15 )
+text = "No"
+
+[node name="NeedMoreCoinsLabel" type="Label" parent="StorePanel/GasPanel"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -187.0
+margin_top = -27.5
+margin_right = 187.0
+margin_bottom = 27.5
+custom_colors/font_color = Color( 1, 0, 0, 1 )
+custom_fonts/font = SubResource( 16 )
+text = "Need More Coins"
+align = 1
+valign = 1
+
+[node name="CoinPanel" type="Panel" parent="StorePanel"]
+visible = false
+margin_left = 13.0
+margin_top = 11.0
+margin_right = 985.0
+margin_bottom = 339.0
+custom_styles/panel = SubResource( 17 )
+script = ExtResource( 24 )
+
+[node name="Coin5Panel" type="Panel" parent="StorePanel/CoinPanel"]
+margin_right = 240.0
+margin_bottom = 324.0
+custom_styles/panel = SubResource( 18 )
+
+[node name="CoinButton" type="Button" parent="StorePanel/CoinPanel/Coin5Panel"]
+margin_right = 240.0
+margin_bottom = 324.0
+custom_styles/hover = SubResource( 19 )
+custom_styles/pressed = SubResource( 20 )
+custom_styles/focus = SubResource( 21 )
+custom_styles/disabled = SubResource( 22 )
+custom_styles/normal = SubResource( 23 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="CoinLabel" type="Label" parent="StorePanel/CoinPanel/Coin5Panel"]
+margin_left = 16.0
+margin_top = 11.0
+margin_right = 228.0
+margin_bottom = 35.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "5 Coins"
+align = 1
+
+[node name="CoinPriceLabel" type="Label" parent="StorePanel/CoinPanel/Coin5Panel"]
+anchor_left = 0.5
+anchor_right = 0.5
+margin_left = -120.0
+margin_top = 48.0
+margin_right = 120.0
+margin_bottom = 94.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "$FIVE_COINS"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="LandImage1" type="TextureRect" parent="StorePanel/CoinPanel/Coin5Panel"]
+margin_left = 14.0
+margin_top = 252.0
+margin_right = 85.0
+margin_bottom = 312.0
+texture = ExtResource( 14 )
+expand = true
+stretch_mode = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="LandImage2" type="TextureRect" parent="StorePanel/CoinPanel/Coin5Panel"]
+margin_left = 85.0
+margin_top = 252.0
+margin_right = 156.0
+margin_bottom = 312.0
+texture = ExtResource( 14 )
+expand = true
+stretch_mode = 1
+
+[node name="LandImage3" type="TextureRect" parent="StorePanel/CoinPanel/Coin5Panel"]
+margin_left = 156.0
+margin_top = 252.0
+margin_right = 228.0
+margin_bottom = 312.0
+texture = ExtResource( 14 )
+expand = true
+stretch_mode = 1
+
+[node name="CoinImage1" type="TextureRect" parent="StorePanel/CoinPanel/Coin5Panel"]
+margin_left = 146.623
+margin_top = 228.081
+margin_right = 170.623
+margin_bottom = 252.081
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage2" type="TextureRect" parent="StorePanel/CoinPanel/Coin5Panel"]
+margin_left = 131.69
+margin_top = 229.71
+margin_right = 155.69
+margin_bottom = 253.71
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage3" type="TextureRect" parent="StorePanel/CoinPanel/Coin5Panel"]
+margin_left = 113.497
+margin_top = 228.081
+margin_right = 137.497
+margin_bottom = 252.081
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage4" type="TextureRect" parent="StorePanel/CoinPanel/Coin5Panel"]
+margin_left = 91.2323
+margin_top = 230.796
+margin_right = 115.232
+margin_bottom = 254.796
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage5" type="TextureRect" parent="StorePanel/CoinPanel/Coin5Panel"]
+margin_left = 72.7686
+margin_top = 229.167
+margin_right = 96.7686
+margin_bottom = 253.167
+texture = ExtResource( 4 )
+expand = true
+
+[node name="DeferredPanel" type="Panel" parent="StorePanel/CoinPanel/Coin5Panel"]
+visible = false
+margin_left = 8.0
+margin_top = 8.0
+margin_right = 232.0
+margin_bottom = 316.0
+custom_styles/panel = SubResource( 24 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="DeferredLabel" type="Label" parent="StorePanel/CoinPanel/Coin5Panel/DeferredPanel"]
+margin_left = -1.0
+margin_top = 105.0
+margin_right = 224.0
+margin_bottom = 183.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "Please complete 
+purchase on the 
+google play store"
+align = 1
+valign = 1
+
+[node name="Coin10Panel" type="Panel" parent="StorePanel/CoinPanel"]
+margin_left = 244.0
+margin_right = 484.0
+margin_bottom = 324.0
+custom_styles/panel = SubResource( 18 )
+
+[node name="CoinButton" type="Button" parent="StorePanel/CoinPanel/Coin10Panel"]
+margin_right = 240.0
+margin_bottom = 324.0
+custom_styles/hover = SubResource( 19 )
+custom_styles/pressed = SubResource( 20 )
+custom_styles/focus = SubResource( 21 )
+custom_styles/disabled = SubResource( 22 )
+custom_styles/normal = SubResource( 23 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="CoinLabel" type="Label" parent="StorePanel/CoinPanel/Coin10Panel"]
+margin_left = 16.0
+margin_top = 11.0
+margin_right = 228.0
+margin_bottom = 35.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "10 Coins"
+align = 1
+
+[node name="CoinPriceLabel" type="Label" parent="StorePanel/CoinPanel/Coin10Panel"]
+anchor_left = 0.5
+anchor_right = 0.5
+margin_left = -120.0
+margin_top = 48.0
+margin_right = 120.0
+margin_bottom = 94.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "$TEN_COINS"
+align = 1
+
+[node name="LandImage1" type="TextureRect" parent="StorePanel/CoinPanel/Coin10Panel"]
+margin_left = 14.0
+margin_top = 252.0
+margin_right = 85.0
+margin_bottom = 312.0
+texture = ExtResource( 14 )
+expand = true
+stretch_mode = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="LandImage2" type="TextureRect" parent="StorePanel/CoinPanel/Coin10Panel"]
+margin_left = 85.0
+margin_top = 252.0
+margin_right = 156.0
+margin_bottom = 312.0
+texture = ExtResource( 14 )
+expand = true
+stretch_mode = 1
+
+[node name="LandImage3" type="TextureRect" parent="StorePanel/CoinPanel/Coin10Panel"]
+margin_left = 156.0
+margin_top = 252.0
+margin_right = 228.0
+margin_bottom = 312.0
+texture = ExtResource( 14 )
+expand = true
+stretch_mode = 1
+
+[node name="CoinImage1" type="TextureRect" parent="StorePanel/CoinPanel/Coin10Panel"]
+margin_left = 146.623
+margin_top = 228.081
+margin_right = 170.623
+margin_bottom = 252.081
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage2" type="TextureRect" parent="StorePanel/CoinPanel/Coin10Panel"]
+margin_left = 131.69
+margin_top = 229.71
+margin_right = 155.69
+margin_bottom = 253.71
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage3" type="TextureRect" parent="StorePanel/CoinPanel/Coin10Panel"]
+margin_left = 113.497
+margin_top = 228.081
+margin_right = 137.497
+margin_bottom = 252.081
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage4" type="TextureRect" parent="StorePanel/CoinPanel/Coin10Panel"]
+margin_left = 91.2323
+margin_top = 230.796
+margin_right = 115.232
+margin_bottom = 254.796
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage5" type="TextureRect" parent="StorePanel/CoinPanel/Coin10Panel"]
+margin_left = 72.7686
+margin_top = 229.167
+margin_right = 96.7686
+margin_bottom = 253.167
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage6" type="TextureRect" parent="StorePanel/CoinPanel/Coin10Panel"]
+margin_left = 141.82
+margin_top = 218.991
+margin_right = 165.82
+margin_bottom = 242.991
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage7" type="TextureRect" parent="StorePanel/CoinPanel/Coin10Panel"]
+margin_left = 123.649
+margin_top = 216.81
+margin_right = 147.649
+margin_bottom = 240.81
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage8" type="TextureRect" parent="StorePanel/CoinPanel/Coin10Panel"]
+margin_left = 102.206
+margin_top = 220.081
+margin_right = 126.206
+margin_bottom = 244.081
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage9" type="TextureRect" parent="StorePanel/CoinPanel/Coin10Panel"]
+margin_left = 82.5812
+margin_top = 214.63
+margin_right = 106.581
+margin_bottom = 238.63
+texture = ExtResource( 4 )
+expand = true
+
+[node name="DeferredPanel" type="Panel" parent="StorePanel/CoinPanel/Coin10Panel"]
+visible = false
+margin_left = 8.0
+margin_top = 8.0
+margin_right = 232.0
+margin_bottom = 316.0
+custom_styles/panel = SubResource( 24 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="DeferredLabel" type="Label" parent="StorePanel/CoinPanel/Coin10Panel/DeferredPanel"]
+margin_left = -1.0
+margin_top = 105.0
+margin_right = 224.0
+margin_bottom = 183.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "Please complete 
+purchase on the 
+google play store"
+align = 1
+valign = 1
+
+[node name="Coin20Panel" type="Panel" parent="StorePanel/CoinPanel"]
+margin_left = 488.0
+margin_right = 728.0
+margin_bottom = 324.0
+custom_styles/panel = SubResource( 18 )
+
+[node name="CoinButton" type="Button" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_right = 240.0
+margin_bottom = 324.0
+custom_styles/hover = SubResource( 19 )
+custom_styles/pressed = SubResource( 20 )
+custom_styles/focus = SubResource( 21 )
+custom_styles/disabled = SubResource( 22 )
+custom_styles/normal = SubResource( 23 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="CoinLabel" type="Label" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 16.0
+margin_top = 11.0
+margin_right = 228.0
+margin_bottom = 35.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "20 Coins"
+align = 1
+
+[node name="CoinPriceLabel" type="Label" parent="StorePanel/CoinPanel/Coin20Panel"]
+anchor_left = 0.5
+anchor_right = 0.5
+margin_left = -149.0
+margin_top = 48.0
+margin_right = 149.0
+margin_bottom = 94.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "$TWENTY_COINS"
+align = 1
+
+[node name="LandImage1" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 14.0
+margin_top = 252.0
+margin_right = 85.0
+margin_bottom = 312.0
+texture = ExtResource( 14 )
+expand = true
+stretch_mode = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="LandImage2" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 85.0
+margin_top = 252.0
+margin_right = 156.0
+margin_bottom = 312.0
+texture = ExtResource( 14 )
+expand = true
+stretch_mode = 1
+
+[node name="LandImage3" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 156.0
+margin_top = 252.0
+margin_right = 228.0
+margin_bottom = 312.0
+texture = ExtResource( 14 )
+expand = true
+stretch_mode = 1
+
+[node name="CoinImage1" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 146.623
+margin_top = 228.081
+margin_right = 170.623
+margin_bottom = 252.081
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage2" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 131.69
+margin_top = 229.71
+margin_right = 155.69
+margin_bottom = 253.71
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage3" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 113.497
+margin_top = 228.081
+margin_right = 137.497
+margin_bottom = 252.081
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage4" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 91.2323
+margin_top = 230.796
+margin_right = 115.232
+margin_bottom = 254.796
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage5" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 72.7686
+margin_top = 229.167
+margin_right = 96.7686
+margin_bottom = 253.167
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage6" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 141.82
+margin_top = 218.991
+margin_right = 165.82
+margin_bottom = 242.991
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage7" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 123.649
+margin_top = 216.81
+margin_right = 147.649
+margin_bottom = 240.81
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage8" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 102.206
+margin_top = 220.081
+margin_right = 126.206
+margin_bottom = 244.081
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage9" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 82.5812
+margin_top = 214.63
+margin_right = 106.581
+margin_bottom = 238.63
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage10" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 82.5812
+margin_top = 214.63
+margin_right = 106.581
+margin_bottom = 238.63
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage11" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 127.646
+margin_top = 203.364
+margin_right = 151.646
+margin_bottom = 227.364
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage12" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 88.7595
+margin_top = 200.82
+margin_right = 112.759
+margin_bottom = 224.82
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage13" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 110.202
+margin_top = 198.639
+margin_right = 134.202
+margin_bottom = 222.639
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage14" type="TextureRect" parent="StorePanel/CoinPanel/Coin20Panel"]
+margin_left = 139.639
+margin_top = 198.276
+margin_right = 163.639
+margin_bottom = 222.276
+texture = ExtResource( 4 )
+expand = true
+
+[node name="DeferredPanel" type="Panel" parent="StorePanel/CoinPanel/Coin20Panel"]
+visible = false
+margin_left = 8.0
+margin_top = 8.0
+margin_right = 232.0
+margin_bottom = 316.0
+custom_styles/panel = SubResource( 24 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="DeferredLabel" type="Label" parent="StorePanel/CoinPanel/Coin20Panel/DeferredPanel"]
+margin_left = -1.0
+margin_top = 105.0
+margin_right = 224.0
+margin_bottom = 183.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "Please complete 
+purchase on the 
+google play store"
+align = 1
+valign = 1
+
+[node name="Coin50Panel" type="Panel" parent="StorePanel/CoinPanel"]
+margin_left = 732.0
+margin_right = 972.0
+margin_bottom = 324.0
+custom_styles/panel = SubResource( 18 )
+
+[node name="CoinButton" type="Button" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_right = 240.0
+margin_bottom = 324.0
+custom_styles/hover = SubResource( 19 )
+custom_styles/pressed = SubResource( 20 )
+custom_styles/focus = SubResource( 21 )
+custom_styles/disabled = SubResource( 22 )
+custom_styles/normal = SubResource( 23 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="CoinLabel" type="Label" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 16.0
+margin_top = 11.0
+margin_right = 228.0
+margin_bottom = 35.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "50 Coins"
+align = 1
+
+[node name="CoinPriceLabel" type="Label" parent="StorePanel/CoinPanel/Coin50Panel"]
+anchor_left = 0.5
+anchor_right = 0.5
+margin_left = -130.0
+margin_top = 48.0
+margin_right = 130.0
+margin_bottom = 94.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "$FIFTY_COINS"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="LandImage1" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 14.0
+margin_top = 252.0
+margin_right = 85.0
+margin_bottom = 312.0
+texture = ExtResource( 14 )
+expand = true
+stretch_mode = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="LandImage2" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 85.0
+margin_top = 252.0
+margin_right = 156.0
+margin_bottom = 312.0
+texture = ExtResource( 14 )
+expand = true
+stretch_mode = 1
+
+[node name="LandImage3" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 156.0
+margin_top = 252.0
+margin_right = 228.0
+margin_bottom = 312.0
+texture = ExtResource( 14 )
+expand = true
+stretch_mode = 1
+
+[node name="CoinImage1" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 146.623
+margin_top = 228.081
+margin_right = 170.623
+margin_bottom = 252.081
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage2" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 131.69
+margin_top = 229.71
+margin_right = 155.69
+margin_bottom = 253.71
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage3" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 113.497
+margin_top = 228.081
+margin_right = 137.497
+margin_bottom = 252.081
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage4" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 91.2323
+margin_top = 230.796
+margin_right = 115.232
+margin_bottom = 254.796
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage5" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 72.7686
+margin_top = 229.167
+margin_right = 96.7686
+margin_bottom = 253.167
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage6" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 141.82
+margin_top = 218.991
+margin_right = 165.82
+margin_bottom = 242.991
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage7" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 123.649
+margin_top = 216.81
+margin_right = 147.649
+margin_bottom = 240.81
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage8" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 102.206
+margin_top = 220.081
+margin_right = 126.206
+margin_bottom = 244.081
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage9" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 82.5812
+margin_top = 214.63
+margin_right = 106.581
+margin_bottom = 238.63
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage10" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 136.369
+margin_top = 201.183
+margin_right = 160.369
+margin_bottom = 225.183
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage11" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 93.1206
+margin_top = 201.546
+margin_right = 117.121
+margin_bottom = 225.546
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage12" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 118.924
+margin_top = 200.456
+margin_right = 142.924
+margin_bottom = 224.456
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage13" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 103.297
+margin_top = 194.641
+margin_right = 127.297
+margin_bottom = 218.641
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage14" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 127.646
+margin_top = 185.556
+margin_right = 151.646
+margin_bottom = 209.556
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage15" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 79.6738
+margin_top = 195.005
+margin_right = 103.674
+margin_bottom = 219.005
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage16" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 90.94
+margin_top = 180.831
+margin_right = 114.94
+margin_bottom = 204.831
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage17" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 109.475
+margin_top = 179.014
+margin_right = 133.475
+margin_bottom = 203.014
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage18" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 126.556
+margin_top = 166.657
+margin_right = 150.556
+margin_bottom = 190.657
+texture = ExtResource( 4 )
+expand = true
+
+[node name="CoinImage19" type="TextureRect" parent="StorePanel/CoinPanel/Coin50Panel"]
+margin_left = 101.116
+margin_top = 163.75
+margin_right = 125.116
+margin_bottom = 187.75
+texture = ExtResource( 4 )
+expand = true
+
+[node name="DeferredPanel" type="Panel" parent="StorePanel/CoinPanel/Coin50Panel"]
+visible = false
+margin_left = 8.0
+margin_top = 8.0
+margin_right = 232.0
+margin_bottom = 316.0
+custom_styles/panel = SubResource( 24 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="DeferredLabel" type="Label" parent="StorePanel/CoinPanel/Coin50Panel/DeferredPanel"]
+margin_left = -1.0
+margin_top = 105.0
+margin_right = 224.0
+margin_bottom = 183.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "Please complete 
+purchase on the 
+google play store"
+align = 1
+valign = 1
+
+[node name="ConfirmCoinPanel" type="Panel" parent="StorePanel/CoinPanel"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -140.0
+margin_top = -80.0
+margin_right = 140.0
+margin_bottom = 92.0
+custom_styles/panel = SubResource( 12 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="BlockingPanel" type="Panel" parent="StorePanel/CoinPanel/ConfirmCoinPanel"]
+margin_left = -360.0
+margin_top = -304.0
+margin_right = 640.0
+margin_bottom = 296.0
+custom_styles/panel = SubResource( 13 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="TitlePanel" type="Panel" parent="StorePanel/CoinPanel/ConfirmCoinPanel"]
+margin_right = 280.0
+margin_bottom = 40.0
+custom_styles/panel = SubResource( 14 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="TitleLabel" type="Label" parent="StorePanel/CoinPanel/ConfirmCoinPanel/TitlePanel"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -130.0
+margin_top = -19.0
+margin_right = 130.0
+margin_bottom = 19.0
+custom_fonts/font = ExtResource( 1 )
+text = "Coins"
+align = 1
+valign = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="MessageLabel" type="Label" parent="StorePanel/CoinPanel/ConfirmCoinPanel"]
+margin_left = 4.0
+margin_top = 43.0
+margin_right = 273.0
+margin_bottom = 112.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "Purchase X coins
+for $0.99?"
+align = 1
+
+[node name="YesButton" type="Button" parent="StorePanel/CoinPanel/ConfirmCoinPanel"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+margin_top = -76.0
+margin_right = 140.0
+margin_bottom = -4.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_colors/font_color_pressed = Color( 1, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+custom_styles/normal = SubResource( 15 )
+text = "Yes"
+
+[node name="NoButton" type="Button" parent="StorePanel/CoinPanel/ConfirmCoinPanel"]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = -140.0
+margin_top = -76.0
+margin_bottom = -4.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_colors/font_color_pressed = Color( 1, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+custom_styles/normal = SubResource( 15 )
+text = "No"
+
+[node name="CarPanel" type="Panel" parent="StorePanel"]
+visible = false
+margin_left = 13.0
+margin_top = 11.0
+margin_right = 985.0
+margin_bottom = 339.0
+custom_styles/panel = SubResource( 25 )
+script = ExtResource( 27 )
+
+[node name="SedanPanel" type="Panel" parent="StorePanel/CarPanel"]
+margin_right = 240.0
+margin_bottom = 324.0
+custom_styles/panel = SubResource( 26 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="PurchaseButton" type="Button" parent="StorePanel/CarPanel/SedanPanel"]
+margin_right = 240.0
+margin_bottom = 324.0
+custom_styles/hover = SubResource( 27 )
+custom_styles/pressed = SubResource( 28 )
+custom_styles/focus = SubResource( 29 )
+custom_styles/disabled = SubResource( 30 )
+custom_styles/normal = SubResource( 31 )
+
+[node name="SedanLabel" type="Label" parent="StorePanel/CarPanel/SedanPanel"]
+margin_left = 17.0
+margin_top = 11.0
+margin_right = 225.0
+margin_bottom = 35.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "Sedan"
+align = 1
+
+[node name="PriceLabel" type="Label" parent="StorePanel/CarPanel/SedanPanel"]
+margin_left = 17.0
+margin_top = 48.0
+margin_right = 225.0
+margin_bottom = 94.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "$1.99"
+align = 1
+
+[node name="TruckPanel" type="Panel" parent="StorePanel/CarPanel"]
+margin_left = 244.0
+margin_right = 484.0
+margin_bottom = 324.0
+custom_styles/panel = SubResource( 32 )
+
+[node name="PurchaseButton" type="Button" parent="StorePanel/CarPanel/TruckPanel"]
+margin_right = 240.0
+margin_bottom = 324.0
+custom_styles/hover = SubResource( 27 )
+custom_styles/pressed = SubResource( 28 )
+custom_styles/focus = SubResource( 29 )
+custom_styles/disabled = SubResource( 30 )
+custom_styles/normal = SubResource( 31 )
+
+[node name="TruckLabel" type="Label" parent="StorePanel/CarPanel/TruckPanel"]
+margin_left = 17.0
+margin_top = 11.0
+margin_right = 225.0
+margin_bottom = 35.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "Truck"
+align = 1
+
+[node name="PriceLabel" type="Label" parent="StorePanel/CarPanel/TruckPanel"]
+margin_left = 70.0
+margin_top = 48.0
+margin_right = 210.0
+margin_bottom = 94.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "*20"
+align = 1
+
+[node name="CoinIcon" type="TextureRect" parent="StorePanel/CarPanel/TruckPanel"]
+margin_left = 70.0
+margin_top = 50.0
+margin_right = 134.0
+margin_bottom = 114.0
+rect_scale = Vector2( 0.5, 0.5 )
+texture = ExtResource( 4 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="NeedMoreCoinsLabel" type="Label" parent="StorePanel/CarPanel/TruckPanel"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -120.0
+margin_top = -162.0
+margin_right = 120.0
+margin_bottom = 162.0
+custom_colors/font_color = Color( 1, 0, 0, 1 )
+custom_fonts/font = SubResource( 16 )
+text = "Need
+More
+Coins"
+align = 1
+valign = 1
+
+[node name="OffroadPanel" type="Panel" parent="StorePanel/CarPanel"]
+margin_left = 488.0
+margin_right = 728.0
+margin_bottom = 324.0
+custom_styles/panel = SubResource( 33 )
+
+[node name="PurchaseButton" type="Button" parent="StorePanel/CarPanel/OffroadPanel"]
+margin_right = 240.0
+margin_bottom = 324.0
+custom_styles/hover = SubResource( 27 )
+custom_styles/pressed = SubResource( 28 )
+custom_styles/focus = SubResource( 29 )
+custom_styles/disabled = SubResource( 30 )
+custom_styles/normal = SubResource( 31 )
+
+[node name="OffroadLabel" type="Label" parent="StorePanel/CarPanel/OffroadPanel"]
+margin_left = 17.0
+margin_top = 11.0
+margin_right = 225.0
+margin_bottom = 35.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "Offroad"
+align = 1
+
+[node name="PriceLabel" type="Label" parent="StorePanel/CarPanel/OffroadPanel"]
+anchor_left = 0.5
+anchor_right = 0.5
+margin_left = -138.0
+margin_top = 48.0
+margin_right = 138.0
+margin_bottom = 94.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "$CAR_OFFROAD"
+align = 1
+
+[node name="DeferredPanel" type="Panel" parent="StorePanel/CarPanel/OffroadPanel"]
+visible = false
+margin_left = 8.0
+margin_top = 8.0
+margin_right = 232.0
+margin_bottom = 316.0
+custom_styles/panel = SubResource( 24 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="DeferredLabel" type="Label" parent="StorePanel/CarPanel/OffroadPanel/DeferredPanel"]
+margin_left = -1.0
+margin_top = 105.0
+margin_right = 224.0
+margin_bottom = 183.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "Please complete 
+purchase on the 
+google play store"
+align = 1
+valign = 1
+
+[node name="KartPanel" type="Panel" parent="StorePanel/CarPanel"]
+margin_left = 732.0
+margin_right = 972.0
+margin_bottom = 324.0
+custom_styles/panel = SubResource( 34 )
+
+[node name="PurchaseButton" type="Button" parent="StorePanel/CarPanel/KartPanel"]
+margin_right = 240.0
+margin_bottom = 324.0
+custom_styles/hover = SubResource( 27 )
+custom_styles/pressed = SubResource( 28 )
+custom_styles/focus = SubResource( 29 )
+custom_styles/disabled = SubResource( 30 )
+custom_styles/normal = SubResource( 31 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="KartLabel" type="Label" parent="StorePanel/CarPanel/KartPanel"]
+margin_left = 17.0
+margin_top = 11.0
+margin_right = 225.0
+margin_bottom = 35.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "Kart"
+align = 1
+
+[node name="PriceLabel" type="Label" parent="StorePanel/CarPanel/KartPanel"]
+margin_left = 17.0
+margin_top = 44.0
+margin_right = 225.0
+margin_bottom = 92.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 12 )
+text = "$CAR_KART"
+align = 1
+
+[node name="DeferredPanel" type="Panel" parent="StorePanel/CarPanel/KartPanel"]
+visible = false
+margin_left = 8.0
+margin_top = 8.0
+margin_right = 232.0
+margin_bottom = 316.0
+custom_styles/panel = SubResource( 24 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="DeferredLabel" type="Label" parent="StorePanel/CarPanel/KartPanel/DeferredPanel"]
+margin_left = -1.0
+margin_top = 105.0
+margin_right = 224.0
+margin_bottom = 183.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "Please complete 
+purchase on the 
+google play store"
+align = 1
+valign = 1
+
+[node name="ConfirmCarPanel" type="Panel" parent="StorePanel/CarPanel"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -140.0
+margin_top = -80.0
+margin_right = 140.0
+margin_bottom = 92.0
+custom_styles/panel = SubResource( 12 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="BlockingPanel" type="Panel" parent="StorePanel/CarPanel/ConfirmCarPanel"]
+margin_left = -360.0
+margin_top = -304.0
+margin_right = 640.0
+margin_bottom = 296.0
+custom_styles/panel = SubResource( 13 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="TitlePanel" type="Panel" parent="StorePanel/CarPanel/ConfirmCarPanel"]
+margin_right = 280.0
+margin_bottom = 40.0
+custom_styles/panel = SubResource( 14 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="TitleLabel" type="Label" parent="StorePanel/CarPanel/ConfirmCarPanel/TitlePanel"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -130.0
+margin_top = -19.0
+margin_right = 130.0
+margin_bottom = 19.0
+custom_fonts/font = ExtResource( 1 )
+text = "Car"
+align = 1
+valign = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="MessageLabel" type="Label" parent="StorePanel/CarPanel/ConfirmCarPanel"]
+margin_left = 4.0
+margin_top = 43.0
+margin_right = 273.0
+margin_bottom = 112.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "Purchase 
+For $0.99?"
+align = 1
+
+[node name="YesButton" type="Button" parent="StorePanel/CarPanel/ConfirmCarPanel"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+margin_top = -76.0
+margin_right = 140.0
+margin_bottom = -4.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_colors/font_color_pressed = Color( 1, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+custom_styles/normal = SubResource( 15 )
+text = "Yes"
+
+[node name="NoButton" type="Button" parent="StorePanel/CarPanel/ConfirmCarPanel"]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = -140.0
+margin_top = -76.0
+margin_bottom = -4.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_colors/font_color_pressed = Color( 1, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+custom_styles/normal = SubResource( 15 )
+text = "No"
+
+[node name="SubscriptionPanel" type="Panel" parent="StorePanel"]
+visible = false
+margin_left = 13.0
+margin_top = 11.0
+margin_right = 985.0
+margin_bottom = 339.0
+custom_styles/panel = SubResource( 35 )
+script = ExtResource( 26 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="SilverPanel" type="Panel" parent="StorePanel/SubscriptionPanel"]
+margin_right = 486.0
+margin_bottom = 324.0
+custom_styles/panel = SubResource( 36 )
+
+[node name="SubscriptionButton" type="Button" parent="StorePanel/SubscriptionPanel/SilverPanel"]
+margin_right = 486.0
+margin_bottom = 324.0
+custom_styles/hover = SubResource( 37 )
+custom_styles/pressed = SubResource( 38 )
+custom_styles/focus = SubResource( 39 )
+custom_styles/disabled = SubResource( 40 )
+custom_styles/normal = SubResource( 41 )
+
+[node name="SubscriptionLabel" type="Label" parent="StorePanel/SubscriptionPanel/SilverPanel"]
+margin_left = 19.0
+margin_top = 22.0
+margin_right = 470.0
+margin_bottom = 36.0
+custom_colors/font_color = Color( 0.501961, 0.501961, 0.501961, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "SILVER"
+align = 1
+
+[node name="DescriptionLabel" type="Label" parent="StorePanel/SubscriptionPanel/SilverPanel"]
+margin_left = 19.0
+margin_top = 98.0
+margin_right = 470.0
+margin_bottom = 122.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "mushroom background"
+align = 1
+
+[node name="PriceLabel" type="Label" parent="StorePanel/SubscriptionPanel/SilverPanel"]
+margin_left = 19.0
+margin_top = 46.0
+margin_right = 470.0
+margin_bottom = 101.0
+custom_colors/font_color = Color( 1, 0.188235, 0.188235, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "VIP SUBSCRIPTION
+$SILVER_SUBSCRIPTION/MONTH"
+align = 1
+
+[node name="SubscriptionButton2" type="Button" parent="StorePanel/SubscriptionPanel/SilverPanel"]
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+margin_left = -83.5
+margin_top = -28.0
+margin_right = 83.5
+custom_colors/font_color_pressed = Color( 0, 0, 0, 1 )
+custom_fonts/font = SubResource( 47 )
+custom_styles/hover = SubResource( 43 )
+custom_styles/pressed = SubResource( 44 )
+custom_styles/focus = SubResource( 45 )
+custom_styles/disabled = SubResource( 43 )
+custom_styles/normal = SubResource( 46 )
+text = "Subscribe Now!"
+
+[node name="SilverImage" type="TextureRect" parent="StorePanel/SubscriptionPanel/SilverPanel"]
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+margin_left = -60.0
+margin_top = -164.0
+margin_right = 60.0
+margin_bottom = -44.0
+texture = ExtResource( 22 )
+expand = true
+stretch_mode = 5
+
+[node name="DeferredPanel" type="Panel" parent="StorePanel/SubscriptionPanel/SilverPanel"]
+visible = false
+margin_left = 8.0
+margin_top = 8.0
+margin_right = 478.0
+margin_bottom = 316.0
+custom_styles/panel = SubResource( 24 )
+
+[node name="DeferredLabel" type="Label" parent="StorePanel/SubscriptionPanel/SilverPanel/DeferredPanel"]
+margin_left = -1.0
+margin_top = 105.0
+margin_right = 467.0
+margin_bottom = 177.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "Please complete purchase
+on the google play store"
+align = 1
+valign = 1
+
+[node name="GoldPanel" type="Panel" parent="StorePanel/SubscriptionPanel"]
+margin_left = 486.0
+margin_right = 972.0
+margin_bottom = 324.0
+custom_styles/panel = SubResource( 48 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="SubscriptionButton" type="Button" parent="StorePanel/SubscriptionPanel/GoldPanel"]
+margin_right = 486.0
+margin_bottom = 324.0
+custom_styles/hover = SubResource( 37 )
+custom_styles/pressed = SubResource( 38 )
+custom_styles/focus = SubResource( 39 )
+custom_styles/disabled = SubResource( 40 )
+custom_styles/normal = SubResource( 41 )
+
+[node name="SubscriptionLabel" type="Label" parent="StorePanel/SubscriptionPanel/GoldPanel"]
+margin_left = 19.0
+margin_top = 22.0
+margin_right = 470.0
+margin_bottom = 36.0
+custom_colors/font_color = Color( 0.560784, 0.639216, 0.0901961, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "GOLDEN"
+align = 1
+
+[node name="DescriptionLabel" type="Label" parent="StorePanel/SubscriptionPanel/GoldPanel"]
+margin_left = 19.0
+margin_top = 98.0
+margin_right = 470.0
+margin_bottom = 203.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "ALL SILVER PRIVILEGES
++
+ALL COIN ITEMS 40% OFF"
+align = 1
+
+[node name="PriceLabel" type="Label" parent="StorePanel/SubscriptionPanel/GoldPanel"]
+margin_left = 19.0
+margin_top = 46.0
+margin_right = 470.0
+margin_bottom = 101.0
+custom_colors/font_color = Color( 1, 0.188235, 0.188235, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "VIP SUBSCRIPTION
+$GOLDEN_SUBSCRIPTION/MONTH"
+align = 1
+
+[node name="SubscriptionButton2" type="Button" parent="StorePanel/SubscriptionPanel/GoldPanel"]
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+margin_left = -83.5
+margin_top = -28.0
+margin_right = 83.5
+custom_colors/font_color_pressed = Color( 0, 0, 0, 1 )
+custom_fonts/font = SubResource( 47 )
+custom_styles/hover = SubResource( 43 )
+custom_styles/pressed = SubResource( 44 )
+custom_styles/focus = SubResource( 45 )
+custom_styles/disabled = SubResource( 43 )
+custom_styles/normal = SubResource( 46 )
+text = "Subscribe Now!"
+
+[node name="DeferredPanel" type="Panel" parent="StorePanel/SubscriptionPanel/GoldPanel"]
+visible = false
+margin_left = 8.0
+margin_top = 8.0
+margin_right = 478.0
+margin_bottom = 316.0
+custom_styles/panel = SubResource( 24 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="DeferredLabel" type="Label" parent="StorePanel/SubscriptionPanel/GoldPanel/DeferredPanel"]
+margin_left = -1.0
+margin_top = 105.0
+margin_right = 467.0
+margin_bottom = 177.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "Please complete purchase
+on the google play store"
+align = 1
+valign = 1
+
+[node name="ConfirmSubscriptionPanel" type="Panel" parent="StorePanel/SubscriptionPanel"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -140.0
+margin_top = -80.0
+margin_right = 140.0
+margin_bottom = 92.0
+custom_styles/panel = SubResource( 12 )
+
+[node name="BlockingPanel" type="Panel" parent="StorePanel/SubscriptionPanel/ConfirmSubscriptionPanel"]
+margin_left = -360.0
+margin_top = -304.0
+margin_right = 640.0
+margin_bottom = 296.0
+custom_styles/panel = SubResource( 13 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="TitlePanel" type="Panel" parent="StorePanel/SubscriptionPanel/ConfirmSubscriptionPanel"]
+margin_right = 280.0
+margin_bottom = 40.0
+custom_styles/panel = SubResource( 14 )
+
+[node name="TitleLabel" type="Label" parent="StorePanel/SubscriptionPanel/ConfirmSubscriptionPanel/TitlePanel"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -130.0
+margin_top = -19.0
+margin_right = 130.0
+margin_bottom = 19.0
+custom_fonts/font = ExtResource( 1 )
+text = "Subscription"
+align = 1
+valign = 1
+
+[node name="MessageLabel" type="Label" parent="StorePanel/SubscriptionPanel/ConfirmSubscriptionPanel"]
+margin_left = 4.0
+margin_top = 43.0
+margin_right = 273.0
+margin_bottom = 112.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+text = "Subscribe to silver vip
+for $1.99/Month?"
+align = 1
+
+[node name="YesButton" type="Button" parent="StorePanel/SubscriptionPanel/ConfirmSubscriptionPanel"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+margin_top = -76.0
+margin_right = 140.0
+margin_bottom = -4.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_colors/font_color_pressed = Color( 1, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+custom_styles/normal = SubResource( 15 )
+text = "Yes"
+
+[node name="NoButton" type="Button" parent="StorePanel/SubscriptionPanel/ConfirmSubscriptionPanel"]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = -140.0
+margin_top = -76.0
+margin_bottom = -4.0
+custom_colors/font_color = Color( 0, 0, 0, 1 )
+custom_colors/font_color_pressed = Color( 1, 0, 0, 1 )
+custom_fonts/font = ExtResource( 1 )
+custom_styles/normal = SubResource( 15 )
+text = "No"
+
+[connection signal="pressed" from="MenuBar/BackButton" to="." method="_on_BackButton_pressed"]
+[connection signal="pressed" from="StoreTabs/GasTab" to="." method="_on_Tab_pressed" binds= [ 0 ]]
+[connection signal="pressed" from="StoreTabs/CoinTab" to="." method="_on_Tab_pressed" binds= [ 1 ]]
+[connection signal="pressed" from="StoreTabs/CarTab" to="." method="_on_Tab_pressed" binds= [ 2 ]]
+[connection signal="pressed" from="StoreTabs/SubscriptionTab" to="." method="_on_Tab_pressed" binds= [ 3 ]]
+[connection signal="pressed" from="StorePanel/GasPanel/GasButton" to="StorePanel/GasPanel" method="_on_GasButton_pressed"]
+[connection signal="pressed" from="StorePanel/GasPanel/ConfirmGasPanel/YesButton" to="StorePanel/GasPanel" method="_on_YesButton_pressed"]
+[connection signal="pressed" from="StorePanel/GasPanel/ConfirmGasPanel/NoButton" to="StorePanel/GasPanel" method="_on_NoButton_pressed"]
+[connection signal="pressed" from="StorePanel/CoinPanel/Coin5Panel/CoinButton" to="StorePanel/CoinPanel" method="_on_purchase_button_pressed" binds= [ 0 ]]
+[connection signal="pressed" from="StorePanel/CoinPanel/Coin10Panel/CoinButton" to="StorePanel/CoinPanel" method="_on_purchase_button_pressed" binds= [ 1 ]]
+[connection signal="pressed" from="StorePanel/CoinPanel/Coin20Panel/CoinButton" to="StorePanel/CoinPanel" method="_on_purchase_button_pressed" binds= [ 2 ]]
+[connection signal="pressed" from="StorePanel/CoinPanel/Coin50Panel/CoinButton" to="StorePanel/CoinPanel" method="_on_purchase_button_pressed" binds= [ 3 ]]
+[connection signal="pressed" from="StorePanel/CoinPanel/ConfirmCoinPanel/YesButton" to="StorePanel/CoinPanel" method="_on_YesButton_pressed"]
+[connection signal="pressed" from="StorePanel/CoinPanel/ConfirmCoinPanel/NoButton" to="StorePanel/CoinPanel" method="_on_NoButton_pressed"]
+[connection signal="pressed" from="StorePanel/CarPanel/SedanPanel/PurchaseButton" to="StorePanel/CarPanel" method="_on_purchase_button_pressed" binds= [ 0 ]]
+[connection signal="pressed" from="StorePanel/CarPanel/TruckPanel/PurchaseButton" to="StorePanel/CarPanel" method="_on_purchase_button_pressed" binds= [ 1 ]]
+[connection signal="pressed" from="StorePanel/CarPanel/OffroadPanel/PurchaseButton" to="StorePanel/CarPanel" method="_on_purchase_button_pressed" binds= [ 2 ]]
+[connection signal="pressed" from="StorePanel/CarPanel/KartPanel/PurchaseButton" to="StorePanel/CarPanel" method="_on_purchase_button_pressed" binds= [ 3 ]]
+[connection signal="pressed" from="StorePanel/CarPanel/ConfirmCarPanel/YesButton" to="StorePanel/CarPanel" method="_on_YesButton_pressed"]
+[connection signal="pressed" from="StorePanel/CarPanel/ConfirmCarPanel/NoButton" to="StorePanel/CarPanel" method="_on_NoButton_pressed"]
+[connection signal="pressed" from="StorePanel/SubscriptionPanel/SilverPanel/SubscriptionButton" to="StorePanel/SubscriptionPanel" method="_on_subscribe_button_pressed" binds= [ 1 ]]
+[connection signal="pressed" from="StorePanel/SubscriptionPanel/SilverPanel/SubscriptionButton2" to="StorePanel/SubscriptionPanel" method="_on_subscribe_button_pressed" binds= [ 1 ]]
+[connection signal="pressed" from="StorePanel/SubscriptionPanel/GoldPanel/SubscriptionButton" to="StorePanel/SubscriptionPanel" method="_on_subscribe_button_pressed" binds= [ 2 ]]
+[connection signal="pressed" from="StorePanel/SubscriptionPanel/GoldPanel/SubscriptionButton2" to="StorePanel/SubscriptionPanel" method="_on_subscribe_button_pressed" binds= [ 2 ]]
+[connection signal="pressed" from="StorePanel/SubscriptionPanel/ConfirmSubscriptionPanel/YesButton" to="StorePanel/SubscriptionPanel" method="_on_YesButton_pressed"]
+[connection signal="pressed" from="StorePanel/SubscriptionPanel/ConfirmSubscriptionPanel/NoButton" to="StorePanel/SubscriptionPanel" method="_on_NoButton_pressed"]

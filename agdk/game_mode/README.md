@@ -1,13 +1,13 @@
 ## Game Mode API Sample
 
-This is a basic sample app that demonstrates the use of [Game Mode API](https://developer.android.com/games/gamemode/gamemode-api). With Game Mode API, an application can understand the user's optimization preference for the game and acts accordingly.
+This is a basic sample that demonstrates the use of the [Game Mode API](https://developer.android.com/games/gamemode/gamemode-api). With the Game Mode API, an application can retrieve the user's optimization preference for the game and act accordingly.
 
 The sample will adjust behavior according to user selected Game Mode:
 
 *   [STANDARD](https://developer.android.com/reference/android/app/GameManager#GAME_MODE_STANDARD): run the game at 30 fps and half the device’s maximum resolution
 *   [PERFORMANCE](https://developer.android.com/reference/android/app/GameManager#GAME_MODE_PERFORMANCE): run the game at 60 fps and maximum resolution
 *   [BATTERY](https://developer.android.com/reference/android/app/GameManager#GAME_MODE_BATTERY): run the game at 30 fps and a quarter of the maximum resolution
-*   [UNSUPPORTED](https://developer.android.com/reference/android/app/GameManager#GAME_MODE_UNSUPPORTED): treat it the same way as STANDARD but you may opt to differ
+*   [UNSUPPORTED](https://developer.android.com/reference/android/app/GameManager#GAME_MODE_UNSUPPORTED): this sample treats it the same way as STANDARD (you may opt to differ)
 
 Note that this sample is just demonstrating the easiest and most distinguishable way to optimize for either PERFORMANCE or BATTERY mode. Each game may have more ways of optimization and may further differentiate between the modes such as loading different assets, online/offline mode (minimizing network calls), etc.
 
@@ -17,27 +17,27 @@ Before building in Android Studio, the following prerequisites must be met:
 
 ### Requirements
 
-Minimum API level of 33 (Android 13) and supported devices (such as Pixel 6~) are required for the Game Mode API to be working
+Minimum API level of 33 (Android 13) and supported devices (such as Pixel 6~) are required for the Game Mode API.
 
 ### 3rd Party Libraries
 
-This sample utilizes 3rd party libraries such as IMGui and BulletPhysics. Here are the steps to setup the required libraries:
+This sample utilizes 3rd party libraries such as Dear Imgui and Bullet physics. Follow these steps to setup the required libraries:
 
 1. Open a terminal and set the working directory to `agdk/thirdparty/`
-2. Run: `git clone -b v1.80 https://github.com/ocornut/imgui`
+2. Run: `git clone https://github.com/ocornut/imgui`
 3. Run: `git clone https://github.com/bulletphysics/bullet3`
 
 ## Building
 
-Once the prerequisites are complete, open the folder in Android Studio 4.2 or higher. You can then build and run the sample from Android Studio
+Once the prerequisites are complete, open the folder in Android Studio 2021.2 or higher. You can then build and run the sample from Android Studio
 
 ## Running
 
-To switch between the game modes, you can use the Game Dashboard (Available on Pixel devices) or similar applications provided by OEM (such as Game Space or Game Booster).
+To switch between the game modes, you can use the Game Dashboard (Available on Pixel devices) or similar applications provided by other OEMs (such as Game Space or Game Booster).
 
 If you are using Game Dashboard and the icon is not showing upon launching the game, you may need to upload your application to Google Play Console and install it via Play Store (you can start an [internal test track](https://support.google.com/googleplay/android-developer/answer/9844679?hl=en) and allowlist your own account to access it)
 
-![Game Dashboard Activity](/docs/gamedashboardactivity.png)
+![Game Dashboard Activity](/agdk/game_mode/docs/gamedashboardactivity.png?raw=true "Game Dashboard Activity")
 
 During development, if you are using device without Game Dashboard and the manufacturer do not provide any way to set Game Mode for each application, you can change the Game Mode status via [adb](https://developer.android.com/studio/command-line/adb)
 

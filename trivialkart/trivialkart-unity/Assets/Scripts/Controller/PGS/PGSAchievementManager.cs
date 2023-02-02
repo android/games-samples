@@ -51,13 +51,13 @@ public class PGSAchievementManager : MonoBehaviour
 
     void Awake()
     {
+#if PLAY_GAMES_SERVICES
         _achievementInfo = new AchievementInfo[]
             {
-#if PLAY_GAMES_SERVICES
                 new AchievementInfo(GPGSIds.achievement_tk_achievement_drive),
                 new AchievementInfo(GPGSIds.achievement_tk_achievement_truck)
-#endif
             };
+#endif            
     }
 
     // Loads the achievements from Play Games Services, and updates

@@ -197,7 +197,7 @@ CreateFromASTCFile(const uint8_t *fileData, const size_t fileSize, GLuint *textu
 // This is not a robust KTX loader, ala libktx. It is only intended to load the KTX 1.1
 // ETC2 format, mip-mapped 2D texture files included with this example
 static bool
-CreateFromKTXFile(const uint8_t *fileData, const size_t fileSize, GLuint *textureID,
+CreateFromKTXFile(const uint8_t *fileData, const size_t /*fileSize*/, GLuint *textureID,
                   uint32_t *textureMipCount) {
     bool success = false;
     const KTXHeader *header = reinterpret_cast<const KTXHeader *>(fileData);

@@ -18,7 +18,7 @@
 #include "jni_util.hpp"
 #include "native_engine.hpp"
 
-static struct JniSetup _jni_setup = {0};
+static struct JniSetup _jni_setup = {0, 0, 0};
 
 struct JniSetup *GetJNISetup() {
     if (!_jni_setup.env) {

@@ -49,6 +49,9 @@ public:
     // This is the env for the app thread. It's different to the main thread.
     JNIEnv *GetAppJniEnv();
 
+    // Return the current system bar offset
+    int GetSystemBarOffset() { return mSystemBarOffset; }
+
 private:
     // variables to track Android lifecycle:
     bool mHasFocus, mIsVisible, mHasWindow;
@@ -70,6 +73,9 @@ private:
 
     // known surface size
     int mSurfWidth, mSurfHeight;
+
+    // system bar offset
+    int mSystemBarOffset;
 
     // known active motion axis ids (bitfield)
     uint64_t mActiveAxisIds;
@@ -122,12 +128,11 @@ private:
 
     bool IsAnimating();
 
+    void HandleGameActivityInput();
+
     void CheckForNewAxis();
 
-    void ProcessKeyEvents();
-
-    void ProcessMotionEvents();
-
+    void UpdateSystemBarOffset();
 public:
     // these are public for simplicity because we have internal static callbacks
     void HandleCommand(int32_t cmd);

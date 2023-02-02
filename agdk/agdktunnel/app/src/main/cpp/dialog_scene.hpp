@@ -19,16 +19,18 @@
 
 #include "engine.hpp"
 #include "ui_scene.hpp"
-#include "welcome_scene.hpp"
+#include "loader_scene.hpp"
 
 /* Dialog Scene. Shows a message and buttons. When a button is clicked, performs
  * a given action. */
 class DialogScene : public UiScene {
 protected:
     // text to be shown
-    const char *mText;
+    std::string mText GUARDED_BY(mTextMutex);
     const char *mLeftButtonText;
     const char *mRightButtonText;
+
+    std::mutex mTextMutex;
 
     // IDs for buttons
     int mLeftButtonId;
@@ -68,11 +70,14 @@ public:
 
     ~DialogScene();
 
+    // We do not take ownership of 'text' here.
     DialogScene *SetText(const char *text) {
+        std::lock_guard<std::mutex> lock(mTextMutex);
         mText = text;
         return this;
     }
 
+    // This takes ownership of 'text'.
     DialogScene *SetSingleButton(const char *text, int action) {
         mLeftButtonText = text;
         mLeftButtonAction = action;

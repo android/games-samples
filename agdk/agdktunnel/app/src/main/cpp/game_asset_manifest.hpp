@@ -23,8 +23,8 @@
 
 namespace GameAssetManifest {
 
-    static const char *MAIN_ASSETPACK_NAME = "TextureAssets";
-    static const char *EXPANSION_ASSETPACK_NAME = "AdditionalTextureAssets";
+    static const char *MAIN_ASSETPACK_NAME = "install_time_assets";
+    static const char *EXPANSION_ASSETPACK_NAME = "on_demand_assets";
 
     struct AssetPackDefinition {
         GameAssetManager::GameAssetPackType mPackType;

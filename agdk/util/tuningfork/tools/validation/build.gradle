@@ -20,20 +20,20 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.8'
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.18'
     }
 }
 
 dependencies {
-    compile 'com.google.guava:guava:26.0-jre'
-    compile 'com.google.protobuf:protobuf-java:3.0.0'
-    compile 'com.google.flogger:flogger:0.3.1'
-    compile 'com.google.flogger:flogger-system-backend:0.3.1'
-    compile 'com.beust:jcommander:1.7'
+    implementation 'com.google.guava:guava:26.0-jre'
+    implementation 'com.google.protobuf:protobuf-java:3.0.0'
+    implementation 'com.google.flogger:flogger:0.3.1'
+    implementation 'com.google.flogger:flogger-system-backend:0.3.1'
+    implementation 'com.beust:jcommander:1.7'
 
-    testCompile 'junit:junit:4.12'
-    testCompile 'com.google.truth:truth:0.43'
-    testCompile 'org.junit.jupiter:junit-jupiter:5.4.1'
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'com.google.truth:truth:0.43'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.4.1'
 
     protobuf files('../../proto/tuningfork.proto')
     protobuf files('src/test/resources/testdata/dev_tuningfork.proto') //for tests
@@ -54,7 +54,7 @@ task createJar(type: Jar) {
     }
     baseName = 'TuningforkApkValidationTool'
     from {
-        configurations.compile.collect {
+        configurations.compileClasspath.collect {
             it.isDirectory()? it:zipTree(it)
         }
     }

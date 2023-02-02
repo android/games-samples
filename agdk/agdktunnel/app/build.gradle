@@ -18,26 +18,49 @@ import org.gradle.internal.os.OperatingSystem;
 
 apply plugin: 'com.android.application'
 
+// See README for details on enabling APT and PAD
+def useApt = APTEnabled
+def usePad = PADEnabled
+
+// Define a path to the extracted Play Core SDK files.
+// If using a relative path, wrap it with file() since CMake requires absolute paths.
+def playcoreDir = file('libs/play-core-native-sdk')
+
 android {
     compileSdkVersion 30
-    ndkVersion '21.4.7075529'
+    ndkVersion '23.1.7779620'
 
     defaultConfig {
         applicationId 'com.google.sample.agdktunnel'
         minSdkVersion 24
         targetSdkVersion 30
         versionCode     1
-        versionName    '1.0'
+        versionName    '1.0.4'
+
+        externalNativeBuild {
+            cmake {
+                // Define the PLAYCORE_LOCATION directive.
+                arguments "-DANDROID_STL=c++_static",
+                        "-DPLAYCORE_LOCATION=$playcoreDir"
+            }
+        }
+        ndk {
+            // Skip deprecated ABIs. Only required when using NDK 16 or earlier.
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+        }
     }
     buildTypes {
         release {
             minifyEnabled = false
             proguardFiles getDefaultProguardFile('proguard-android.txt'),
-                          'proguard-rules.pro'
+                    'proguard-rules.pro',
+                    '$playcoreDir/proguard/common.pgcfg',
+                    '$playcoreDir/proguard/per-feature-proguard-files'
             externalNativeBuild {
                 cmake {
                     arguments "-DANDROID_STL=c++_shared",
-                            "-DUSE_ASSET_PACKS=false"
+                              "-DUSE_ASSET_PACKS=$usePad",
+                              "-DUSE_APT=$useApt"
                 }
             }
         }
@@ -48,10 +71,27 @@ android {
                         'proguard-rules.pro'
                 cmake {
                     arguments "-DANDROID_STL=c++_shared",
-                            "-DUSE_ASSET_PACKS=false"
+                              "-DUSE_ASSET_PACKS=$usePad",
+                              "-DUSE_APT=$useApt"
                 }
             }
             multiDexEnabled true
+        }
+    }
+    // Flavor dimension to create mobile and PC build variants
+    flavorDimensions "platform"
+    productFlavors {
+        mobile {
+            getIsDefault().set(true)
+            dimension "platform"
+        }
+        playGamesPC {
+            dimension "platform"
+
+            // x86 ABI compatibility
+            ndk {
+                abiFilters 'x86', 'x86_64'
+            }
         }
     }
     externalNativeBuild {
@@ -62,19 +102,36 @@ android {
     buildFeatures {
         prefab true
     }
+    assetPacks = [":install_time_assets", ":on_demand_assets"]
+    // Enable the splitting of your asset packs per textures
+    bundle {
+        texture {
+            enableSplit true
+        }
+    }
 }
 
 dependencies {
     implementation "androidx.lifecycle:lifecycle-viewmodel:2.2.0"
     implementation "androidx.lifecycle:lifecycle-livedata:2.2.0"
     implementation "androidx.lifecycle:lifecycle-runtime:2.2.0"
+    implementation "androidx.core:core:1.5.0"
     implementation "androidx.constraintlayout:constraintlayout:2.0.4"
     implementation 'androidx.fragment:fragment:1.2.5'
     implementation 'com.google.oboe:oboe:1.5.0'
-    implementation "androidx.games:games-frame-pacing:1.9.0"
-    implementation "androidx.games:games-performance-tuner:1.4.3"
-    implementation "androidx.games:games-activity:1.0.0"
-    implementation "androidx.games:games-controller:1.0.0"
+    implementation "androidx.games:games-frame-pacing:2.0.0-alpha01"
+    implementation "androidx.games:games-performance-tuner:1.5.0"
+    implementation "androidx.games:games-activity:2.0.0-alpha01"
+    implementation "androidx.games:games-controller:2.0.0-alpha01"
+    implementation "androidx.games:games-memory-advice:1.0.0-beta01"
+
+    // Google Play Games dependencies
+    implementation "com.google.android.gms:play-services-games-v2:17.0.0"
+    // Use the Play Core AAR included with the SDK.
+    if(PADEnabled.toBoolean()) {
+        implementation files("$playcoreDir/playcore.aar")
+    }
+    playGamesPCImplementation 'com.google.android.libraries.play.games:inputmapping:1.0.0-beta'
 
     // Example of using local .aar files in libs/ directory.
     // Comment out the androidx.games implementation lines if
@@ -82,7 +139,7 @@ dependencies {
     //implementation fileTree(dir: 'libs', include: ['GameActivity.aar',
     //                                               'GameController.aar',
     //                                               'games-frame-pacing-1.9.0.aar',
-    //                                               'games-performance-tuner-1.4.3.aar'])
+    //                                               'games-performance-tuner-1.5.0.aar'])
 }
 
 android.lintOptions {
@@ -114,4 +171,34 @@ task buildTuningForkBinFiles(type: Exec) {
             getProtocPath()
 }
 
-tasks.preBuild.dependsOn("buildTuningForkBinFiles")
+if (APTEnabled.toBoolean()) {
+    tasks.preBuild.dependsOn("buildTuningForkBinFiles")
+}
+
+task copyTexturesToAssets(type: Copy) {
+    def assetsDir = new File(projectDir, 'src/main/assets/no_asset_packs_textures')
+    from (rootProject.file('install_time_assets/src/main/assets/textures')) {
+        include('*.ktx')
+    }
+    into assetsDir
+    from (rootProject.file('on_demand_assets/src/main/assets/textures')) {
+        include('*.ktx')
+    }
+    into assetsDir
+}
+
+task deleteAssets(type: Delete) {
+    def assetsDir = new File(projectDir, 'src/main/assets/no_asset_packs_textures')
+    delete assetsDir
+}
+
+tasks.whenTaskAdded { task ->
+    if (!PADEnabled.toBoolean()) {
+        // Copy the ETC2 textures into directory
+        // src/main/assets/no_asset_packs_textures/
+        task.dependsOn copyTexturesToAssets
+    } else {
+        // Delete the src/main/assets/no_asset_packs_textures if using asset packs
+        task.dependsOn deleteAssets
+    }
+}

@@ -24,6 +24,9 @@
 
 #include "game-text-input/gametextinput.h"
 
+// from samples/common/include
+#include "Versions.h"
+
 #include <string>
 #include <android/window.h>
 
@@ -53,6 +56,7 @@
 
 // position of each side button (the buttons on the sides of the PLAY button)
 #define BUTTON_STORY_POS 0.1f + 0.5f * BUTTON_SIDEBUTTON_WIDTH, 0.5f
+#define BUTTON_MEMORY_POS 0.1f + 0.5f * BUTTON_SIDEBUTTON_WIDTH, 0.25f
 #define BUTTON_ABOUT_POS center + 0.3f + 0.5f * BUTTON_SIDEBUTTON_WIDTH, 0.5f
 #define BUTTON_TEST_POS center + 0.3f + 0.5f * BUTTON_SIDEBUTTON_WIDTH, 0.75f
 #define BUTTON_QUIT_POS center + 0.3f + 0.5f * BUTTON_SIDEBUTTON_WIDTH, 0.25f
@@ -87,17 +91,53 @@ void WelcomeScene::RenderBackground() {
     RenderBackgroundAnimation(mShapeRenderer);
 }
 
+static std::string sAboutStartText;
+
+void WelcomeScene::InitAboutText(JNIEnv* env, jobject context) {
+    std::stringstream aboutStream;
+    aboutStream << BLURB_ABOUT;
+    std::string versionName;
+    agdk_samples_util::GetAppVersionInfo(env, context, nullptr, &versionName);
+    aboutStream << "\nApp Version: " << versionName;
+    aboutStream << "\nTarget SDK Version: "
+                << android_get_application_target_sdk_version();
+    aboutStream << "\nDevice OS Version: " << android_get_device_api_level();
+    sAboutStartText = aboutStream.str();
+}
+
+std::string WelcomeScene::AboutMessage() {
+    std::stringstream aboutStream;
+    aboutStream << sAboutStartText;
+    // Add window insets to help debugging
+    aboutStream << "\n[Debug Insets (left, right, top, bottom)]\n";
+    auto activity = NativeEngine::GetInstance()->GetAndroidApp()->activity;
+    ARect insets;
+    GameActivity_getWindowInsets(activity, GAMECOMMON_INSETS_TYPE_SYSTEM_BARS, &insets);
+    aboutStream << "System bars: (" << insets.left << ", " << insets.right << ", " << insets.top
+                << ", " << insets.bottom << ")\n";
+    GameActivity_getWindowInsets(activity, GAMECOMMON_INSETS_TYPE_DISPLAY_CUTOUT, &insets);
+    aboutStream << "Cutout: (" << insets.left << ", " << insets.right << ", " << insets.top
+                << ", " << insets.bottom << ")\n";
+    GameActivity_getWindowInsets(activity, GAMECOMMON_INSETS_TYPE_WATERFALL, &insets);
+    aboutStream << "Waterfall: (" << insets.left << ", " << insets.right << ", "
+                << insets.top << ", " << insets.bottom << ")";
+    return aboutStream.str();
+}
+
 void WelcomeScene::OnButtonClicked(int id) {
     SceneManager *mgr = SceneManager::GetInstance();
 
     if (id == mPlayButtonId) {
-        mgr->RequestNewScene(new PlayScene());
+        DataLoaderStateMachine *dataStateMachine =
+                NativeEngine::GetInstance()->GetDataStateMachine();
+        mgr->RequestNewScene(new PlayScene(dataStateMachine->getLevelLoaded()));
     } else if (id == mStoryButtonId) {
         mgr->RequestNewScene((new DialogScene())->SetText(BLURB_STORY)->SetSingleButton(S_OK,
-                                                                                        DialogScene::ACTION_RETURN));
+                DialogScene::ACTION_RETURN));
     } else if (id == mAboutButtonId) {
-        mgr->RequestNewScene((new DialogScene())->SetText(BLURB_ABOUT)->SetSingleButton(S_OK,
-                                                                                        DialogScene::ACTION_RETURN));
+        std::string aboutText = AboutMessage();
+        mgr->RequestNewScene((new DialogScene())->SetText(aboutText.c_str())->SetSingleButton(S_OK,
+                DialogScene::ACTION_RETURN));
     } else if (id == mNameEdit->GetId()) {
         auto activity = NativeEngine::GetInstance()->GetAndroidApp()->activity;
         // NB: the UI is resized when the IME is shown and OnCreateWidgets is called again.
@@ -115,6 +155,8 @@ void WelcomeScene::OnButtonClicked(int id) {
     } else if (id == mQuitButtonId) {
         auto activity = NativeEngine::GetInstance()->GetAndroidApp()->activity;
         GameActivity_finish(activity);
+    } else if (id == mMemoryButtonId) {
+        NativeEngine::GetInstance()->GetMemoryConsumer()->SetActive(true);
     }
 }
 
@@ -127,6 +169,11 @@ void WelcomeScene::OnTextInput() {
     }, this);
     __android_log_print(ANDROID_LOG_DEBUG, "WelcomeScene", "Got game text %s", sNameEdit.c_str());
     mNameEdit->SetText(sNameEdit.c_str());
+    ARect insets;
+    GameTextInput_getImeInsets(GameActivity_getTextInput(activity), &insets);
+    __android_log_print(ANDROID_LOG_DEBUG,
+                        "WelcomeScene", "IME insets: left=%d right=%d top=%d bottom=%d",
+                        insets.left, insets.right, insets.top, insets.bottom);
 }
 
 void WelcomeScene::DoFrame() {
@@ -145,7 +192,8 @@ void WelcomeScene::UpdateWidgetStates() {
     AddNav(mPlayButtonId, UI_DIR_LEFT, mStoryButtonId);
     AddNav(mPlayButtonId, UI_DIR_RIGHT, mAboutButtonId);
 
-    AddNav(mStoryButtonId, UI_DIR_RIGHT, mPlayButtonId);
+    AddNav(mStoryButtonId, UI_DIR_RIGHT, mMemoryButtonId);
+    AddNav(mMemoryButtonId, UI_DIR_RIGHT, mPlayButtonId);
 
     AddNav(mAboutButtonId, UI_DIR_LEFT, mPlayButtonId);
 
@@ -174,6 +222,12 @@ void WelcomeScene::OnCreateWidgets() {
     // story button
     mStoryButtonId = NewWidget()->SetTextColor(BUTTON_COLOR)->SetText(S_STORY)
             ->SetCenter(BUTTON_STORY_POS)->SetSize(BUTTON_SIDEBUTTON_SIZE)
+            ->SetFontScale(BUTTON_FONT_SCALE)->SetIsButton(true)
+            ->SetTransition(UiWidget::TRANS_FROM_RIGHT)->GetId();
+
+    // memory button
+    mMemoryButtonId = NewWidget()->SetTextColor(BUTTON_COLOR)->SetText(S_MEMORY)
+            ->SetCenter(BUTTON_MEMORY_POS)->SetSize(BUTTON_SIDEBUTTON_SIZE)
             ->SetFontScale(BUTTON_FONT_SCALE)->SetIsButton(true)
             ->SetTransition(UiWidget::TRANS_FROM_RIGHT)->GetId();
 

@@ -142,23 +142,23 @@ bool SceneManager::OnBackKeyPressed() {
     return false;
 }
 
-void SceneManager::OnKeyDown(int ourKeycode) {
-    MY_ASSERT(ourKeycode >= 0 && ourKeycode < OURKEY_COUNT);
-    if (mHasGraphics && mCurScene) {
-        mCurScene->OnKeyDown(ourKeycode);
+void SceneManager::OnKeyDown(int keyCode) {
+    if (isMovementKey(keyCode) || (keyCode >= 0 && keyCode < OURKEY_COUNT &&
+            mHasGraphics && mCurScene)) {
+        mCurScene->OnKeyDown(keyCode);
 
         // if our "escape" key (normally corresponding to joystick button B or Y)
         // was pressed, handle it as a back key
-        if (ourKeycode == OURKEY_ESCAPE) {
+        if (keyCode == OURKEY_ESCAPE) {
             mCurScene->OnBackKeyPressed();
         }
     }
 }
 
-void SceneManager::OnKeyUp(int ourKeycode) {
-    MY_ASSERT(ourKeycode >= 0 && ourKeycode < OURKEY_COUNT);
-    if (mHasGraphics && mCurScene) {
-        mCurScene->OnKeyUp(ourKeycode);
+void SceneManager::OnKeyUp(int keyCode) {
+    if (isMovementKey(keyCode) || (keyCode >= 0 && keyCode < OURKEY_COUNT &&
+            mHasGraphics && mCurScene)) {
+        mCurScene->OnKeyUp(keyCode);
     }
 }
 
@@ -175,7 +175,7 @@ void SceneManager::OnPause() {
 }
 
 void SceneManager::OnResume() {
-    if (mHasGraphics && mCurScene) {
+    if (mCurScene) {
         mCurScene->OnResume();
     }
 }
