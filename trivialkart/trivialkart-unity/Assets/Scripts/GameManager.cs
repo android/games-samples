@@ -18,11 +18,11 @@ using System.Globalization;
 using UnityEngine;
 using UnityEngine.Android;
 using UnityEngine.UI;
-
 #if PLAY_GAMES_PC
-using Google.Play.InputMapping;
+using Google.Android.Libraries.Play.Games.Inputmapping;
+using Google.Android.Libraries.Play.Games.Inputmapping.ExternalType.Android.Content;
+using Google.LibraryWrapper.Java;
 #endif
-
 /// <summary>
 /// GameManager initializes the game on startup and controls the 'play' canvas.
 /// GameManager initializes constant data and requests the load of savegame data.
@@ -86,6 +86,7 @@ public class GameManager : MonoBehaviour
 
 #if PLAY_GAMES_PC
     private readonly InputSDKMappingProvider _inputMapProvider = new InputSDKMappingProvider();
+    private InputMappingClient _inputMappingClient;
 #endif
 
     // Init the game.
@@ -107,9 +108,10 @@ public class GameManager : MonoBehaviour
         SetCanvas(playPageCanvas);
 
 #if PLAY_GAMES_PC
-        PlayInputMappingClient inputMappingClient =
-            Google.Play.InputMapping.PlayInput.GetInputMappingClient();
-        inputMappingClient.SetInputMappingProvider(_inputMapProvider);
+        Context context = (Context)Utils.GetUnityActivity().GetRawObject();
+        _inputMappingClient =
+                Google.Android.Libraries.Play.Games.Inputmapping.Input.GetInputMappingClient(context);
+        _inputMappingClient.SetInputMappingProvider(_inputMapProvider);
 #endif
 
 #if PLAY_GAMES_PC
@@ -311,6 +313,18 @@ public class GameManager : MonoBehaviour
 
         // Set the target canvas page to be active.
         targetCanvasPage.SetActive(true);
+#if PLAY_GAMES_PC
+        if (IsInPlayCanvas())
+        {
+            _inputMappingClient
+                .SetInputContext(InputSDKMappingProvider.roadControlsContext);
+        }
+        else
+        {
+            _inputMappingClient
+                .SetInputContext(InputSDKMappingProvider.menuControlsContext);
+        }
+#endif
     }
 
     // Check if the player is in play mode (page).
@@ -431,9 +445,7 @@ public class GameManager : MonoBehaviour
     private void OnDestroy()
     {
 #if PLAY_GAMES_PC
-        PlayInputMappingClient inputMappingClient =
-            Google.Play.InputMapping.PlayInput.GetInputMappingClient();
-        inputMappingClient.ClearInputMappingProvider();
+        _inputMappingClient.ClearInputMappingProvider();
 #endif
     }
 }
