@@ -105,12 +105,21 @@ public class GameManager : MonoBehaviour
 #else
         SetWaitMessageActive(false);
 #endif
-        SetCanvas(playPageCanvas);
-
 #if PLAY_GAMES_PC
+        // Set the key used for menu buttons
+        GameObject.Find("GarageButton").GetComponentInChildren<Text>().text
+            = string.Format("Garage ({0})", "G");
+        GameObject.Find("PGSButton").GetComponentInChildren<Text>().text
+            = string.Format("PGS({0})", "P");
+        GameObject.Find("StoreButton").GetComponentInChildren<Text>().text
+            = string.Format("Store({0})", "S");
+
         Context context = (Context)Utils.GetUnityActivity().GetRawObject();
         _inputMappingClient =
                 Google.Android.Libraries.Play.Games.Inputmapping.Input.GetInputMappingClient(context);
+        // Register InputRemappingListener before registering the InputMappingProvider
+        _inputMappingClient.RegisterRemappingListener(new InputSDKRemappingListener());
+        // Register the InputMappingProvider before setting any context
         _inputMappingClient.SetInputMappingProvider(_inputMapProvider);
 #endif
 
@@ -123,7 +132,7 @@ public class GameManager : MonoBehaviour
             Permission.RequestUserPermission(Permission.Camera);
        }
 #endif
-
+        SetCanvas(playPageCanvas);
     }
 
 #if PLAY_GAMES_SERVICES
@@ -314,6 +323,8 @@ public class GameManager : MonoBehaviour
         // Set the target canvas page to be active.
         targetCanvasPage.SetActive(true);
 #if PLAY_GAMES_PC
+        // Update InputContext. Make sure to have registered your
+        // InputMappingProvider before setting any context.
         if (IsInPlayCanvas())
         {
             _inputMappingClient
@@ -446,6 +457,7 @@ public class GameManager : MonoBehaviour
     {
 #if PLAY_GAMES_PC
         _inputMappingClient.ClearInputMappingProvider();
+        _inputMappingClient.ClearRemappingListener();
 #endif
     }
 }
