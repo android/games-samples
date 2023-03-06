@@ -175,7 +175,7 @@
     <AndroidEnablePackaging>true</AndroidEnablePackaging>
     <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\AndroidPackaging\</AndroidGradleBuildDir>
     <AndroidApplicationModule>app</AndroidApplicationModule>
-    <AndroidApplicationVariant>$(Configuration)</AndroidApplicationVariant>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
     <AndroidDebugComponent>com.example.hellojni/.MainActivity</AndroidDebugComponent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -186,7 +186,7 @@
     <AndroidEnablePackaging>true</AndroidEnablePackaging>
     <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\AndroidPackaging\</AndroidGradleBuildDir>
     <AndroidApplicationModule>app</AndroidApplicationModule>
-    <AndroidApplicationVariant>$(Configuration)</AndroidApplicationVariant>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
     <AndroidDebugComponent>com.example.hellojni/.MainActivity</AndroidDebugComponent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -197,7 +197,7 @@
     <AndroidEnablePackaging>true</AndroidEnablePackaging>
     <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\AndroidPackaging\</AndroidGradleBuildDir>
     <AndroidApplicationModule>app</AndroidApplicationModule>
-    <AndroidApplicationVariant>$(Configuration)</AndroidApplicationVariant>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
     <AndroidDebugComponent>com.example.hellojni/.MainActivity</AndroidDebugComponent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -208,35 +208,35 @@
     <AndroidEnablePackaging>true</AndroidEnablePackaging>
     <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\AndroidPackaging\</AndroidGradleBuildDir>
     <AndroidApplicationModule>app</AndroidApplicationModule>
-    <AndroidApplicationVariant>$(Configuration)</AndroidApplicationVariant>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
     <AndroidDebugComponent>com.example.hellojni/.MainActivity</AndroidDebugComponent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-armeabi-v7a'">
     <AndroidEnablePackaging>true</AndroidEnablePackaging>
     <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\AndroidPackaging\</AndroidGradleBuildDir>
     <AndroidApplicationModule>app</AndroidApplicationModule>
-    <AndroidApplicationVariant>$(Configuration)</AndroidApplicationVariant>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
     <AndroidDebugComponent>com.example.hellojni/.MainActivity</AndroidDebugComponent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-arm64-v8a'">
     <AndroidEnablePackaging>true</AndroidEnablePackaging>
     <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\AndroidPackaging\</AndroidGradleBuildDir>
     <AndroidApplicationModule>app</AndroidApplicationModule>
-    <AndroidApplicationVariant>$(Configuration)</AndroidApplicationVariant>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
     <AndroidDebugComponent>com.example.hellojni/.MainActivity</AndroidDebugComponent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-arm64-v8a'">
     <AndroidEnablePackaging>true</AndroidEnablePackaging>
     <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\AndroidPackaging\</AndroidGradleBuildDir>
     <AndroidApplicationModule>app</AndroidApplicationModule>
-    <AndroidApplicationVariant>$(Configuration)</AndroidApplicationVariant>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
     <AndroidDebugComponent>com.example.hellojni/.MainActivity</AndroidDebugComponent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-armeabi-v7a'">
     <AndroidEnablePackaging>true</AndroidEnablePackaging>
     <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\AndroidPackaging\</AndroidGradleBuildDir>
     <AndroidApplicationModule>app</AndroidApplicationModule>
-    <AndroidApplicationVariant>$(Configuration)</AndroidApplicationVariant>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
     <AndroidDebugComponent>com.example.hellojni/.MainActivity</AndroidDebugComponent>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

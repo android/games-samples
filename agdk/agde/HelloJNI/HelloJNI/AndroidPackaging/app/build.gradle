@@ -16,13 +16,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 29
-    buildToolsVersion "29.0.1"
+    compileSdkVersion 31
+    buildToolsVersion "30.0.3"
     ndkVersion MSBUILD_NDK_VERSION
     defaultConfig {
         applicationId "com.example.hellojni"
         minSdkVersion MSBUILD_MIN_SDK_VERSION
-        targetSdkVersion 29
+        targetSdkVersion 31
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
