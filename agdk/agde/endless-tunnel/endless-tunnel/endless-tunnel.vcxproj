@@ -204,7 +204,7 @@
     <AndroidEnablePackaging>true</AndroidEnablePackaging>
     <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
     <AndroidApplicationModule>app</AndroidApplicationModule>
-    <AndroidApplicationVariant>$(Configuration)</AndroidApplicationVariant>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
     <AndroidDebugComponent>com.google.sample.tunnel/android.app.NativeActivity</AndroidDebugComponent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-x86_64'">
@@ -212,7 +212,7 @@
     <AndroidEnablePackaging>true</AndroidEnablePackaging>
     <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
     <AndroidApplicationModule>app</AndroidApplicationModule>
-    <AndroidApplicationVariant>$(Configuration)</AndroidApplicationVariant>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
     <AndroidDebugComponent>com.google.sample.tunnel/android.app.NativeActivity</AndroidDebugComponent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-armeabi-v7a'">
@@ -220,7 +220,7 @@
     <AndroidEnablePackaging>true</AndroidEnablePackaging>
     <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
     <AndroidApplicationModule>app</AndroidApplicationModule>
-    <AndroidApplicationVariant>$(Configuration)</AndroidApplicationVariant>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
     <AndroidDebugComponent>com.google.sample.tunnel/android.app.NativeActivity</AndroidDebugComponent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-x86'">
@@ -228,7 +228,7 @@
     <AndroidEnablePackaging>true</AndroidEnablePackaging>
     <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
     <AndroidApplicationModule>app</AndroidApplicationModule>
-    <AndroidApplicationVariant>$(Configuration)</AndroidApplicationVariant>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
     <AndroidDebugComponent>com.google.sample.tunnel/android.app.NativeActivity</AndroidDebugComponent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -242,7 +242,7 @@
     <AndroidEnablePackaging>true</AndroidEnablePackaging>
     <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
     <AndroidApplicationModule>app</AndroidApplicationModule>
-    <AndroidApplicationVariant>$(Configuration)</AndroidApplicationVariant>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
     <AndroidDebugComponent>com.google.sample.tunnel/.MainActivity</AndroidDebugComponent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-x86_64'">
@@ -250,7 +250,7 @@
     <AndroidEnablePackaging>true</AndroidEnablePackaging>
     <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
     <AndroidApplicationModule>app</AndroidApplicationModule>
-    <AndroidApplicationVariant>$(Configuration)</AndroidApplicationVariant>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
     <AndroidDebugComponent>com.google.sample.tunnel/.MainActivity</AndroidDebugComponent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-armeabi-v7a'">
@@ -258,7 +258,7 @@
     <AndroidEnablePackaging>true</AndroidEnablePackaging>
     <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
     <AndroidApplicationModule>app</AndroidApplicationModule>
-    <AndroidApplicationVariant>$(Configuration)</AndroidApplicationVariant>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
     <AndroidDebugComponent>com.google.sample.tunnel/.MainActivity</AndroidDebugComponent>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-x86'">
@@ -266,7 +266,7 @@
     <AndroidEnablePackaging>true</AndroidEnablePackaging>
     <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
     <AndroidApplicationModule>app</AndroidApplicationModule>
-    <AndroidApplicationVariant>$(Configuration)</AndroidApplicationVariant>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
     <AndroidDebugComponent>com.google.sample.tunnel/.MainActivity</AndroidDebugComponent>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

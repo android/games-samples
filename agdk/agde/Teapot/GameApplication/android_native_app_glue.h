@@ -81,7 +81,7 @@ extern "C" {
  * full usage example.  Also look at the JavaDoc of NativeActivity.
  */
 
-    struct android_app;
+struct android_app;
 
 /**
  * Data associated with an ALooper fd that will be returned as the "outData"
