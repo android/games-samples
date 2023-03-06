@@ -1,0 +1,1126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+     Copyright (C) 2021 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Android-arm64-v8a">
+      <Configuration>Debug</Configuration>
+      <Platform>Android-arm64-v8a</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Android-armeabi-v7a">
+      <Configuration>Debug</Configuration>
+      <Platform>Android-armeabi-v7a</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Android-x86">
+      <Configuration>Debug</Configuration>
+      <Platform>Android-x86</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Android-x86_64">
+      <Configuration>Debug</Configuration>
+      <Platform>Android-x86_64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Instrumented|Android-arm64-v8a">
+      <Configuration>Instrumented</Configuration>
+      <Platform>Android-arm64-v8a</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Instrumented|Android-armeabi-v7a">
+      <Configuration>Instrumented</Configuration>
+      <Platform>Android-armeabi-v7a</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Instrumented|Android-x86">
+      <Configuration>Instrumented</Configuration>
+      <Platform>Android-x86</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Instrumented|Android-x86_64">
+      <Configuration>Instrumented</Configuration>
+      <Platform>Android-x86_64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Instrumented|Win32">
+      <Configuration>Instrumented</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Instrumented|x64">
+      <Configuration>Instrumented</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Optimized|Android-arm64-v8a">
+      <Configuration>Optimized</Configuration>
+      <Platform>Android-arm64-v8a</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Optimized|Android-armeabi-v7a">
+      <Configuration>Optimized</Configuration>
+      <Platform>Android-armeabi-v7a</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Optimized|Android-x86">
+      <Configuration>Optimized</Configuration>
+      <Platform>Android-x86</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Optimized|Android-x86_64">
+      <Configuration>Optimized</Configuration>
+      <Platform>Android-x86_64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Optimized|Win32">
+      <Configuration>Optimized</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Optimized|x64">
+      <Configuration>Optimized</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Android-arm64-v8a">
+      <Configuration>Release</Configuration>
+      <Platform>Android-arm64-v8a</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Android-armeabi-v7a">
+      <Configuration>Release</Configuration>
+      <Platform>Android-armeabi-v7a</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Android-x86">
+      <Configuration>Release</Configuration>
+      <Platform>Android-x86</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Android-x86_64">
+      <Configuration>Release</Configuration>
+      <Platform>Android-x86_64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{A07AF0E9-6E4E-4BED-B8AB-5E3F565E639D}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>endlesstunnel</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-arm64-v8a'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-arm64-v8a'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <ProfileGuidedOptimizationMode>Optimized</ProfileGuidedOptimizationMode>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-arm64-v8a'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <ProfileGuidedOptimizationMode>Instrumented</ProfileGuidedOptimizationMode>
+    <ProfileGuidedOptimizationProfiles>/data/data/com.google.sample.tunnel/cache/</ProfileGuidedOptimizationProfiles>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-x86_64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-x86_64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <ProfileGuidedOptimizationMode>Optimized</ProfileGuidedOptimizationMode>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-x86_64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <ProfileGuidedOptimizationMode>Instrumented</ProfileGuidedOptimizationMode>
+    <ProfileGuidedOptimizationProfiles>/data/data/com.google.sample.tunnel/cache/</ProfileGuidedOptimizationProfiles>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-armeabi-v7a'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-armeabi-v7a'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <ProfileGuidedOptimizationMode>Optimized</ProfileGuidedOptimizationMode>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-armeabi-v7a'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <ProfileGuidedOptimizationMode>Instrumented</ProfileGuidedOptimizationMode>
+    <ProfileGuidedOptimizationProfiles>/data/data/com.google.sample.tunnel/cache/</ProfileGuidedOptimizationProfiles>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-x86'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-x86'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <ProfileGuidedOptimizationMode>Optimized</ProfileGuidedOptimizationMode>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-x86'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <ProfileGuidedOptimizationMode>Instrumented</ProfileGuidedOptimizationMode>
+    <ProfileGuidedOptimizationProfiles>/data/data/com.google.sample.tunnel/cache/</ProfileGuidedOptimizationProfiles>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-arm64-v8a'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-x86_64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-armeabi-v7a'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-x86'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-arm64-v8a'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-arm64-v8a'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-arm64-v8a'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-x86_64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-x86_64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-x86_64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-armeabi-v7a'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-armeabi-v7a'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-armeabi-v7a'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-x86'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-x86'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-x86'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-arm64-v8a'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-x86_64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-armeabi-v7a'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-x86'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-arm64-v8a'">
+    <LinkIncremental>true</LinkIncremental>
+    <AndroidEnablePackaging>true</AndroidEnablePackaging>
+    <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
+    <AndroidApplicationModule>app</AndroidApplicationModule>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
+    <AndroidDebugComponent>com.google.sample.tunnel/android.app.NativeActivity</AndroidDebugComponent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-arm64-v8a'">
+    <LinkIncremental>true</LinkIncremental>
+    <AndroidEnablePackaging>true</AndroidEnablePackaging>
+    <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
+    <AndroidApplicationModule>app</AndroidApplicationModule>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
+    <AndroidDebugComponent>com.google.sample.tunnel/android.app.NativeActivity</AndroidDebugComponent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-arm64-v8a'">
+    <LinkIncremental>true</LinkIncremental>
+    <AndroidEnablePackaging>true</AndroidEnablePackaging>
+    <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
+    <AndroidApplicationModule>app</AndroidApplicationModule>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
+    <AndroidDebugComponent>com.google.sample.tunnel/android.app.NativeActivity</AndroidDebugComponent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-x86_64'">
+    <LinkIncremental>true</LinkIncremental>
+    <AndroidEnablePackaging>true</AndroidEnablePackaging>
+    <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
+    <AndroidApplicationModule>app</AndroidApplicationModule>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
+    <AndroidDebugComponent>com.google.sample.tunnel/android.app.NativeActivity</AndroidDebugComponent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-x86_64'">
+    <LinkIncremental>true</LinkIncremental>
+    <AndroidEnablePackaging>true</AndroidEnablePackaging>
+    <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
+    <AndroidApplicationModule>app</AndroidApplicationModule>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
+    <AndroidDebugComponent>com.google.sample.tunnel/android.app.NativeActivity</AndroidDebugComponent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-x86_64'">
+    <LinkIncremental>true</LinkIncremental>
+    <AndroidEnablePackaging>true</AndroidEnablePackaging>
+    <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
+    <AndroidApplicationModule>app</AndroidApplicationModule>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
+    <AndroidDebugComponent>com.google.sample.tunnel/android.app.NativeActivity</AndroidDebugComponent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-armeabi-v7a'">
+    <LinkIncremental>true</LinkIncremental>
+    <AndroidEnablePackaging>true</AndroidEnablePackaging>
+    <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
+    <AndroidApplicationModule>app</AndroidApplicationModule>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
+    <AndroidDebugComponent>com.google.sample.tunnel/android.app.NativeActivity</AndroidDebugComponent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-armeabi-v7a'">
+    <LinkIncremental>true</LinkIncremental>
+    <AndroidEnablePackaging>true</AndroidEnablePackaging>
+    <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
+    <AndroidApplicationModule>app</AndroidApplicationModule>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
+    <AndroidDebugComponent>com.google.sample.tunnel/android.app.NativeActivity</AndroidDebugComponent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-armeabi-v7a'">
+    <LinkIncremental>true</LinkIncremental>
+    <AndroidEnablePackaging>true</AndroidEnablePackaging>
+    <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
+    <AndroidApplicationModule>app</AndroidApplicationModule>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
+    <AndroidDebugComponent>com.google.sample.tunnel/android.app.NativeActivity</AndroidDebugComponent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-x86'">
+    <LinkIncremental>true</LinkIncremental>
+    <AndroidEnablePackaging>true</AndroidEnablePackaging>
+    <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
+    <AndroidApplicationModule>app</AndroidApplicationModule>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
+    <AndroidDebugComponent>com.google.sample.tunnel/android.app.NativeActivity</AndroidDebugComponent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-x86'">
+    <LinkIncremental>true</LinkIncremental>
+    <AndroidEnablePackaging>true</AndroidEnablePackaging>
+    <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
+    <AndroidApplicationModule>app</AndroidApplicationModule>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
+    <AndroidDebugComponent>com.google.sample.tunnel/android.app.NativeActivity</AndroidDebugComponent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-x86'">
+    <LinkIncremental>true</LinkIncremental>
+    <AndroidEnablePackaging>true</AndroidEnablePackaging>
+    <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
+    <AndroidApplicationModule>app</AndroidApplicationModule>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
+    <AndroidDebugComponent>com.google.sample.tunnel/android.app.NativeActivity</AndroidDebugComponent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-arm64-v8a'">
+    <LinkIncremental>false</LinkIncremental>
+    <AndroidEnablePackaging>true</AndroidEnablePackaging>
+    <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
+    <AndroidApplicationModule>app</AndroidApplicationModule>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
+    <AndroidDebugComponent>com.google.sample.tunnel/.MainActivity</AndroidDebugComponent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-x86_64'">
+    <LinkIncremental>false</LinkIncremental>
+    <AndroidEnablePackaging>true</AndroidEnablePackaging>
+    <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
+    <AndroidApplicationModule>app</AndroidApplicationModule>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
+    <AndroidDebugComponent>com.google.sample.tunnel/.MainActivity</AndroidDebugComponent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-armeabi-v7a'">
+    <LinkIncremental>false</LinkIncremental>
+    <AndroidEnablePackaging>true</AndroidEnablePackaging>
+    <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
+    <AndroidApplicationModule>app</AndroidApplicationModule>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
+    <AndroidDebugComponent>com.google.sample.tunnel/.MainActivity</AndroidDebugComponent>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-x86'">
+    <LinkIncremental>false</LinkIncremental>
+    <AndroidEnablePackaging>true</AndroidEnablePackaging>
+    <AndroidGradleBuildDir>$(MSBuildProjectDirectory)\Android\</AndroidGradleBuildDir>
+    <AndroidApplicationModule>app</AndroidApplicationModule>
+    <AndroidGradleBuildType>$(Configuration)</AndroidGradleBuildType>
+    <AndroidDebugComponent>com.google.sample.tunnel/.MainActivity</AndroidDebugComponent>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-arm64-v8a'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>-u ANativeActivity_onCreate</AdditionalOptions>
+      <LibraryDependencies>EGL;GLESv2;OpenSLES;android;log;atomic</LibraryDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-arm64-v8a'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>-u ANativeActivity_onCreate</AdditionalOptions>
+      <LibraryDependencies>EGL;GLESv2;OpenSLES;android;log;atomic</LibraryDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-arm64-v8a'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>-u ANativeActivity_onCreate</AdditionalOptions>
+      <LibraryDependencies>EGL;GLESv2;OpenSLES;android;log;atomic</LibraryDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-x86_64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>-u ANativeActivity_onCreate</AdditionalOptions>
+      <LibraryDependencies>EGL;GLESv2;OpenSLES;android;log;atomic</LibraryDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-x86_64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>-u ANativeActivity_onCreate</AdditionalOptions>
+      <LibraryDependencies>EGL;GLESv2;OpenSLES;android;log;atomic</LibraryDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-x86_64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>-u ANativeActivity_onCreate</AdditionalOptions>
+      <LibraryDependencies>EGL;GLESv2;OpenSLES;android;log;atomic</LibraryDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-armeabi-v7a'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>-u ANativeActivity_onCreate</AdditionalOptions>
+      <LibraryDependencies>EGL;GLESv2;OpenSLES;android;log;atomic</LibraryDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-armeabi-v7a'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>-u ANativeActivity_onCreate</AdditionalOptions>
+      <LibraryDependencies>EGL;GLESv2;OpenSLES;android;log;atomic</LibraryDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-armeabi-v7a'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>-u ANativeActivity_onCreate</AdditionalOptions>
+      <LibraryDependencies>EGL;GLESv2;OpenSLES;android;log;atomic</LibraryDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Android-x86'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>-u ANativeActivity_onCreate</AdditionalOptions>
+      <LibraryDependencies>EGL;GLESv2;OpenSLES;android;log;atomic</LibraryDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-x86'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>-u ANativeActivity_onCreate</AdditionalOptions>
+      <LibraryDependencies>EGL;GLESv2;OpenSLES;android;log;atomic</LibraryDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-x86'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>-u ANativeActivity_onCreate</AdditionalOptions>
+      <LibraryDependencies>EGL;GLESv2;OpenSLES;android;log;atomic</LibraryDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-arm64-v8a'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <CLanguageStandard>c11</CLanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <LibraryDependencies>EGL;GLESv2;OpenSLES;android;log;atomic</LibraryDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>-u ANativeActivity_onCreate</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-x86_64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <CLanguageStandard>c11</CLanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <LibraryDependencies>EGL;GLESv2;OpenSLES;android;log;atomic</LibraryDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>-u ANativeActivity_onCreate</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-armeabi-v7a'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <CLanguageStandard>c11</CLanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <LibraryDependencies>EGL;GLESv2;OpenSLES;android;log;atomic</LibraryDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>-u ANativeActivity_onCreate</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Android-x86'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>GLM_FORCE_SIZE_T_LENGTH;GLM_FORCE_RADIANS;_NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>$(VS_NdkRoot)\sources\android\native_app_glue;$(SolutionDir)third_party\glm\Android;$(AndroidGradleBuildDir)\app\src\main\cpp\data;$(AndroidGradleBuildDir)\app\src\main\cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <CLanguageStandard>c11</CLanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <LibraryDependencies>EGL;GLESv2;OpenSLES;android;log;atomic</LibraryDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>-u ANativeActivity_onCreate</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="Android\app\src\main\cpp\anim.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\ascii_to_geom.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\dialog_scene.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\indexbuf.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\input_util.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\jni_util.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\native_engine.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\obstacle.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\obstacle_generator.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\our_shader.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\play_scene.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\scene.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\scene_manager.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\sfxman.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\shader.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\shape_renderer.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\simplegeom.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\texture.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\text_renderer.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\tex_quad.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\ui_scene.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\util.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\vertexbuf.hpp" />
+    <ClInclude Include="Android\app\src\main\cpp\welcome_scene.hpp" />
+    <ClInclude Include="pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Android\app\src\main\cpp\android_main.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\anim.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\ascii_to_geom.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\dialog_scene.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\indexbuf.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\input_util.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\jni_util.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\native_engine.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\obstacle.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\obstacle_generator.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\our_shader.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\play_scene.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\scene.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\scene_manager.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\sfxman.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\shader.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\shape_renderer.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\texture.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\text_renderer.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\tex_quad.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\ui_scene.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\util.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\vertexbuf.cpp" />
+    <ClCompile Include="Android\app\src\main\cpp\welcome_scene.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Optimized|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Instrumented|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Optimized|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Instrumented|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Android-arm64-v8a'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-arm64-v8a'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-arm64-v8a'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Android-x86_64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-x86_64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-x86_64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Android-armeabi-v7a'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-armeabi-v7a'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-armeabi-v7a'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Android-x86'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Optimized|Android-x86'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Instrumented|Android-x86'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Android-arm64-v8a'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Android-x86_64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Android-armeabi-v7a'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Android-x86'">Create</PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\build.gradle" />
+    <None Include="Android\app\proguard-rules.pro" />
+    <None Include="Android\build.gradle" />
+    <None Include="Android\gradle.properties" />
+    <None Include="Android\gradlew" />
+    <None Include="Android\gradlew.bat" />
+    <None Include="Android\gradle\wrapper\gradle-wrapper.jar" />
+    <None Include="Android\gradle\wrapper\gradle-wrapper.properties" />
+    <None Include="Android\settings.gradle" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\drawable\ic_launcher_background.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\drawable-v24\ic_launcher_foreground.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\mipmap-anydpi-v26\ic_launcher.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\mipmap-anydpi-v26\ic_launcher_round.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\mipmap-hdpi\ic_launcher.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\mipmap-hdpi\ic_launcher_round.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\mipmap-mdpi\ic_launcher.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\mipmap-mdpi\ic_launcher_round.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\mipmap-xhdpi\ic_launcher.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\mipmap-xhdpi\ic_launcher_round.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\mipmap-xxhdpi\ic_launcher.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\mipmap-xxhdpi\ic_launcher_round.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\mipmap-xxxhdpi\ic_launcher.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\mipmap-xxxhdpi\ic_launcher_round.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\values\colors.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\values\strings.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\res\values\styles.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Android\app\src\main\AndroidManifest.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\third_party\glm\glm.vcxproj">
+      <Project>{991f34d0-e1e0-4833-aba3-25af229bc6d5}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\native_app_glue\native_app_glue.vcxproj">
+      <Project>{382d675a-9f29-4d9e-925a-f89a295a3012}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PgoProfile Include="..\pgo-profiles\25\profile.profraw" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
