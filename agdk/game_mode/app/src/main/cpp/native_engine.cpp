@@ -751,7 +751,7 @@ void NativeEngine::DoFrame() {
   if (mIsFirstFrame) {
     mIsFirstFrame = false;
     ALOGI("GameMode first frame");
-    mgr->RequestNewScene(new DemoScene());
+    mgr->RequestNewScene(&DemoScene::getInstance());
   }
 
   // render!

@@ -38,8 +38,17 @@ class GameAssetManager;
 // In the future version, the sample is update to adjust the CPU/GPU load
 // based on the thermal status of the device.
 class DemoScene : public Scene {
- public:
+ private:
+  // Ctor. It's private since the class is designed as a singleton.
   DemoScene();
+
+ public:
+
+  // Singleton function.
+  static DemoScene& getInstance() {
+    static DemoScene instance;
+    return instance;
+  }
 
   virtual ~DemoScene();
 
@@ -57,14 +66,27 @@ class DemoScene : public Scene {
 
   virtual void OnScreenResized(int width, int height);
 
+  static DemoScene* GetInstance();
+
+  void AdaptThermalLevel(int32_t index);
+
+  void ControlStep(bool step_up);
+  void ControlBoxCount(bool count_up);
+  void ControlResetToDefaultSettings();
+
  private:
-  // # of cubes managed in bullet physics.
-  static constexpr int32_t kArraySizeX = 6;
-  static constexpr int32_t kArraySizeY = 6;
-  static constexpr int32_t kArraySizeZ = 6;
+  // # of cubes managed in bullet physics. Defaulted to 8
+  static constexpr int32_t kArraySize = 8;
+  static constexpr int32_t kArraySizeY = 8;
+  static constexpr int32_t kArraySizeZ = 8;
+  static constexpr int32_t kPhysicsStep = 8;
+
+  static constexpr int32_t kPhysicsStepMax = 24;
+  static constexpr int32_t kBoxSizeMin = 4;
+  static constexpr int32_t kBoxSizeMax = 12;
 
   // Size of the box in the bullet physics.
-  static constexpr float kBoxSize = 1.0f;
+  static constexpr float kBoxSize = 0.5f;
 
   // must be implemented by subclass
 
@@ -84,9 +106,15 @@ class DemoScene : public Scene {
 
   // Bullet Physics related methods.
   void InitializePhysics();
+  void CreateRigidBodies();
+  void DeleteRigidBodies();
   void CleanupPhysics();
   void UpdatePhysics();
   void ResetPhysics();
+
+  int32_t currentTimeMillis();
+
+  static void on_thermal_state_changed(int32_t last_state, int32_t current_state);
 
   // We want to register a touch down as the equivalent of
   // a button click to ImGui, so we send it an up event
@@ -101,6 +129,8 @@ class DemoScene : public Scene {
 
   // Did we simulate a click for ImGui?
   SimulatedClickState simulated_click_state_;
+
+  bool recreate_physics_obj_; // need to create obj on next tick
 
   // Is a touch pointer (a.k.a. finger) down at the moment?
   bool pointer_down_;
@@ -117,9 +147,20 @@ class DemoScene : public Scene {
   // Renderer to render cubes.
   BoxRenderer box_;
 
+  int32_t current_thermal_index_;
+
   // Current and target frame rate period.
   int32_t target_frame_period_;
   int32_t current_frame_period_;
+
+  // time of last physics reset
+  int32_t last_physics_reset_tick_;
+
+  int32_t current_physics_step_;
+
+  int32_t array_size_;
+
+  float box_size_;
 
   // Bullet physics data members.
   btDefaultCollisionConfiguration* collision_configuration_;
@@ -128,6 +169,7 @@ class DemoScene : public Scene {
   btAlignedObjectArray<btCollisionShape*> collision_shapes_;
   btSequentialImpulseConstraintSolver* solver_;
   btBroadphaseInterface* overlapping_pair_cache_;
+  btCollisionShape* box_collision_shape_;
 };
 
 #endif  // DEMO_SCENE_H_

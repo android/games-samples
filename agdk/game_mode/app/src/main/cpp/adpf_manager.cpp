@@ -205,6 +205,21 @@ bool ADPFManager::InitializePerformanceHintManager() {
   return true;
 }
 
+thermalStateChangeListener ADPFManager::thermalListener = NULL;
+
+void ADPFManager::SetThermalStatus(int32_t i) {
+  int32_t prev_status_ = thermal_status_;
+  int32_t current_status_ = i;
+  thermal_status_ = i;
+  if (thermalListener != NULL) {
+    thermalListener(prev_status_, current_status_);
+  }
+}
+
+void ADPFManager::SetThermalListener(thermalStateChangeListener listener) {
+  thermalListener = listener;
+}
+
 // Indicates the start and end of the performance intensive task.
 // The methods call performance hint API to tell the performance
 // hint to the system.
