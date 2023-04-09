@@ -51,6 +51,9 @@ class ADPFManager {
       if (obj_power_service_ != nullptr) {
         app_->activity->env->DeleteGlobalRef(obj_power_service_);
       }
+      if (obj_battery_service_ != nullptr) {
+        app_->activity->env->DeleteGlobalRef(obj_battery_service_);
+      }
       if (obj_perfhint_service_ != nullptr) {
         app_->activity->env->DeleteGlobalRef(obj_perfhint_service_);
       }
@@ -81,6 +84,9 @@ class ADPFManager {
   int32_t GetThermalStatus() { return thermal_status_; }
   float GetThermalHeadroom() { return thermal_headroom_; }
 
+  // Retrieve current battery usage from BatteryManager.
+  long GetBatteryUsage();
+  
   // Indicates the start and end of the performance intensive task.
   // The methods call performance hint API to tell the performance
   // hint to the system.
@@ -102,6 +108,9 @@ class ADPFManager {
         thermal_headroom_(0.f),
         obj_power_service_(nullptr),
         get_thermal_headroom_(0),
+        obj_battery_service_(nullptr),
+        battery_propertyid_(0),
+        get_long_property_(0),
         obj_perfhint_service_(nullptr),
         obj_perfhint_session_(nullptr),
         report_actual_work_duration_(0),
@@ -115,6 +124,10 @@ class ADPFManager {
   bool InitializePowerManager();
   float UpdateThermalStatusHeadRoom();
   bool InitializePerformanceHintManager();
+  bool InitializeBatteryManager();
+
+  // Helper function using JNI calls.
+  jobject GetService(JNIEnv *env, const char* service);
 
   AThermalManager* thermal_manager_;
   int32_t thermal_status_;
@@ -123,6 +136,9 @@ class ADPFManager {
   std::shared_ptr<android_app> app_;
   jobject obj_power_service_;
   jmethodID get_thermal_headroom_;
+  jobject obj_battery_service_;
+  jint battery_propertyid_;
+  jmethodID get_long_property_;
 
   jobject obj_perfhint_service_;
   jobject obj_perfhint_session_;

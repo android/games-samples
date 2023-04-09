@@ -228,6 +228,10 @@ void DemoScene::RenderPanel() {
   ImGui::Text("Thermal State:%s", thermal_state_label[thermal_state]);
   ImGui::Text("Thermal Headroom:%f",
               ADPFManager::getInstance().GetThermalHeadroom());
+
+  // Show current power usage using BatteryManager API.
+  long powerUsage = ADPFManager::getInstance().GetBatteryUsage();
+  ImGui::Text("Power usage:%ld", powerUsage);
 }
 
 void DemoScene::OnButtonClicked(int buttonId) {

@@ -20,6 +20,7 @@ import android.os.Build;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager.LayoutParams;
 
@@ -96,4 +97,6 @@ public class ADPFSampleActivity extends GameActivity {
         this.adpfManager.unregisterListener(getApplicationContext());
         super.onPause();
     }
+
 }
+
