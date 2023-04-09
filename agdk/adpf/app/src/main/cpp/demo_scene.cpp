@@ -21,8 +21,6 @@
 
 #include "Log.h"
 #include "adpf_manager.h"
-#include "imgui.h"
-#include "imgui_manager.h"
 #include "native_engine.h"
 
 extern "C" {
@@ -232,6 +230,23 @@ void DemoScene::RenderPanel() {
   // Show current power usage using BatteryManager API.
   long powerUsage = ADPFManager::getInstance().GetBatteryUsage();
   ImGui::Text("Power usage:%ld", powerUsage);
+  static float t = 0;
+  t += ImGui::GetIO().DeltaTime;
+  graph_buffer_.AddPoint(t, powerUsage * 0.005f);
+
+  ImPlotAxisFlags flags = ImPlotAxisFlags_NoTickLabels;
+  if (ImPlot::BeginPlot("##PowerUsage", ImVec2(-1, 600))) {
+    constexpr float history = 30.f;
+    ImPlot::SetupAxes(NULL, NULL, flags, flags);
+    ImPlot::SetupAxisLimits(ImAxis_X1, t - history, t, ImGuiCond_Always);
+    ImPlot::SetupAxisLimits(ImAxis_Y1, -10000, 10000);
+
+    ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.5f);
+    ImPlot::PlotShaded("Battery usage", &graph_buffer_.Data[0].x,
+                       &graph_buffer_.Data[0].y, graph_buffer_.Data.size(),
+                       -INFINITY, 0, graph_buffer_.Offset, 2 * sizeof(float));
+    ImPlot::EndPlot();
+  }
 }
 
 void DemoScene::OnButtonClicked(int buttonId) {

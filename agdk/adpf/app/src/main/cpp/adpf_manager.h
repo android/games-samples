@@ -86,7 +86,7 @@ class ADPFManager {
 
   // Retrieve current battery usage from BatteryManager.
   long GetBatteryUsage();
-  
+
   // Indicates the start and end of the performance intensive task.
   // The methods call performance hint API to tell the performance
   // hint to the system.
@@ -127,7 +127,7 @@ class ADPFManager {
   bool InitializeBatteryManager();
 
   // Helper function using JNI calls.
-  jobject GetService(JNIEnv *env, const char* service);
+  jobject GetService(JNIEnv* env, const char* service);
 
   AThermalManager* thermal_manager_;
   int32_t thermal_status_;

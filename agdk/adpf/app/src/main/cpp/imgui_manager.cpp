@@ -22,6 +22,7 @@ extern "C" {
 #include "backends/imgui_impl_opengl3.h"
 #include "imgui.h"
 #include "imgui_manager.h"
+#include "implot.h"
 
 namespace {
 const float GUI_LOWDPI_FONT_SCALE = 2.0f;
@@ -35,6 +36,7 @@ ImGuiManager::ImGuiManager() : delta_clock_() {
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
+  ImPlot::CreateContext();
 
   // Setup Dear ImGui style
   ImGui::StyleColorsDark();
@@ -45,6 +47,7 @@ ImGuiManager::ImGuiManager() : delta_clock_() {
 
 ImGuiManager::~ImGuiManager() {
   ImGui_ImplOpenGL3_Shutdown();
+  ImPlot::DestroyContext();
   ImGui::DestroyContext();
 }
 

@@ -38,6 +38,9 @@ add_definitions("-DIMGUI_IMPL_OPENGL_ES2")
 # build Dear ImGui as a static lib
 set(IMGUI_BASE_DIR "../../../../../third_party/imgui")
 
+# build Dear ImGui as a static lib
+set(IMPLOT_BASE_DIR "../../../../../third_party/implot")
+
 # build bullet physics as a static lib
 set(BULLET_BASE_DIR "../../../../../third_party/bullet3/src")
 
@@ -48,12 +51,13 @@ set(COMMON_SRC_DIR "../../../../../common")
 set(COMMON_INCLUDE_DIR "../../../../../common/include")
 
 add_library(imgui STATIC
-        ${IMGUI_BASE_DIR}/imgui_demo.cpp
         ${IMGUI_BASE_DIR}/imgui_draw.cpp
         ${IMGUI_BASE_DIR}/imgui_tables.cpp
         ${IMGUI_BASE_DIR}/imgui_widgets.cpp
         ${IMGUI_BASE_DIR}/imgui.cpp
-        ${IMGUI_BASE_DIR}/backends/imgui_impl_opengl3.cpp)
+        ${IMGUI_BASE_DIR}/backends/imgui_impl_opengl3.cpp
+        ${IMPLOT_BASE_DIR}/implot.cpp
+        ${IMPLOT_BASE_DIR}/implot_items.cpp)
 
 target_include_directories(imgui PRIVATE
         ${IMGUI_BASE_DIR})
@@ -122,6 +126,7 @@ target_include_directories(game PRIVATE
         ${COMMON_SRC_DIR}
         ${COMMON_INCLUDE_DIR}
         ${IMGUI_BASE_DIR}
+        ${IMPLOT_BASE_DIR}
         ${BULLET_BASE_DIR})
 
 target_compile_options(game
