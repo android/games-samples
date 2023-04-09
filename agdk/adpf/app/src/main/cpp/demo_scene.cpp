@@ -40,7 +40,7 @@ const char* thermal_state_label[] = {
 DemoScene::DemoScene() {
   simulated_click_state_ = SIMULATED_CLICK_NONE;
   pointer_down_ = false;
-  point_x_ = 0.0f;
+  pointer_x_ = 0.0f;
   pointer_y_ = 0.0f;
   transition_start_ = 0.0f;
   target_frame_period_ = SWAPPY_SWAP_60FPS;
@@ -142,7 +142,7 @@ void DemoScene::OnPointerDown(int pointerId,
   // way.
   if (coords->is_screen_) {
     pointer_down_ = true;
-    point_x_ = coords->x_;
+    pointer_x_ = coords->x_;
     pointer_y_ = coords->y_;
   }
 }
@@ -150,14 +150,14 @@ void DemoScene::OnPointerDown(int pointerId,
 void DemoScene::OnPointerMove(int pointerId,
                               const struct PointerCoords* coords) {
   if (coords->is_screen_ && pointer_down_) {
-    point_x_ = coords->x_;
+    pointer_x_ = coords->x_;
     pointer_y_ = coords->y_;
   }
 }
 
 void DemoScene::OnPointerUp(int pointerId, const struct PointerCoords* coords) {
   if (coords->is_screen_) {
-    point_x_ = coords->x_;
+    pointer_x_ = coords->x_;
     pointer_y_ = coords->y_;
     pointer_down_ = false;
     simulated_click_state_ = SIMULATED_CLICK_NONE;
@@ -166,7 +166,7 @@ void DemoScene::OnPointerUp(int pointerId, const struct PointerCoords* coords) {
 
 void DemoScene::UpdateUIInput() {
   ImGuiIO& io = ImGui::GetIO();
-  io.MousePos = ImVec2(point_x_, pointer_y_);
+  io.MousePos = ImVec2(pointer_x_, pointer_y_);
   bool pointer_down = false;
   // To make a touch work like a mouse click we need to sequence the following:
   // 1) Position cursor at touch spot with mouse button still up
@@ -217,6 +217,16 @@ void DemoScene::RenderPanel() {
   assert(thermal_state >= 0 &&
          thermal_state <
              sizeof(thermal_state_label) / sizeof(thermal_state_label[0]));
+
+  // Show checkbox to enable/disable ADPF.
+  static bool useADPF = true;
+  if (ImGui::Checkbox("use ADPF", &useADPF)) {
+    if(useADPF) {
+      ADPFManager::getInstance().InitializePerformanceHintManager();
+    } else {
+      ADPFManager::getInstance().ClosePerfHintSession();
+    }
+  }
 
   // Show current FPS target.
   ImGui::Text("FPS target:%s",

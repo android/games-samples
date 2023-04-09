@@ -110,7 +110,7 @@ class DemoScene : public Scene {
   bool pointer_down_;
 
   // Touch pointer current X
-  float point_x_;
+  float pointer_x_;
 
   // Touch pointer current Y
   float pointer_y_;

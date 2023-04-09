@@ -172,22 +172,8 @@ float ADPFManager::UpdateThermalStatusHeadRoom() {
 bool ADPFManager::InitializePerformanceHintManager() {
   JNIEnv *env = NativeEngine::GetInstance()->GetJniEnv();
 
-  // Retrieve class information
-  jclass context = env->FindClass("android/content/Context");
-
-  // Get the value of a constant
-  jfieldID fid = env->GetStaticFieldID(context, "PERFORMANCE_HINT_SERVICE",
-                                       "Ljava/lang/String;");
-  jobject str_svc = env->GetStaticObjectField(context, fid);
-
-  // Get the method 'getSystemService' and call it
-  jmethodID mid_getss = env->GetMethodID(
-      context, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;");
-  jobject obj_perfhint_service = env->CallObjectMethod(
-      app_->activity->javaGameActivity, mid_getss, str_svc);
-
-  // Add global reference to the power service object.
-  obj_perfhint_service_ = env->NewGlobalRef(obj_perfhint_service);
+  // Retrieve performance hint service.
+  obj_perfhint_service_ = GetService(env, "PERFORMANCE_HINT_SERVICE");
 
   // Retrieve methods IDs for the APIs.
   jclass cls_perfhint_service = env->GetObjectClass(obj_perfhint_service_);
@@ -219,15 +205,13 @@ bool ADPFManager::InitializePerformanceHintManager() {
         cls_perfhint_session, "reportActualWorkDuration", "(J)V");
     update_target_work_duration_ = env->GetMethodID(
         cls_perfhint_session, "updateTargetWorkDuration", "(J)V");
+    close_session_ = env->GetMethodID(cls_perfhint_session, "close", "()V");
   }
 
   // Free local references
   env->DeleteLocalRef(obj_hintsession);
   env->DeleteLocalRef(array);
   env->DeleteLocalRef(cls_perfhint_service);
-  env->DeleteLocalRef(obj_perfhint_service);
-  env->DeleteLocalRef(str_svc);
-  env->DeleteLocalRef(context);
 
   if (report_actual_work_duration_ == 0 || update_target_work_duration_ == 0) {
     // The API is not supported in the platform version.
@@ -262,5 +246,20 @@ void ADPFManager::EndPerfHintSession(jlong target_duration_ns) {
                         duration_ns);
     env->CallVoidMethod(obj_perfhint_session_, update_target_work_duration_,
                         target_duration_ns);
+  }
+}
+
+// Close perfhint session.
+void ADPFManager::ClosePerfHintSession() {
+  if (obj_perfhint_session_) {
+    // Close the session.
+    JNIEnv *env = NativeEngine::GetInstance()->GetJniEnv();
+    env->CallVoidMethod(obj_perfhint_session_, close_session_);
+
+    // Delete references.
+    env->DeleteGlobalRef(obj_perfhint_session_);
+    env->DeleteGlobalRef(obj_perfhint_service_);
+    obj_perfhint_service_ = nullptr;
+    obj_perfhint_session_ = nullptr;
   }
 }

@@ -93,6 +93,13 @@ class ADPFManager {
   void BeginPerfHintSession();
   void EndPerfHintSession(jlong target_duration_ns);
 
+  // Initialize performance hint session.
+  bool InitializePerformanceHintManager();
+
+  // Close current perf hint session.
+  void ClosePerfHintSession();
+
+
   // Method to retrieve thermal manager. The API is used to register/unregister
   // callbacks from C API.
   AThermalManager* GetThermalManager() { return thermal_manager_; }
@@ -115,6 +122,7 @@ class ADPFManager {
         obj_perfhint_session_(nullptr),
         report_actual_work_duration_(0),
         update_target_work_duration_(0),
+        close_session_(0),
         preferred_update_rate_(0) {
     last_clock_ = Clock();
     perfhintsession_start_ = 0;
@@ -123,7 +131,6 @@ class ADPFManager {
   // Functions to initialize ADPF API's calls.
   bool InitializePowerManager();
   float UpdateThermalStatusHeadRoom();
-  bool InitializePerformanceHintManager();
   bool InitializeBatteryManager();
 
   // Helper function using JNI calls.
@@ -144,6 +151,7 @@ class ADPFManager {
   jobject obj_perfhint_session_;
   jmethodID report_actual_work_duration_;
   jmethodID update_target_work_duration_;
+  jmethodID close_session_;
   jlong preferred_update_rate_;
 
   float perfhintsession_start_;
