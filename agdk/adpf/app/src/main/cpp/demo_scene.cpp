@@ -221,7 +221,7 @@ void DemoScene::RenderPanel() {
   // Show checkbox to enable/disable ADPF.
   static bool useADPF = true;
   if (ImGui::Checkbox("use ADPF", &useADPF)) {
-    if(useADPF) {
+    if (useADPF) {
       ADPFManager::getInstance().InitializePerformanceHintManager();
     } else {
       ADPFManager::getInstance().ClosePerfHintSession();
@@ -233,9 +233,23 @@ void DemoScene::RenderPanel() {
               target_frame_period_ == SWAPPY_SWAP_60FPS ? "60" : "30");
 
   // Show current thermal state on screen.
-  ImGui::Text("Thermal State:%s", thermal_state_label[thermal_state]);
-  ImGui::Text("Thermal Headroom:%f",
+  ImGui::Text("Thermal State: %s", thermal_state_label[thermal_state]);
+  ImGui::Text("Thermal Headroom: %f",
               ADPFManager::getInstance().GetThermalHeadroom());
+
+  ImGui::SameLine(1200);
+  ImGui::Text("Forecast");
+  ImGui::SameLine();
+  ImGui::PushItemWidth(600);
+  int32_t forcast_sec = ADPFManager::getInstance().GetThermalHeadroomForecast();
+  if (ImGui::InputInt("sec", &forcast_sec, 1, 2, 0)) {
+    forcast_sec =
+        std::min(forcast_sec, ADPFManager::kThermalHeadroomForecastMax);
+    forcast_sec =
+        std::max(forcast_sec, ADPFManager::kThermalHeadroomForecastMin);
+    ADPFManager::getInstance().SetThermalHeadroomForecast(forcast_sec);
+  }
+  ImGui::PopItemWidth();
 
   // Show current power usage using BatteryManager API.
   long powerUsage = ADPFManager::getInstance().GetBatteryUsage();

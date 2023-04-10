@@ -150,8 +150,8 @@ jobject ADPFManager::GetService(JNIEnv *env, const char *service_name) {
 float ADPFManager::UpdateThermalStatusHeadRoom() {
   if (android_get_device_api_level() >= 31) {
     // Use NDK API to retrieve thermal status headroom.
-    thermal_headroom_ = AThermal_getThermalHeadroom(
-        thermal_manager_, kThermalHeadroomUpdateThreshold);
+    thermal_headroom_ = AThermal_getThermalHeadroom(thermal_manager_,
+                                                    thremal_headroom_forcast_);
     return thermal_headroom_;
   }
 
@@ -161,9 +161,8 @@ float ADPFManager::UpdateThermalStatusHeadRoom() {
   JNIEnv *env = NativeEngine::GetInstance()->GetJniEnv();
 
   // Get thermal headroom!
-  thermal_headroom_ =
-      env->CallFloatMethod(obj_power_service_, get_thermal_headroom_,
-                           kThermalHeadroomUpdateThreshold);
+  thermal_headroom_ = env->CallFloatMethod(
+      obj_power_service_, get_thermal_headroom_, thremal_headroom_forcast_);
   ALOGE("Current thermal Headroom %f", thermal_headroom_);
   return thermal_headroom_;
 }

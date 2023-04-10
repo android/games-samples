@@ -84,6 +84,16 @@ class ADPFManager {
   int32_t GetThermalStatus() { return thermal_status_; }
   float GetThermalHeadroom() { return thermal_headroom_; }
 
+  // Set and get thermal headroom forecast period.
+  int32_t GetThermalHeadroomForecast() { return thremal_headroom_forcast_; }
+  void SetThermalHeadroomForecast(int32_t forecast) {
+    if (forecast < kThermalHeadroomForecastMin ||
+        forecast > kThermalHeadroomForecastMax) {
+      return;
+    }
+    thremal_headroom_forcast_ = forecast;
+  }
+
   // Retrieve current battery usage from BatteryManager.
   long GetBatteryUsage();
 
@@ -99,14 +109,17 @@ class ADPFManager {
   // Close current perf hint session.
   void ClosePerfHintSession();
 
-
   // Method to retrieve thermal manager. The API is used to register/unregister
   // callbacks from C API.
   AThermalManager* GetThermalManager() { return thermal_manager_; }
 
+  static constexpr int32_t kThermalHeadroomForecastMin = 1;
+  static constexpr int32_t kThermalHeadroomForecastMax = 100;
+
  private:
   // Update thermal headroom each sec.
   static constexpr int32_t kThermalHeadroomUpdateThreshold = 1;
+  static constexpr int32_t kThermalHeadroomForecastDefault = 1;
 
   // Ctor. It's private since the class is designed as a singleton.
   ADPFManager()
@@ -123,7 +136,8 @@ class ADPFManager {
         report_actual_work_duration_(0),
         update_target_work_duration_(0),
         close_session_(0),
-        preferred_update_rate_(0) {
+        preferred_update_rate_(0),
+        thremal_headroom_forcast_(kThermalHeadroomForecastDefault) {
     last_clock_ = Clock();
     perfhintsession_start_ = 0;
   }
@@ -155,6 +169,9 @@ class ADPFManager {
   jlong preferred_update_rate_;
 
   float perfhintsession_start_;
+
+  // Theamal headroom forecast duration.
+  int32_t thremal_headroom_forcast_;
 };
 
 #endif  // ADPF_MANAGER_H_
