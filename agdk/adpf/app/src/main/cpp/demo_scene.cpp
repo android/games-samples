@@ -219,9 +219,9 @@ void DemoScene::RenderPanel() {
              sizeof(thermal_state_label) / sizeof(thermal_state_label[0]));
 
   // Show checkbox to enable/disable ADPF.
-  static bool useADPF = true;
-  if (ImGui::Checkbox("use ADPF", &useADPF)) {
-    if (useADPF) {
+  static bool use_ADPF = true;
+  if (ImGui::Checkbox("use ADPF", &use_ADPF)) {
+    if (use_ADPF) {
       ADPFManager::getInstance().InitializePerformanceHintManager();
     } else {
       ADPFManager::getInstance().ClosePerfHintSession();
@@ -252,11 +252,38 @@ void DemoScene::RenderPanel() {
   ImGui::PopItemWidth();
 
   // Show current power usage using BatteryManager API.
-  long powerUsage = ADPFManager::getInstance().GetBatteryUsage();
-  ImGui::Text("Power usage:%ld", powerUsage);
+  long power_usage = ADPFManager::getInstance().GetBatteryUsage();
+  ImGui::Text("Pow drain:%ld", power_usage);
+
+  // Update average w/wo ADPF.
+  static int32_t num_sample_adpf = 1;
+  static double powerused_adpf = 0.f;
+  static int32_t num_sample_noadpf = 1;
+  static double powerused_noadpf = 0.f;
+  if (use_ADPF) {
+    powerused_adpf += power_usage;
+    num_sample_adpf++;
+  } else {
+    powerused_noadpf += power_usage;
+    num_sample_noadpf++;
+  }
+  ImGui::SameLine();
+  ImGui::PushItemWidth(600);
+  ImGui::Text("Avg w/ADPF:%f", powerused_adpf / static_cast<double>(num_sample_adpf));
+  ImGui::SameLine();
+  ImGui::Text("Avg wo/ADPF:%f", powerused_noadpf / static_cast<double>(num_sample_noadpf));
+  ImGui::PopItemWidth();
+  if (ImGui::Button("Reset")) {
+      // Reset values.
+      num_sample_adpf = 1;
+      powerused_adpf = 0.f;
+      num_sample_noadpf = 1;
+      powerused_noadpf = 0.f;
+  }
+
   static float t = 0;
   t += ImGui::GetIO().DeltaTime;
-  graph_buffer_.AddPoint(t, powerUsage * 0.005f);
+  graph_buffer_.AddPoint(t, power_usage * 0.005f);
 
   ImPlotAxisFlags flags = ImPlotAxisFlags_NoTickLabels;
   if (ImPlot::BeginPlot("##PowerUsage", ImVec2(-1, 600))) {
@@ -266,7 +293,7 @@ void DemoScene::RenderPanel() {
     ImPlot::SetupAxisLimits(ImAxis_Y1, -10000, 10000);
 
     ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.5f);
-    ImPlot::PlotShaded("Battery usage", &graph_buffer_.Data[0].x,
+    ImPlot::PlotShaded("Pow drain", &graph_buffer_.Data[0].x,
                        &graph_buffer_.Data[0].y, graph_buffer_.Data.size(),
                        -INFINITY, 0, graph_buffer_.Offset, 2 * sizeof(float));
     ImPlot::EndPlot();
