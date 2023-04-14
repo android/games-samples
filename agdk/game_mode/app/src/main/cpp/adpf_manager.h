@@ -89,7 +89,7 @@ class ADPFManager {
   // The methods call performance hint API to tell the performance
   // hint to the system.
   void BeginPerfHintSession();
-  void EndPerfHintSession();
+  void EndPerfHintSession(jlong target_duration_ns);
 
   // Method to retrieve thermal manager. The API is used to register/unregister
   // callbacks from C API.
