@@ -207,7 +207,7 @@ void DemoScene::DoFrame() {
   // Tell ADPF manager end of the perf intensive task.
   // The ADPF manager update PerfHintManager's session using
   // reportActualWorkDuration() and updateTargetWorkDuration() API.
-  ADPFManager::getInstance().EndPerfHintSession();
+  ADPFManager::getInstance().EndPerfHintSession(target_frame_period_);
 }
 
 //--------------------------------------------------------------------------------
