@@ -38,17 +38,14 @@ class GameAssetManager;
 // In the future version, the sample is update to adjust the CPU/GPU load
 // based on the thermal status of the device.
 class DemoScene : public Scene {
- private:
-  // Ctor. It's private since the class is designed as a singleton.
-  DemoScene();
-
  public:
 
   // Singleton function.
-  static DemoScene& getInstance() {
-    static DemoScene instance;
-    return instance;
+  static DemoScene* getInstance() {
+    return instance_;
   }
+
+  DemoScene();
 
   virtual ~DemoScene();
 
@@ -126,6 +123,8 @@ class DemoScene : public Scene {
   };
 
   static constexpr size_t MOTION_AXIS_COUNT = 3;
+
+  static DemoScene* instance_;
 
   // Did we simulate a click for ImGui?
   SimulatedClickState simulated_click_state_;
