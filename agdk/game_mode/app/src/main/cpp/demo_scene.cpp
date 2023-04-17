@@ -101,9 +101,30 @@ DemoScene::~DemoScene() {
 //--------------------------------------------------------------------------------
 // Callbacks that manage demo scene's events.
 //--------------------------------------------------------------------------------
-void DemoScene::OnStartGraphics() { transition_start_ = Clock(); }
+void DemoScene::OnStartGraphics() {
+  transition_start_ = Clock();
 
-void DemoScene::OnKillGraphics() {}
+  // 2. Game State: Finish Loading, showing the attract screen which is not
+  // interruptible
+  GameModeManager::getInstance().SetGameState(
+      false, GAME_STATE_GAMEPLAY_UNINTERRUPTIBLE);
+}
+
+void DemoScene::OnKillGraphics() {
+  // 3. Game State: exiting, cleaning up and preparing to load the next scene
+  GameModeManager::getInstance().SetGameState(true, GAME_STATE_NONE);
+}
+
+void DemoScene::OnInstall() {
+  // 1. Game State: Start Loading
+  GameModeManager::getInstance().SetGameState(true, GAME_STATE_NONE);
+}
+
+void DemoScene::OnUninstall() {
+  // 4. Game State: Finished unloading this scene, it will be immediately
+  // followed by loading the next scene
+  GameModeManager::getInstance().SetGameState(false, GAME_STATE_UNKNOWN);
+}
 
 void DemoScene::OnScreenResized(int width, int height) {}
 
