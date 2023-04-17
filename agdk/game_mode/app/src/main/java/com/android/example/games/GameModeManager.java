@@ -16,6 +16,7 @@
 package com.android.example.games;
 
 import android.app.GameManager;
+import android.app.GameState;
 import android.content.Context;
 import android.os.Build;
 import android.util.Log;
@@ -43,10 +44,16 @@ public class GameModeManager {
         this.retrieveGameMode(this.gameMode);
     }
 
+    public void uninitialize(Context context) {
+        uninitializeGameModeManager();
+    }
+
     public int getGameMode() {
         return this.gameMode;
     }
 
     protected native void retrieveGameMode(int gameMode);
+
+    protected native void uninitializeGameModeManager();
 
 }

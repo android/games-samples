@@ -53,6 +53,10 @@ class DemoScene : public Scene {
 
   virtual void OnKillGraphics();
 
+  virtual void OnInstall();
+
+  virtual void OnUninstall();
+
   virtual void DoFrame();
 
   virtual void OnPointerDown(int pointerId, const struct PointerCoords* coords);
