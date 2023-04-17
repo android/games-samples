@@ -54,6 +54,8 @@ const int32_t thermal_state_array_size[] = {
 
 const int32_t kPhysicsResetTime = 10000;  // 10 sec
 
+DemoScene* DemoScene::instance_ = NULL;
+
 //--------------------------------------------------------------------------------
 // Ctor
 //--------------------------------------------------------------------------------
@@ -76,6 +78,8 @@ DemoScene::DemoScene() {
   box_.Init();
   InitializePhysics();
 
+  instance_ = this;
+
   ADPFManager::getInstance().SetThermalListener(on_thermal_state_changed);
 
   current_thermal_index_ = ADPFManager::getInstance().GetThermalStatus();
@@ -89,22 +93,42 @@ DemoScene::~DemoScene() {
   box_.Unload();
   CleanupPhysics();
 
+  instance_ = NULL;
+
   ADPFManager::getInstance().SetThermalListener(NULL);
 }
 
 //--------------------------------------------------------------------------------
 // Callbacks that manage demo scene's events.
 //--------------------------------------------------------------------------------
-void DemoScene::OnStartGraphics() { transition_start_ = Clock(); }
+void DemoScene::OnStartGraphics() {
+  transition_start_ = Clock();
 
-void DemoScene::OnKillGraphics() {}
+  // 2. Game State: Finish Loading, showing the attract screen which is not interruptible
+  GameModeManager::getInstance().SetGameState(false, GAME_STATE_GAMEPLAY_UNINTERRUPTIBLE);
+}
+
+void DemoScene::OnKillGraphics() {
+  // 3. Game State: exiting, cleaning up and preparing to load the next scene
+  GameModeManager::getInstance().SetGameState(true, GAME_STATE_NONE);
+}
+
+void DemoScene::OnInstall() {
+  // 1. Game State: Start Loading
+  GameModeManager::getInstance().SetGameState(true, GAME_STATE_NONE);
+}
+
+void DemoScene::OnUninstall() {
+  // 4. Game State: Finished unloading this scene, it will be immediately followed by loading the next scene
+  GameModeManager::getInstance().SetGameState(false, GAME_STATE_UNKNOWN);
+}
 
 void DemoScene::OnScreenResized(int width, int height) {}
 
 void DemoScene::on_thermal_state_changed(int32_t last_state,
                                          int32_t current_state) {
   if (last_state != current_state) {
-    getInstance().AdaptThermalLevel(current_state);
+    getInstance()->AdaptThermalLevel(current_state);
   }
 }
 
