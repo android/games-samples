@@ -34,6 +34,14 @@ enum GAME_MODE_DEFINITION {
     GAME_MODE_BATTERY = 3,
 };
 
+enum GAME_STATE_DEFINITION {
+    GAME_STATE_UNKNOWN = 0,
+    GAME_STATE_NONE = 1,
+    GAME_STATE_GAMEPLAY_INTERRUPTIBLE = 2,
+    GAME_STATE_GAMEPLAY_UNINTERRUPTIBLE = 3,
+    GAME_STATE_CONTENT = 4,
+};
+
 /*
  * GameModeManager class manages the GameMode APIs.
  */
@@ -51,8 +59,15 @@ class GameModeManager {
   GameModeManager(GameModeManager const&) = delete;
   void operator=(GameModeManager const&) = delete;
 
+  // Invoke the API first to set the android_app instance.
+  void SetApplication(android_app* app);
+  void Initialize();
+  void Uninitialize();
+
   void SetGameMode(int game_mode);
   int GetGameMode();
+
+  void SetGameState(bool is_loading, GAME_STATE_DEFINITION game_state);
 
   const char* GetGameModeString();
   const char* GetFPSString(int32_t swappy_swap_interval);
@@ -62,6 +77,11 @@ class GameModeManager {
   GameModeManager() {}
 
   int game_mode_ = 0;
+
+  std::shared_ptr<android_app> app_;
+
+  jobject obj_gamemanager_;
+  jmethodID gamemgr_setgamestate_;
 };
 
 #endif  // GAME_MODE_MANAGER_H_

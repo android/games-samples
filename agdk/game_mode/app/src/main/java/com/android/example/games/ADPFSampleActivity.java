@@ -95,6 +95,7 @@ public class ADPFSampleActivity extends GameActivity {
     protected void onPause() {
         // Remove ADPF thermal status listener on resume.
         this.adpfManager.unregisterListener(getApplicationContext());
+        this.gameModeManager.uninitialize(getApplicationContext());
         super.onPause();
     }
 }

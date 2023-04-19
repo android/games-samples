@@ -62,6 +62,7 @@ void android_main(struct android_app *app) {
 
   // Set android_app to ADPF manager.
   ADPFManager::getInstance().SetApplication(app);
+  GameModeManager::getInstance().SetApplication(app);
   ndk_helper::JNIHelper::Init(app);
 
   engine->GameLoop();
