@@ -29,21 +29,24 @@ void Java_com_android_example_games_GameModeManager_retrieveGameMode(
 }
 
 void Java_com_android_example_games_GameModeManager_uninitializeGameModeManager(
-        JNIEnv* env, jobject obj) {
+    JNIEnv* env, jobject obj) {
   GameModeManager& gmm = GameModeManager::getInstance();
   gmm.Uninitialize();
 }
 
-void GameModeManager::SetGameState(bool is_loading, GAME_STATE_DEFINITION game_state) {
-  if ( android_get_device_api_level() >= 33 ) {
+void GameModeManager::SetGameState(bool is_loading,
+                                   GAME_STATE_DEFINITION game_state) {
+  if (android_get_device_api_level() >= 33) {
     ALOGI("GameModeManager::SetGameState: %d => %d", is_loading, game_state);
 
-    JNIEnv *env = NativeEngine::GetInstance()->GetJniEnv();
+    JNIEnv* env = NativeEngine::GetInstance()->GetJniEnv();
 
     jclass cls_gamestate = env->FindClass("android/app/GameState");
 
-    jmethodID ctor_gamestate = env->GetMethodID(cls_gamestate, "<init>", "(ZI)V");
-    jobject obj_gamestate = env->NewObject(cls_gamestate, ctor_gamestate, (jboolean)is_loading, (jint)game_state);
+    jmethodID ctor_gamestate =
+        env->GetMethodID(cls_gamestate, "<init>", "(ZI)V");
+    jobject obj_gamestate = env->NewObject(
+        cls_gamestate, ctor_gamestate, (jboolean)is_loading, (jint)game_state);
 
     env->CallVoidMethod(obj_gamemanager_, gamemgr_setgamestate_, obj_gamestate);
 
@@ -74,7 +77,7 @@ const char* GameModeManager::GetGameModeString() {
 }
 
 // Invoke the API first to set the android_app instance.
-void GameModeManager::SetApplication(android_app *app) {
+void GameModeManager::SetApplication(android_app* app) {
   app_.reset(app);
 
   // Initialize JNI reference.
@@ -82,15 +85,18 @@ void GameModeManager::SetApplication(android_app *app) {
 }
 
 void GameModeManager::Initialize() {
-  JNIEnv  *env = NativeEngine::GetInstance()->GetJniEnv();
+  JNIEnv* env = NativeEngine::GetInstance()->GetJniEnv();
 
   jclass context = env->FindClass("android/content/Context");
   jclass gamemgr = env->FindClass("android/app/GameManager");
 
-  jmethodID mid_getss = env->GetMethodID(context, "getSystemService", "(Ljava/lang/Class;)Ljava/lang/Object;");
-  jobject obj_gamemanager = env->CallObjectMethod(app_->activity->javaGameActivity, mid_getss, gamemgr);
+  jmethodID mid_getss = env->GetMethodID(
+      context, "getSystemService", "(Ljava/lang/Class;)Ljava/lang/Object;");
+  jobject obj_gamemanager = env->CallObjectMethod(
+      app_->activity->javaGameActivity, mid_getss, gamemgr);
 
-  gamemgr_setgamestate_ = env->GetMethodID(gamemgr, "setGameState", "(Landroid/app/GameState;)V");
+  gamemgr_setgamestate_ =
+      env->GetMethodID(gamemgr, "setGameState", "(Landroid/app/GameState;)V");
 
   obj_gamemanager_ = env->NewGlobalRef(obj_gamemanager);
 
@@ -100,7 +106,7 @@ void GameModeManager::Initialize() {
 }
 
 void GameModeManager::Uninitialize() {
-  JNIEnv  *env = NativeEngine::GetInstance()->GetJniEnv();
+  JNIEnv* env = NativeEngine::GetInstance()->GetJniEnv();
   env->DeleteGlobalRef(obj_gamemanager_);
 }
 

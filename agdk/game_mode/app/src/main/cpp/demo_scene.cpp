@@ -104,8 +104,10 @@ DemoScene::~DemoScene() {
 void DemoScene::OnStartGraphics() {
   transition_start_ = Clock();
 
-  // 2. Game State: Finish Loading, showing the attract screen which is not interruptible
-  GameModeManager::getInstance().SetGameState(false, GAME_STATE_GAMEPLAY_UNINTERRUPTIBLE);
+  // 2. Game State: Finish Loading, showing the attract screen which is not
+  // interruptible
+  GameModeManager::getInstance().SetGameState(
+      false, GAME_STATE_GAMEPLAY_UNINTERRUPTIBLE);
 }
 
 void DemoScene::OnKillGraphics() {
@@ -119,7 +121,8 @@ void DemoScene::OnInstall() {
 }
 
 void DemoScene::OnUninstall() {
-  // 4. Game State: Finished unloading this scene, it will be immediately followed by loading the next scene
+  // 4. Game State: Finished unloading this scene, it will be immediately
+  // followed by loading the next scene
   GameModeManager::getInstance().SetGameState(false, GAME_STATE_UNKNOWN);
 }
 
