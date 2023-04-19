@@ -106,8 +106,6 @@ void GameModeManager::Initialize() {
 }
 
 void GameModeManager::Uninitialize() {
-  JNIEnv* env = NativeEngine::GetInstance()->GetJniEnv();
-  env->DeleteGlobalRef(obj_gamemanager_);
 }
 
 const char* GameModeManager::GetFPSString(int32_t swappy_swap_interval) {
