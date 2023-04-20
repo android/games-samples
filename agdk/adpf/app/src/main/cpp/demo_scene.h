@@ -127,6 +127,12 @@ class DemoScene : public Scene {
 
   // ImGUI buffer
   ScrollingBuffer graph_buffer_;
+  ScrollingBuffer graph_buffer_forecast1_;
+  ScrollingBuffer graph_buffer_forecast2_;
+  ScrollingBuffer graph_buffer_forecast3_;
+
+  ScrollingBuffer graph_buffer_power1_;
+  ScrollingBuffer graph_buffer_power2_;
 
   // Bullet physics data members.
   btDefaultCollisionConfiguration* collision_configuration_;

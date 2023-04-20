@@ -92,6 +92,7 @@ class ADPFManager {
       return;
     }
     thremal_headroom_forcast_ = forecast;
+    UpdateThermalStatusHeadRoom();
   }
 
   // Retrieve current battery usage from BatteryManager.
