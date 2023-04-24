@@ -253,12 +253,19 @@ void DemoScene::RenderPanel() {
 
   // Show checkbox to enable/disable ADPF.
   static bool use_ADPF = true;
+  if (!ADPFManager::getInstance().IsSupported()) {
+    ImGui::BeginDisabled();
+    use_ADPF = false;
+  }
   if (ImGui::Checkbox("use ADPF", &use_ADPF)) {
     if (use_ADPF) {
       ADPFManager::getInstance().InitializePerformanceHintManager();
     } else {
       ADPFManager::getInstance().ClosePerfHintSession();
     }
+  }
+  if (!ADPFManager::getInstance().IsSupported()) {
+    ImGui::EndDisabled();
   }
 
   ImGui::SameLine(600);

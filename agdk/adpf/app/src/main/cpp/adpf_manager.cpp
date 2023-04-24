@@ -63,7 +63,7 @@ void ADPFManager::SetApplication(android_app *app) {
   app_.reset(app);
 
   // Initialize PowerManager reference.
-  InitializePowerManager();
+  adpf_supported_ = InitializePowerManager();
 
   // Initialize PowerHintManager reference.
   InitializePerformanceHintManager();
@@ -77,7 +77,10 @@ bool ADPFManager::InitializePowerManager() {
   if (android_get_device_api_level() >= 31) {
     // Initialize the powermanager using NDK API.
     thermal_manager_ = AThermal_acquireManager();
-    return true;
+    if (thermal_manager_ != nullptr) {
+      ALOGI("ADPF NDK API is supported on the device.");
+      return true;
+    }
   }
 
   // Initialize service using JNI calls.
@@ -94,9 +97,11 @@ bool ADPFManager::InitializePowerManager() {
 
   if (get_thermal_headroom_ == 0) {
     // The API is not supported in the platform version.
+    ALOGE("ADPF API is not supported on the device.");
     return false;
   }
 
+  ALOGI("ADPF Java API is supported on the device.");
   return true;
 }
 

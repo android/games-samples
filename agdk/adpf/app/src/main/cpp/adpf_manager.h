@@ -69,6 +69,9 @@ class ADPFManager {
   ADPFManager(ADPFManager const&) = delete;
   void operator=(ADPFManager const&) = delete;
 
+  // Indicates if ADPF is supported on the device.
+  bool IsSupported() { return adpf_supported_; }
+
   // Invoke the method periodically (once a frame) to monitor
   // the device's thermal throttling status.
   void Monitor();
@@ -124,7 +127,8 @@ class ADPFManager {
 
   // Ctor. It's private since the class is designed as a singleton.
   ADPFManager()
-      : thermal_manager_(nullptr),
+      : adpf_supported_(false),
+        thermal_manager_(nullptr),
         thermal_status_(0),
         thermal_headroom_(0.f),
         obj_power_service_(nullptr),
@@ -150,6 +154,8 @@ class ADPFManager {
 
   // Helper function using JNI calls.
   jobject GetService(JNIEnv* env, const char* service);
+
+  bool adpf_supported_;
 
   AThermalManager* thermal_manager_;
   int32_t thermal_status_;
