@@ -28,6 +28,33 @@ void Java_com_android_example_games_GameModeManager_retrieveGameMode(
   GameModeManager::getInstance().SetGameMode(game_mode);
 }
 
+void Java_com_android_example_games_GameModeManager_uninitializeGameModeManager(
+    JNIEnv* env, jobject obj) {
+  GameModeManager& gmm = GameModeManager::getInstance();
+  gmm.Uninitialize();
+}
+
+void GameModeManager::SetGameState(bool is_loading,
+                                   GAME_STATE_DEFINITION game_state) {
+  if (android_get_device_api_level() >= 33) {
+    ALOGI("GameModeManager::SetGameState: %d => %d", is_loading, game_state);
+
+    JNIEnv* env = NativeEngine::GetInstance()->GetJniEnv();
+
+    jclass cls_gamestate = env->FindClass("android/app/GameState");
+
+    jmethodID ctor_gamestate =
+        env->GetMethodID(cls_gamestate, "<init>", "(ZI)V");
+    jobject obj_gamestate = env->NewObject(
+        cls_gamestate, ctor_gamestate, (jboolean)is_loading, (jint)game_state);
+
+    env->CallVoidMethod(obj_gamemanager_, gamemgr_setgamestate_, obj_gamestate);
+
+    env->DeleteLocalRef(obj_gamestate);
+    env->DeleteLocalRef(cls_gamestate);
+  }
+}
+
 void GameModeManager::SetGameMode(int game_mode) {
   ALOGI("GameMode SET: %d => %d", game_mode_, game_mode);
   game_mode_ = game_mode;
@@ -48,6 +75,37 @@ const char* GameModeManager::GetGameModeString() {
   }
   return "UNKNOWN";
 }
+
+// Invoke the API first to set the android_app instance.
+void GameModeManager::SetApplication(android_app* app) {
+  app_.reset(app);
+
+  // Initialize JNI reference.
+  Initialize();
+}
+
+void GameModeManager::Initialize() {
+  JNIEnv* env = NativeEngine::GetInstance()->GetJniEnv();
+
+  jclass context = env->FindClass("android/content/Context");
+  jclass gamemgr = env->FindClass("android/app/GameManager");
+
+  jmethodID mid_getss = env->GetMethodID(
+      context, "getSystemService", "(Ljava/lang/Class;)Ljava/lang/Object;");
+  jobject obj_gamemanager = env->CallObjectMethod(
+      app_->activity->javaGameActivity, mid_getss, gamemgr);
+
+  gamemgr_setgamestate_ =
+      env->GetMethodID(gamemgr, "setGameState", "(Landroid/app/GameState;)V");
+
+  obj_gamemanager_ = env->NewGlobalRef(obj_gamemanager);
+
+  env->DeleteLocalRef(obj_gamemanager);
+  env->DeleteLocalRef(gamemgr);
+  env->DeleteLocalRef(context);
+}
+
+void GameModeManager::Uninitialize() {}
 
 const char* GameModeManager::GetFPSString(int32_t swappy_swap_interval) {
   if (swappy_swap_interval <= SWAPPY_SWAP_60FPS) {

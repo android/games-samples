@@ -16,6 +16,8 @@
 
 #include "demo_scene.h"
 
+#include <time.h>
+
 #include <cassert>
 #include <functional>
 
@@ -37,6 +39,23 @@ const char* thermal_state_label[] = {
     "THERMAL_STATUS_CRITICAL", "THERMAL_STATUS_EMERGENCY",
     "THERMAL_STATUS_SHUTDOWN"};
 
+const int32_t thermal_state_physics_steps[] = {
+    16,
+    12,
+    8,
+    4,
+};
+const int32_t thermal_state_array_size[] = {
+    8,
+    6,
+    4,
+    2,
+};
+
+const int32_t kPhysicsResetTime = 10000;  // 10 sec
+
+DemoScene* DemoScene::instance_ = NULL;
+
 //--------------------------------------------------------------------------------
 // Ctor
 //--------------------------------------------------------------------------------
@@ -49,8 +68,22 @@ DemoScene::DemoScene() {
   target_frame_period_ = SWAPPY_SWAP_60FPS;
   current_frame_period_ = SWAPPY_SWAP_60FPS;
 
+  last_physics_reset_tick_ = currentTimeMillis();
+
+  // Physics Dynamic adjustments
+  current_physics_step_ = kPhysicsStep;
+  array_size_ = kArraySize;
+  box_size_ = kBoxSize;
+
   box_.Init();
   InitializePhysics();
+
+  instance_ = this;
+
+  ADPFManager::getInstance().SetThermalListener(on_thermal_state_changed);
+
+  current_thermal_index_ = ADPFManager::getInstance().GetThermalStatus();
+  AdaptThermalLevel(current_thermal_index_);
 }
 
 //--------------------------------------------------------------------------------
@@ -59,16 +92,112 @@ DemoScene::DemoScene() {
 DemoScene::~DemoScene() {
   box_.Unload();
   CleanupPhysics();
+
+  instance_ = NULL;
+
+  ADPFManager::getInstance().SetThermalListener(NULL);
 }
 
 //--------------------------------------------------------------------------------
 // Callbacks that manage demo scene's events.
 //--------------------------------------------------------------------------------
-void DemoScene::OnStartGraphics() { transition_start_ = Clock(); }
+void DemoScene::OnStartGraphics() {
+  transition_start_ = Clock();
 
-void DemoScene::OnKillGraphics() {}
+  // 2. Game State: Finish Loading, showing the attract screen which is not
+  // interruptible
+  GameModeManager::getInstance().SetGameState(
+      false, GAME_STATE_GAMEPLAY_UNINTERRUPTIBLE);
+}
+
+void DemoScene::OnKillGraphics() {
+  // 3. Game State: exiting, cleaning up and preparing to load the next scene
+  GameModeManager::getInstance().SetGameState(true, GAME_STATE_NONE);
+}
+
+void DemoScene::OnInstall() {
+  // 1. Game State: Start Loading
+  GameModeManager::getInstance().SetGameState(true, GAME_STATE_NONE);
+}
+
+void DemoScene::OnUninstall() {
+  // 4. Game State: Finished unloading this scene, it will be immediately
+  // followed by loading the next scene
+  GameModeManager::getInstance().SetGameState(false, GAME_STATE_UNKNOWN);
+}
 
 void DemoScene::OnScreenResized(int width, int height) {}
+
+void DemoScene::on_thermal_state_changed(int32_t last_state,
+                                         int32_t current_state) {
+  if (last_state != current_state) {
+    getInstance()->AdaptThermalLevel(current_state);
+  }
+}
+
+void DemoScene::AdaptThermalLevel(int32_t index) {
+  int32_t current_index = index;
+  int32_t array_size = sizeof(thermal_state_physics_steps) /
+                       sizeof(thermal_state_physics_steps[0]);
+  if (current_index < 0) {
+    current_index = 0;
+  } else if (current_index >= array_size) {
+    current_index = array_size - 1;
+  }
+
+  current_physics_step_ = thermal_state_physics_steps[current_index];
+  array_size_ = thermal_state_array_size[current_index];
+
+  recreate_physics_obj_ = true;
+}
+
+//--------------------------------------------------------------------------------
+// Control the simulation parameters
+//--------------------------------------------------------------------------------
+void DemoScene::ControlStep(bool step_up) {
+  if (step_up) {
+    current_physics_step_ += kPhysicsStep;
+    if (current_physics_step_ >= kPhysicsStepMax) {
+      current_physics_step_ = kPhysicsStepMax;
+    }
+  } else {
+    current_physics_step_ -= kPhysicsStep;
+    if (current_physics_step_ < kPhysicsStep) {
+      current_physics_step_ = kPhysicsStep;
+    }
+  }
+}
+
+void DemoScene::ControlBoxCount(bool count_up) {
+  int32_t min_count = kBoxSizeMin;
+  int32_t max_count = kBoxSizeMax;
+  bool changed = false;
+
+  if (count_up) {
+    int32_t new_count = array_size_ + 1;
+    if (new_count <= max_count) {
+      changed = true;
+      array_size_ = new_count;
+    }
+  } else {
+    int32_t new_count = array_size_ - 1;
+    if (new_count >= min_count) {
+      changed = true;
+      array_size_ = new_count;
+    }
+  }
+
+  if (changed) {
+    recreate_physics_obj_ = true;
+  }
+}
+
+void DemoScene::ControlResetToDefaultSettings() {
+  current_physics_step_ = kPhysicsStep;
+  array_size_ = kArraySize;
+
+  recreate_physics_obj_ = true;
+}
 
 //--------------------------------------------------------------------------------
 // Process each frame's status updates.
@@ -105,7 +234,7 @@ void DemoScene::DoFrame() {
   // Tell ADPF manager end of the perf intensive task.
   // The ADPF manager update PerfHintManager's session using
   // reportActualWorkDuration() and updateTargetWorkDuration() API.
-  ADPFManager::getInstance().EndPerfHintSession();
+  ADPFManager::getInstance().EndPerfHintSession(target_frame_period_);
 }
 
 //--------------------------------------------------------------------------------
@@ -128,6 +257,34 @@ void DemoScene::OnPointerDown(int pointerId,
     point_x_ = coords->x_;
     pointer_y_ = coords->y_;
   }
+
+  // Uncomment this block for debug control of the simulation
+  /**
+  // x: left to right
+  // y: top to bottom
+  ALOGI("PointerDown: %f, %f : (%f, %f)", point_x_, pointer_y_, coords->max_x_,
+  coords->max_y_);
+  //===============
+  //   ||   ||   ||
+  //===============
+  //   ||   ||   ||
+  //===============
+  bool upper_touch = coords->y_ < coords->max_y_ / 2.0f;
+  if ( coords->x_ < coords->max_x_ / 3.0f ) {
+    // left, control steps
+    ControlStep(upper_touch);
+  } else if ( coords->x_ > ((2.0f * coords->max_x_) / 3.0f) ) {
+    // right, control box count
+    ControlBoxCount(upper_touch);
+  } else {
+    // middle, control recreate/respawn
+    if ( upper_touch ) {
+      ResetPhysics(); // respawn boxes
+    } else {
+      ControlResetToDefaultSettings();
+    }
+  }
+  **/
 }
 
 void DemoScene::OnPointerMove(int pointerId,
@@ -212,6 +369,8 @@ void DemoScene::RenderPanel() {
   ImGui::Text("Thermal State:%s", thermal_state_label[thermal_state]);
   ImGui::Text("Thermal Headroom:%f",
               ADPFManager::getInstance().GetThermalHeadroom());
+  ImGui::Text("Physics Steps:%d", current_physics_step_);
+  ImGui::Text("Array Size: %d", array_size_);
 
   // Show the stat changes according to selected Game Mode
   ImGui::Text("Game Mode: %s", game_mode_manager.GetGameModeString());
@@ -240,7 +399,14 @@ void DemoScene::InitializePhysics() {
   dynamics_world_->setGravity(btVector3(0, -10, 0));
 
   /// create a few basic rigid bodies
+  CreateRigidBodies();
+}
 
+//--------------------------------------------------------------------------------
+// Create some RigidBodies (Ground and Boxes)
+//--------------------------------------------------------------------------------
+void DemoScene::CreateRigidBodies() {
+  /// Create Ground
   // the ground is a cube of side 100 at position y = -56.
   // the sphere will hit it at y = -6, with center at -5
   btCollisionShape* ground_shape =
@@ -267,25 +433,29 @@ void DemoScene::InitializePhysics() {
   dynamics_world_->addRigidBody(body);
 
   // create a dynamic rigidbody
-  btCollisionShape* colShape =
-      new btBoxShape(btVector3(kBoxSize, kBoxSize, kBoxSize));
-  collision_shapes_.push_back(colShape);
+  box_collision_shape_ =
+      new btBoxShape(btVector3(box_size_, box_size_, box_size_));
+  collision_shapes_.push_back(box_collision_shape_);
 
   /// Create Dynamic Objects
-  for (auto k = 0; k < kArraySizeY; k++) {
-    for (auto i = 0; i < kArraySizeX; i++) {
-      for (auto j = 0; j < kArraySizeZ; j++) {
+  int32_t array_size_x = array_size_;
+  int32_t array_size_y = array_size_;
+  int32_t array_size_z = array_size_;
+  for (auto k = 0; k < array_size_y; k++) {
+    for (auto i = 0; i < array_size_x; i++) {
+      for (auto j = 0; j < array_size_z; j++) {
         // rigidbody is dynamic if and only if mass is non zero, otherwise
         // static
         btScalar mass_dynamic(1.f);
-        colShape->calculateLocalInertia(mass_dynamic, local_inertia);
+        box_collision_shape_->calculateLocalInertia(mass_dynamic,
+                                                    local_inertia);
 
         btTransform start_transform;
         start_transform.setIdentity();
         start_transform.setOrigin(btVector3(
-            btScalar((-kBoxSize * kArraySizeX / 2) + kBoxSize * 2.0 * i),
-            btScalar(10 + kBoxSize * k),
-            btScalar((-kBoxSize * kArraySizeZ / 2) + kBoxSize * 2.0 * j)));
+            btScalar((-box_size_ * array_size_x / 2) + box_size_ * 2.0 * i),
+            btScalar(10 + box_size_ * k),
+            btScalar((-box_size_ * array_size_z / 2) + box_size_ * 2.0 * j)));
         float angle = random();
         btQuaternion qt(btVector3(1, 1, 0), angle);
         start_transform.setRotation(qt);
@@ -295,11 +465,37 @@ void DemoScene::InitializePhysics() {
         btDefaultMotionState* motionState_dynamic =
             new btDefaultMotionState(start_transform);
         btRigidBody::btRigidBodyConstructionInfo rbInfo_dynamic(
-            mass_dynamic, motionState_dynamic, colShape, local_inertia);
+            mass_dynamic, motionState_dynamic, box_collision_shape_,
+            local_inertia);
         btRigidBody* body_dynamic = new btRigidBody(rbInfo_dynamic);
         dynamics_world_->addRigidBody(body_dynamic);
       }
     }
+  }
+
+  recreate_physics_obj_ = false;
+}
+
+//--------------------------------------------------------------------------------
+// Delete the RigidBodies (Ground and Boxes)
+//--------------------------------------------------------------------------------
+void DemoScene::DeleteRigidBodies() {
+  // remove the rigidbodies from the dynamics world and delete them
+  for (auto i = dynamics_world_->getNumCollisionObjects() - 1; i >= 0; i--) {
+    btCollisionObject* obj = dynamics_world_->getCollisionObjectArray()[i];
+    btRigidBody* body = btRigidBody::upcast(obj);
+    if (body && body->getMotionState()) {
+      delete body->getMotionState();
+    }
+    dynamics_world_->removeCollisionObject(obj);
+    delete obj;
+  }
+
+  // delete collision shapes (2 elements: Ground shape & Box shape)
+  for (auto j = 0; j < collision_shapes_.size(); j++) {
+    btCollisionShape* shape = collision_shapes_[j];
+    collision_shapes_[j] = 0;
+    delete shape;
   }
 }
 
@@ -307,12 +503,18 @@ void DemoScene::InitializePhysics() {
 // Update phycis world and render boxes.
 //--------------------------------------------------------------------------------
 void DemoScene::UpdatePhysics() {
+  if (recreate_physics_obj_) {
+    DeleteRigidBodies();
+    CreateRigidBodies();
+    ResetPhysics();
+  }
+
   // In the sample, it's looping physics update here.
   // It's intended to add more CPU load to the system to achieve thermal
   // throttling status easily.
   // In the future version of the sample, this part will be update to
   // dynamically adjust the load.
-  auto max_steps = 8;
+  auto max_steps = current_physics_step_;
   for (auto steps = 0; steps < max_steps; ++steps) {
     dynamics_world_->stepSimulation(1.f / (60.f * max_steps), 10);
   }
@@ -354,23 +556,35 @@ void DemoScene::UpdatePhysics() {
 
   box_.EndMultipleRender();
 
-  // Reset a physics each 10 sec.
-  static auto count = 0;
-  count++;
-  if (count > 600) {
+  // Reset a physics each kPhysicsResetTime sec (independent of frame rate)
+  int32_t currentTime = currentTimeMillis();
+  int32_t elapsedTime = currentTime - last_physics_reset_tick_;
+  if (elapsedTime > kPhysicsResetTime) {
     ResetPhysics();
-    count = 0;
   }
 }
 
+int32_t DemoScene::currentTimeMillis() {
+  struct timespec t;
+  clock_gettime(CLOCK_MONOTONIC, &t);
+  return 1000.0 * t.tv_sec + (double)t.tv_nsec / 1e6;
+}
+
 //--------------------------------------------------------------------------------
-// Helper to reset the physics world.
+// Helper to reset the physics world. (RespawnBoxes)
 //--------------------------------------------------------------------------------
 void DemoScene::ResetPhysics() {
+  // keep track of last reset time
+  int32_t currentTime = currentTimeMillis();
+  last_physics_reset_tick_ = currentTime;
+
   // Reset physics state.
   auto k = 0;
   auto i = 0;
   auto j = 0;
+  int32_t array_size_x = array_size_;
+  int32_t array_size_y = array_size_;
+  int32_t array_size_z = array_size_;
   for (auto index = dynamics_world_->getNumCollisionObjects() - 1; index >= 0;
        index--) {
     btCollisionObject* obj = dynamics_world_->getCollisionObjectArray()[index];
@@ -387,9 +601,9 @@ void DemoScene::ResetPhysics() {
           btTransform transform;
           transform.setIdentity();
           transform.setOrigin(btVector3(
-              btScalar((-kBoxSize * kBoxSize / 2) + kBoxSize * 2.0 * i),
-              btScalar(10 + kBoxSize * k),
-              btScalar((-kBoxSize * kArraySizeZ / 2) + kBoxSize * 2.0 * j)));
+              btScalar((-box_size_ * box_size_ / 2) + box_size_ * 2.0 * i),
+              btScalar(10 + box_size_ * k),
+              btScalar((-box_size_ * array_size_z / 2) + box_size_ * 2.0 * j)));
           float angle = random();
           btQuaternion qt(btVector3(1, 1, 0), angle);
           transform.setRotation(qt);
@@ -398,11 +612,11 @@ void DemoScene::ResetPhysics() {
           body->setActivationState(DISABLE_DEACTIVATION);
 
           // Update cube's index.
-          j = (j + 1) % kArraySizeZ;
+          j = (j + 1) % array_size_z;
           if (!j) {
-            i = (i + 1) % kArraySizeX;
+            i = (i + 1) % array_size_x;
             if (!i) {
-              k = (k + 1) % kArraySizeY;
+              k = (k + 1) % array_size_y;
             }
           }
         }
@@ -416,23 +630,7 @@ void DemoScene::ResetPhysics() {
 // Clean up bullet physics data.
 //--------------------------------------------------------------------------------
 void DemoScene::CleanupPhysics() {
-  // remove the rigidbodies from the dynamics world and delete them
-  for (auto i = dynamics_world_->getNumCollisionObjects() - 1; i >= 0; i--) {
-    btCollisionObject* obj = dynamics_world_->getCollisionObjectArray()[i];
-    btRigidBody* body = btRigidBody::upcast(obj);
-    if (body && body->getMotionState()) {
-      delete body->getMotionState();
-    }
-    dynamics_world_->removeCollisionObject(obj);
-    delete obj;
-  }
-
-  // delete collision shapes
-  for (auto j = 0; j < collision_shapes_.size(); j++) {
-    btCollisionShape* shape = collision_shapes_[j];
-    collision_shapes_[j] = 0;
-    delete shape;
-  }
+  DeleteRigidBodies();
 
   // delete dynamics world
   delete dynamics_world_;

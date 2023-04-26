@@ -38,11 +38,11 @@ public class ADPFManager implements PowerManager.OnThermalStatusChangedListener 
 
     public boolean registerListener(Context context) {
         // Retrieve power manager and register thermal state change callback.
-        if (Build.VERSION.SDK_INT >= VERSION_CODES.S) {
+        if (Build.VERSION.SDK_INT >= VERSION_CODES.R) {
             // Use NDK Thermal API.
             nativeRegisterThermalStatusListener();
             return true;
-        } else if (Build.VERSION.SDK_INT >= VERSION_CODES.R) {
+        } else if (Build.VERSION.SDK_INT >= VERSION_CODES.Q) {
             PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
             if (pm != null) {
                 pm.addThermalStatusListener(this);
@@ -55,11 +55,11 @@ public class ADPFManager implements PowerManager.OnThermalStatusChangedListener 
 
     public boolean unregisterListener(Context context) {
         // Remove the thermal state change listener on pause.
-        if (Build.VERSION.SDK_INT >= VERSION_CODES.S) {
+        if (Build.VERSION.SDK_INT >= VERSION_CODES.R) {
             // Use NDK Thermal API.
             nativeUnregisterThermalStatusListener();
             return true;
-        } else if (Build.VERSION.SDK_INT >= VERSION_CODES.R) {
+        } else if (Build.VERSION.SDK_INT >= VERSION_CODES.Q) {
             PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
             if (pm != null) {
                 pm.removeThermalStatusListener(this);

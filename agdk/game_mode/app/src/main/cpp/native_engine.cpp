@@ -23,6 +23,7 @@
 #include "imgui_manager.h"
 #include "input_util.h"
 #include "scene_manager.h"
+#include "welcome_scene.h"
 
 // verbose debug logs on?
 #define VERBOSE_LOGGING 1
@@ -751,7 +752,7 @@ void NativeEngine::DoFrame() {
   if (mIsFirstFrame) {
     mIsFirstFrame = false;
     ALOGI("GameMode first frame");
-    mgr->RequestNewScene(new DemoScene());
+    mgr->RequestNewScene(new WelcomeScene());
   }
 
   // render!

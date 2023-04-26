@@ -34,6 +34,8 @@ void nativeRegisterThermalStatusListener(JNIEnv* env, jclass cls);
 void nativeUnregisterThermalStatusListener(JNIEnv* env, jclass cls);
 }
 
+typedef void (*thermalStateChangeListener)(int32_t, int32_t);
+
 /*
  * ADPFManager class anages the ADPF APIs.
  */
@@ -75,17 +77,19 @@ class ADPFManager {
 
   // Method to set thermal status. Need to be public since the method
   // is called from C native listener.
-  void SetThermalStatus(int32_t i) { thermal_status_ = i; }
+  void SetThermalStatus(int32_t i);
 
   // Get current thermal status and headroom.
   int32_t GetThermalStatus() { return thermal_status_; }
   float GetThermalHeadroom() { return thermal_headroom_; }
 
+  void SetThermalListener(thermalStateChangeListener listener);
+
   // Indicates the start and end of the performance intensive task.
   // The methods call performance hint API to tell the performance
   // hint to the system.
   void BeginPerfHintSession();
-  void EndPerfHintSession();
+  void EndPerfHintSession(jlong target_duration_ns);
 
   // Method to retrieve thermal manager. The API is used to register/unregister
   // callbacks from C API.
@@ -94,6 +98,9 @@ class ADPFManager {
  private:
   // Update thermal headroom each sec.
   static constexpr int32_t kThermalHeadroomUpdateThreshold = 1;
+
+  // Function pointer from the game, will be invoked when we receive state changed event from Thermal API
+  static thermalStateChangeListener thermalListener;
 
   // Ctor. It's private since the class is designed as a singleton.
   ADPFManager()

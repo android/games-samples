@@ -115,7 +115,8 @@ add_library(game SHARED
         ndk_helper/VecMath.cpp
         scene.cpp
         scene_manager.cpp
-        util.cpp)
+        util.cpp
+        welcome_scene.cpp)
 
 target_include_directories(game PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
