@@ -32,7 +32,8 @@ performed:
 
 1. Open a terminal and set the working directory to `agdk/third_party/`
 2. `git clone https://github.com/ocornut/imgui`
-3. `git clone https://github.com/bulletphysics/bullet3`
+3. `git clone https://github.com/epezent/implot`
+4. `git clone https://github.com/bulletphysics/bullet3`
 
 ## Building
 

@@ -51,6 +51,9 @@ class ADPFManager {
       if (obj_power_service_ != nullptr) {
         app_->activity->env->DeleteGlobalRef(obj_power_service_);
       }
+      if (obj_battery_service_ != nullptr) {
+        app_->activity->env->DeleteGlobalRef(obj_battery_service_);
+      }
       if (obj_perfhint_service_ != nullptr) {
         app_->activity->env->DeleteGlobalRef(obj_perfhint_service_);
       }
@@ -65,6 +68,9 @@ class ADPFManager {
   // Delete copy constructor since the class is used as a singleton.
   ADPFManager(ADPFManager const&) = delete;
   void operator=(ADPFManager const&) = delete;
+
+  // Indicates if ADPF is supported on the device.
+  bool IsSupported() { return adpf_supported_; }
 
   // Invoke the method periodically (once a frame) to monitor
   // the device's thermal throttling status.
@@ -81,32 +87,62 @@ class ADPFManager {
   int32_t GetThermalStatus() { return thermal_status_; }
   float GetThermalHeadroom() { return thermal_headroom_; }
 
+  // Set and get thermal headroom forecast period.
+  int32_t GetThermalHeadroomForecast() { return thremal_headroom_forcast_; }
+  void SetThermalHeadroomForecast(int32_t forecast) {
+    if (forecast < kThermalHeadroomForecastMin ||
+        forecast > kThermalHeadroomForecastMax) {
+      return;
+    }
+    thremal_headroom_forcast_ = forecast;
+    UpdateThermalStatusHeadRoom();
+  }
+
+  // Retrieve current battery usage from BatteryManager.
+  long GetBatteryUsage();
+
   // Indicates the start and end of the performance intensive task.
   // The methods call performance hint API to tell the performance
   // hint to the system.
   void BeginPerfHintSession();
   void EndPerfHintSession(jlong target_duration_ns);
 
+  // Initialize performance hint session.
+  bool InitializePerformanceHintManager();
+
+  // Close current perf hint session.
+  void ClosePerfHintSession();
+
   // Method to retrieve thermal manager. The API is used to register/unregister
   // callbacks from C API.
   AThermalManager* GetThermalManager() { return thermal_manager_; }
 
+  static constexpr int32_t kThermalHeadroomForecastMin = 1;
+  static constexpr int32_t kThermalHeadroomForecastMax = 100;
+
  private:
   // Update thermal headroom each sec.
   static constexpr int32_t kThermalHeadroomUpdateThreshold = 1;
+  static constexpr int32_t kThermalHeadroomForecastDefault = 1;
 
   // Ctor. It's private since the class is designed as a singleton.
   ADPFManager()
-      : thermal_manager_(nullptr),
+      : adpf_supported_(false),
+        thermal_manager_(nullptr),
         thermal_status_(0),
         thermal_headroom_(0.f),
         obj_power_service_(nullptr),
         get_thermal_headroom_(0),
+        obj_battery_service_(nullptr),
+        battery_propertyid_(0),
+        get_long_property_(0),
         obj_perfhint_service_(nullptr),
         obj_perfhint_session_(nullptr),
         report_actual_work_duration_(0),
         update_target_work_duration_(0),
-        preferred_update_rate_(0) {
+        close_session_(0),
+        preferred_update_rate_(0),
+        thremal_headroom_forcast_(kThermalHeadroomForecastDefault) {
     last_clock_ = Clock();
     perfhintsession_start_ = 0;
   }
@@ -114,7 +150,12 @@ class ADPFManager {
   // Functions to initialize ADPF API's calls.
   bool InitializePowerManager();
   float UpdateThermalStatusHeadRoom();
-  bool InitializePerformanceHintManager();
+  bool InitializeBatteryManager();
+
+  // Helper function using JNI calls.
+  jobject GetService(JNIEnv* env, const char* service);
+
+  bool adpf_supported_;
 
   AThermalManager* thermal_manager_;
   int32_t thermal_status_;
@@ -123,14 +164,21 @@ class ADPFManager {
   std::shared_ptr<android_app> app_;
   jobject obj_power_service_;
   jmethodID get_thermal_headroom_;
+  jobject obj_battery_service_;
+  jint battery_propertyid_;
+  jmethodID get_long_property_;
 
   jobject obj_perfhint_service_;
   jobject obj_perfhint_session_;
   jmethodID report_actual_work_duration_;
   jmethodID update_target_work_duration_;
+  jmethodID close_session_;
   jlong preferred_update_rate_;
 
   float perfhintsession_start_;
+
+  // Theamal headroom forecast duration.
+  int32_t thremal_headroom_forcast_;
 };
 
 #endif  // ADPF_MANAGER_H_

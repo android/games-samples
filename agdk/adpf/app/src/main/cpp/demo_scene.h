@@ -17,6 +17,10 @@
 #ifndef DEMO_SCENE_H_
 #define DEMO_SCENE_H_
 
+#include "imgui.h"
+#include "imgui_manager.h"
+#include "implot.h"
+
 // Header file for bullet physics.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wextra-semi"
@@ -106,7 +110,7 @@ class DemoScene : public Scene {
   bool pointer_down_;
 
   // Touch pointer current X
-  float point_x_;
+  float pointer_x_;
 
   // Touch pointer current Y
   float pointer_y_;
@@ -120,6 +124,15 @@ class DemoScene : public Scene {
   // Current and target frame rate period.
   int32_t target_frame_period_;
   int32_t current_frame_period_;
+
+  // ImGUI buffer
+  ScrollingBuffer graph_buffer_;
+  ScrollingBuffer graph_buffer_forecast1_;
+  ScrollingBuffer graph_buffer_forecast2_;
+  ScrollingBuffer graph_buffer_forecast3_;
+
+  ScrollingBuffer graph_buffer_power1_;
+  ScrollingBuffer graph_buffer_power2_;
 
   // Bullet physics data members.
   btDefaultCollisionConfiguration* collision_configuration_;

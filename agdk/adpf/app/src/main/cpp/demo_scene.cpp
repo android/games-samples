@@ -21,8 +21,6 @@
 
 #include "Log.h"
 #include "adpf_manager.h"
-#include "imgui.h"
-#include "imgui_manager.h"
 #include "native_engine.h"
 
 extern "C" {
@@ -42,7 +40,7 @@ const char* thermal_state_label[] = {
 DemoScene::DemoScene() {
   simulated_click_state_ = SIMULATED_CLICK_NONE;
   pointer_down_ = false;
-  point_x_ = 0.0f;
+  pointer_x_ = 0.0f;
   pointer_y_ = 0.0f;
   transition_start_ = 0.0f;
   target_frame_period_ = SWAPPY_SWAP_60FPS;
@@ -144,7 +142,7 @@ void DemoScene::OnPointerDown(int pointerId,
   // way.
   if (coords->is_screen_) {
     pointer_down_ = true;
-    point_x_ = coords->x_;
+    pointer_x_ = coords->x_;
     pointer_y_ = coords->y_;
   }
 }
@@ -152,14 +150,14 @@ void DemoScene::OnPointerDown(int pointerId,
 void DemoScene::OnPointerMove(int pointerId,
                               const struct PointerCoords* coords) {
   if (coords->is_screen_ && pointer_down_) {
-    point_x_ = coords->x_;
+    pointer_x_ = coords->x_;
     pointer_y_ = coords->y_;
   }
 }
 
 void DemoScene::OnPointerUp(int pointerId, const struct PointerCoords* coords) {
   if (coords->is_screen_) {
-    point_x_ = coords->x_;
+    pointer_x_ = coords->x_;
     pointer_y_ = coords->y_;
     pointer_down_ = false;
     simulated_click_state_ = SIMULATED_CLICK_NONE;
@@ -168,7 +166,7 @@ void DemoScene::OnPointerUp(int pointerId, const struct PointerCoords* coords) {
 
 void DemoScene::UpdateUIInput() {
   ImGuiIO& io = ImGui::GetIO();
-  io.MousePos = ImVec2(point_x_, pointer_y_);
+  io.MousePos = ImVec2(pointer_x_, pointer_y_);
   bool pointer_down = false;
   // To make a touch work like a mouse click we need to sequence the following:
   // 1) Position cursor at touch spot with mouse button still up
@@ -215,6 +213,9 @@ void DemoScene::SetupUIWindow() {
 }
 
 void DemoScene::RenderPanel() {
+  static float t = 0;
+  t += ImGui::GetIO().DeltaTime;
+
   int32_t thermal_state = ADPFManager::getInstance().GetThermalStatus();
   assert(thermal_state >= 0 &&
          thermal_state <
@@ -223,11 +224,138 @@ void DemoScene::RenderPanel() {
   // Show current FPS target.
   ImGui::Text("FPS target:%s",
               target_frame_period_ == SWAPPY_SWAP_60FPS ? "60" : "30");
+  ImGui::Text("Thermal State: %s", thermal_state_label[thermal_state]);
 
   // Show current thermal state on screen.
-  ImGui::Text("Thermal State:%s", thermal_state_label[thermal_state]);
-  ImGui::Text("Thermal Headroom:%f",
-              ADPFManager::getInstance().GetThermalHeadroom());
+  static int32_t forecast_sec = 1;
+
+  // Retrieve thermal headroom forecast for different ranges.
+  ADPFManager::getInstance().SetThermalHeadroomForecast(forecast_sec);
+  float headroom = ADPFManager::getInstance().GetThermalHeadroom();
+  graph_buffer_forecast1_.AddPoint(t, headroom * 10000);
+  ImGui::Text("Thermal Headroom: %.3f/", headroom);
+
+  ADPFManager::getInstance().SetThermalHeadroomForecast(forecast_sec * 10);
+  headroom = ADPFManager::getInstance().GetThermalHeadroom();
+  graph_buffer_forecast2_.AddPoint(t, headroom * 10000);
+  ImGui::SameLine();
+  ImGui::Text("%.3f/", headroom);
+
+  ADPFManager::getInstance().SetThermalHeadroomForecast(forecast_sec * 100);
+  headroom = ADPFManager::getInstance().GetThermalHeadroom();
+  graph_buffer_forecast3_.AddPoint(t, headroom * 10000);
+  ImGui::SameLine();
+  ImGui::Text("%.3f", headroom);
+
+  if (!ImGui::CollapsingHeader("Details")) {
+    return;
+  }
+
+  // Show checkbox to enable/disable ADPF.
+  static bool use_ADPF = true;
+  if (!ADPFManager::getInstance().IsSupported()) {
+    ImGui::BeginDisabled();
+    use_ADPF = false;
+  }
+  if (ImGui::Checkbox("use ADPF", &use_ADPF)) {
+    if (use_ADPF) {
+      ADPFManager::getInstance().InitializePerformanceHintManager();
+    } else {
+      ADPFManager::getInstance().ClosePerfHintSession();
+    }
+  }
+  if (!ADPFManager::getInstance().IsSupported()) {
+    ImGui::EndDisabled();
+  }
+
+  ImGui::SameLine(600);
+  ImGui::Text("Forecast");
+  ImGui::SameLine();
+  ImGui::PushItemWidth(600);
+  if (ImGui::InputInt("sec", &forecast_sec, 1, 2, 0)) {
+    forecast_sec =
+        std::min(forecast_sec, ADPFManager::kThermalHeadroomForecastMax);
+    forecast_sec =
+        std::max(forecast_sec, ADPFManager::kThermalHeadroomForecastMin);
+  }
+  ImGui::PopItemWidth();
+
+  // Show current power usage using BatteryManager API.
+  long power_usage = ADPFManager::getInstance().GetBatteryUsage();
+  ImGui::Text("Pow drain:%ld", power_usage);
+
+  // Update average w/wo ADPF.
+  static int32_t num_sample_adpf = 1;
+  static double powerused_adpf = 0.f;
+  static int32_t num_sample_noadpf = 1;
+  static double powerused_noadpf = 0.f;
+  if (use_ADPF) {
+    if (power_usage < 0.f) {
+      powerused_adpf += power_usage;
+      num_sample_adpf++;
+    }
+  } else {
+    if (power_usage < 0.f) {
+      powerused_noadpf += power_usage;
+      num_sample_noadpf++;
+    }
+  }
+  graph_buffer_.AddPoint(t, power_usage * 0.005f);
+
+  ImGui::SameLine();
+  ImGui::PushItemWidth(600);
+  float power = powerused_adpf / static_cast<double>(num_sample_adpf);
+  ImGui::Text("Avg w/ADPF:%.0f", power);
+  graph_buffer_power1_.AddPoint(t, power * 0.005f);
+  ImGui::SameLine();
+  power = powerused_noadpf / static_cast<double>(num_sample_noadpf);
+  graph_buffer_power2_.AddPoint(t, power * 0.005f);
+  ImGui::Text("wo/ADPF:%.0f", power);
+  ImGui::PopItemWidth();
+  ImGui::SameLine();
+  if (ImGui::Button("Reset")) {
+    // Reset values.
+    num_sample_adpf = 1;
+    powerused_adpf = 0.f;
+    num_sample_noadpf = 1;
+    powerused_noadpf = 0.f;
+  }
+
+  ImPlotAxisFlags flags = ImPlotAxisFlags_NoTickLabels;
+  if (ImPlot::BeginPlot("##PowerUsage", ImVec2(-1, 600))) {
+    constexpr float history = 30.f;
+    ImPlot::SetupAxes(NULL, NULL, flags, flags);
+    ImPlot::SetupAxisLimits(ImAxis_X1, t - history, t, ImGuiCond_Always);
+    ImPlot::SetupAxisLimits(ImAxis_Y1, -10000, 10000);
+
+    ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.5f);
+    ImPlot::PlotShaded("Pow drain", &graph_buffer_.Data[0].x,
+                       &graph_buffer_.Data[0].y, graph_buffer_.Data.size(),
+                       -INFINITY, 0, graph_buffer_.Offset, 2 * sizeof(float));
+
+    ImPlot::PlotLine("Forecast x1", &graph_buffer_forecast1_.Data[0].x,
+                     &graph_buffer_forecast1_.Data[0].y,
+                     graph_buffer_forecast1_.Data.size(), 0,
+                     graph_buffer_forecast1_.Offset, 2 * sizeof(float));
+    ImPlot::PlotLine("x10", &graph_buffer_forecast2_.Data[0].x,
+                     &graph_buffer_forecast2_.Data[0].y,
+                     graph_buffer_forecast2_.Data.size(), 0,
+                     graph_buffer_forecast2_.Offset, 2 * sizeof(float));
+    ImPlot::PlotLine("x100", &graph_buffer_forecast3_.Data[0].x,
+                     &graph_buffer_forecast3_.Data[0].y,
+                     graph_buffer_forecast3_.Data.size(), 0,
+                     graph_buffer_forecast3_.Offset, 2 * sizeof(float));
+    ImPlot::PlotLine("ADPF", &graph_buffer_power1_.Data[0].x,
+                     &graph_buffer_power1_.Data[0].y,
+                     graph_buffer_power1_.Data.size(), 0,
+                     graph_buffer_power1_.Offset, 2 * sizeof(float));
+    ImPlot::PlotLine("NOADPF", &graph_buffer_power2_.Data[0].x,
+                     &graph_buffer_power2_.Data[0].y,
+                     graph_buffer_power2_.Data.size(), 0,
+                     graph_buffer_power2_.Offset, 2 * sizeof(float));
+
+    ImPlot::EndPlot();
+  }
 }
 
 void DemoScene::OnButtonClicked(int buttonId) {
