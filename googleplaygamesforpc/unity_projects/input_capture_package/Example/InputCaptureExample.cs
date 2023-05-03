@@ -4,7 +4,7 @@ using UnityEngine;
 public class InputCaptureExample : MonoBehaviour
 {
 	private const string enableMouseCaptureText = "Hit Space to Enable Capture";
-	private const string disableMouseCaptureText = "Hit Space to Disable Capture";
+	private const string disableMouseCaptureText = "Hit Space to Disable Capture. Hit Return to reset pointer location";
 
 	public UnityEngine.UI.Image cursor;
 	private RectTransform picture;
@@ -26,6 +26,13 @@ public class InputCaptureExample : MonoBehaviour
 	
 	private void InputCapture_MouseCaptureChangedCallback(bool mouseCaptured) {
 		labelText = mouseCaptured ? disableMouseCaptureText : enableMouseCaptureText;
+		m_MousePosition = Vector2.zero;
+	}
+	
+	private void SetMousePointerLocation(Vector2 newLocation) {
+		if (MouseCapture.isMouseCaptureEnabled)  {
+			m_MousePosition = newLocation;
+		}
 	}
 
 	private void OnGUI()  {
@@ -37,6 +44,9 @@ public class InputCaptureExample : MonoBehaviour
 				MouseCapture.DisableMouseCapture();
 				labelText = enableMouseCaptureText;
 			}
+		}
+		if (Input.GetKey(KeyCode.Return) || Input.GetKey("return"))  {
+			SetMousePointerLocation(Vector2.zero);
 		}
 
 		var mouseDelta = MouseCapture.GetMouseDelta();
