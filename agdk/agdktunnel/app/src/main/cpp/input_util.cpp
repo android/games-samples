@@ -89,22 +89,42 @@ static bool _cookEventForPointerIndex(GameActivityMotionEvent *motionEvent,
     return false;
 }
 
-bool isMovementKey(const int32_t keyCode) {
-    return keyCode == KEYCODE_W ||
-           keyCode == KEYCODE_A ||
-           keyCode == KEYCODE_S ||
-           keyCode == KEYCODE_D;
+bool isDirectionalKey(const int32_t ourKeyCode) {
+    return ourKeyCode == OURKEY_UP ||
+           ourKeyCode == OURKEY_LEFT ||
+           ourKeyCode == OURKEY_DOWN ||
+           ourKeyCode == OURKEY_RIGHT;
+}
+
+int32_t getOurKeyFromAndroidKey(const int32_t androidKeyCode) {
+    switch (androidKeyCode) {
+        case AKEYCODE_W:
+            return OURKEY_UP;
+        case AKEYCODE_A:
+            return OURKEY_LEFT;
+        case AKEYCODE_S:
+            return OURKEY_DOWN;
+        case AKEYCODE_D:
+            return OURKEY_RIGHT;
+        case AKEYCODE_ENTER:
+            return OURKEY_ENTER;
+        case AKEYCODE_ESCAPE:
+            return OURKEY_ESCAPE;
+        default:
+            return OURKEY_UNKNOWN;
+    }
 }
 
 bool CookGameActivityKeyEvent(GameActivityKeyEvent *keyEvent, CookedEventCallback callback) {
+    int32_t ourKeyCode = getOurKeyFromAndroidKey(keyEvent->keyCode);
     if (keyEvent->keyCode == AKEYCODE_BACK && 0 == keyEvent->action) {
         // back key was pressed
         struct CookedEvent ev;
         memset(&ev, 0, sizeof(ev));
         ev.type = COOKED_EVENT_TYPE_BACK;
         return callback(&ev);
-    } else if (isMovementKey(keyEvent->keyCode)) {
-        // cook movement key events
+    } else if (ourKeyCode >= 0 && ourKeyCode < OURKEY_COUNT) {
+        // cook our key events
         struct CookedEvent ev;
         memset(&ev, 0, sizeof(ev));
         ev.keyCode = keyEvent->keyCode;
@@ -159,7 +179,7 @@ CookGameActivityMotionEvent(GameActivityMotionEvent *motionEvent, CookedEventCal
         uint32_t pointerIndex = GAMEACTIVITY_MAX_NUM_POINTERS_IN_MOTION_EVENT;
         struct CookedEvent ev;
         memset(&ev, 0, sizeof(ev));
-        ev.motionIsOnScreen = motionEvent->source == AINPUT_SOURCE_TOUCHSCREEN;
+        ev.motionIsOnScreen = (motionEvent->source & AINPUT_SOURCE_TOUCHSCREEN) != 0;
         if (ev.motionIsOnScreen) {
             // use screen size as the motion range
             ev.motionMinX = 0.0f;

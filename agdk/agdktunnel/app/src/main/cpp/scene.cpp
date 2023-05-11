@@ -51,4 +51,6 @@ void Scene::OnResume() {}
 
 void Scene::OnTextInput() {}
 
+void Scene::SetInputSdkContext() {}
+
 Scene::~Scene() {}

@@ -35,7 +35,7 @@ android {
         minSdkVersion 24
         targetSdkVersion 30
         versionCode     1
-        versionName    '1.0.4'
+        versionName    '1.0.5'
 
         externalNativeBuild {
             cmake {
@@ -78,22 +78,6 @@ android {
             multiDexEnabled true
         }
     }
-    // Flavor dimension to create mobile and PC build variants
-    flavorDimensions "platform"
-    productFlavors {
-        mobile {
-            getIsDefault().set(true)
-            dimension "platform"
-        }
-        playGamesPC {
-            dimension "platform"
-
-            // x86 ABI compatibility
-            ndk {
-                abiFilters 'x86', 'x86_64'
-            }
-        }
-    }
     externalNativeBuild {
         cmake {
             path 'src/main/cpp/CMakeLists.txt'
@@ -119,10 +103,10 @@ dependencies {
     implementation "androidx.constraintlayout:constraintlayout:2.0.4"
     implementation 'androidx.fragment:fragment:1.2.5'
     implementation 'com.google.oboe:oboe:1.5.0'
-    implementation "androidx.games:games-frame-pacing:2.0.0-alpha01"
+    implementation "androidx.games:games-frame-pacing:2.0.0"
     implementation "androidx.games:games-performance-tuner:1.5.0"
-    implementation "androidx.games:games-activity:2.0.0-alpha01"
-    implementation "androidx.games:games-controller:2.0.0-alpha01"
+    implementation "androidx.games:games-activity:2.0.0"
+    implementation "androidx.games:games-controller:2.0.0"
     implementation "androidx.games:games-memory-advice:1.0.0-beta01"
 
     // Google Play Games dependencies
@@ -131,7 +115,8 @@ dependencies {
     if(PADEnabled.toBoolean()) {
         implementation files("$playcoreDir/playcore.aar")
     }
-    playGamesPCImplementation 'com.google.android.libraries.play.games:inputmapping:1.0.0-beta'
+    // Google Play Games for PC Input SDK
+    implementation 'com.google.android.libraries.play.games:inputmapping:1.1.0-beta'
 
     // Example of using local .aar files in libs/ directory.
     // Comment out the androidx.games implementation lines if

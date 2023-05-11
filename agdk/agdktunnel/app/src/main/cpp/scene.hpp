@@ -75,6 +75,9 @@ public:
     // Called when the soft keyboard state has changed.
     virtual void OnTextInput();
 
+    // Called when installing the scene to specify the controls of the scene
+    virtual void SetInputSdkContext();
+
     // Destructor
     virtual ~Scene();
 };
