@@ -105,7 +105,8 @@ void GameModeManager::Initialize() {
   env->DeleteLocalRef(context);
 }
 
-void GameModeManager::Uninitialize() {}
+void GameModeManager::Uninitialize() {
+}
 
 const char* GameModeManager::GetFPSString(int32_t swappy_swap_interval) {
   if (swappy_swap_interval <= SWAPPY_SWAP_60FPS) {
