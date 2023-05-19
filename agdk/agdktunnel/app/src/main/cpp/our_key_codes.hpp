@@ -18,6 +18,7 @@
 #define agdktunnel_our_key_codes_hpp
 
 // Our keycodes:
+#define OURKEY_UNKNOWN -1
 #define OURKEY_UP 0
 #define OURKEY_RIGHT 1
 #define OURKEY_DOWN 2

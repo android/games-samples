@@ -30,6 +30,7 @@
 #define S_QUIT "Quit"
 #define S_START_OVER "Start Over"
 #define S_RESUME "Start from checkpoint"
+#define S_RESUME_CLOUD "Resume from cloud"
 
 #define S_TITLE "AGDKTunnel"
 #define S_PLAY "Play!"

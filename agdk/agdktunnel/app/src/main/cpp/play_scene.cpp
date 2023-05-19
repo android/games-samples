@@ -97,6 +97,7 @@ PlayScene::PlayScene(int savedLevel) : Scene() {
     mMenuItemText[MENUITEM_START_OVER] = (char *)S_START_OVER;
     mMenuItemText[MENUITEM_RESUME] = (char *)S_RESUME;
     mMenuItemText[MENUITEM_LOADING] = new char[64];
+    mMenuItemText[MENUITEM_RESUME_CLOUD] = (char *)S_RESUME_CLOUD;
 
     memset(mMenuItems, 0, sizeof(mMenuItems));
     mMenuItemCount = 0;
@@ -251,7 +252,7 @@ void PlayScene::DoFrame() {
                     NativeEngine::GetInstance()->GetDataStateMachine();
             if (dataStateMachine->isLoadingDataCompleted()) {
                 // resume from saved level
-                HandleMenu(mMenu);
+                HandleMenu(MENUITEM_LOADING);
             } else {
                 int loadingPercentage = dataStateMachine->getStepsCompleted()
                         * 100 / dataStateMachine->getTotalSteps();
@@ -798,15 +799,15 @@ void PlayScene::OnMovementKey() {
     }
 }
 
-void PlayScene::OnKeyUp(int keyCode) {
-    if (isMovementKey(keyCode) && mSteering == STEERING_KEY) {
-        if (keyCode == KEYCODE_W) {
+void PlayScene::OnKeyUp(int ourKeyCode) {
+    if (isDirectionalKey(ourKeyCode) && mSteering == STEERING_KEY) {
+        if (ourKeyCode == OURKEY_UP) {
             mMotionKeyBitmask &= ~UP_MOVEMENT_BIT;
-        } else if (keyCode == KEYCODE_A) {
+        } else if (ourKeyCode == OURKEY_LEFT) {
             mMotionKeyBitmask &= ~LEFT_MOVEMENT_BIT;
-        } else if (keyCode == KEYCODE_S) {
+        } else if (ourKeyCode == OURKEY_DOWN) {
             mMotionKeyBitmask &= ~DOWN_MOVEMENT_BIT;
-        } else if (keyCode == KEYCODE_D) {
+        } else if (ourKeyCode == OURKEY_RIGHT) {
             mMotionKeyBitmask &= ~RIGHT_MOVEMENT_BIT;
         }
 
@@ -816,27 +817,27 @@ void PlayScene::OnKeyUp(int keyCode) {
     }
 }
 
-void PlayScene::OnKeyDown(int keyCode) {
-    if (isMovementKey(keyCode)) {
+void PlayScene::OnKeyDown(int ourKeyCode) {
+    if (isDirectionalKey(ourKeyCode)) {
         mSteering = STEERING_KEY;
 
-        if (keyCode == KEYCODE_W) {
+        if (ourKeyCode == OURKEY_UP) {
             mMotionKeyBitmask |= UP_MOVEMENT_BIT;
-        } else if (keyCode == KEYCODE_A) {
+        } else if (ourKeyCode == OURKEY_LEFT) {
             mMotionKeyBitmask |= LEFT_MOVEMENT_BIT;
-        } else if (keyCode == KEYCODE_S) {
+        } else if (ourKeyCode == OURKEY_DOWN) {
             mMotionKeyBitmask |= DOWN_MOVEMENT_BIT;
-        } else if (keyCode == KEYCODE_D) {
+        } else if (ourKeyCode == OURKEY_RIGHT) {
             mMotionKeyBitmask |= RIGHT_MOVEMENT_BIT;
         }
     }
 
     if (mMenu) {
-        if (keyCode == OURKEY_UP) {
+        if (ourKeyCode == OURKEY_UP) {
             mMenuSel = mMenuSel > 0 ? mMenuSel - 1 : mMenuSel;
-        } else if (keyCode == OURKEY_DOWN) {
+        } else if (ourKeyCode == OURKEY_DOWN) {
             mMenuSel = mMenuSel + 1 < mMenuItemCount ? mMenuSel + 1 : mMenuSel;
-        } else if (keyCode == OURKEY_ENTER) {
+        } else if (ourKeyCode == OURKEY_ENTER) {
             HandleMenu(mMenuItems[mMenuSel]);
         }
     }
@@ -845,11 +846,20 @@ void PlayScene::OnKeyDown(int keyCode) {
 void PlayScene::ShowMenu(int menu) {
     mMenu = menu;
     mMenuSel = 0;
+    NativeEngine *instance = NativeEngine::GetInstance();
+    DataLoaderStateMachine *dataStateMachine = instance->GetDataStateMachine();
     switch (menu) {
         case MENU_PAUSE:
             mMenuItems[0] = MENUITEM_UNPAUSE;
             mMenuItems[1] = MENUITEM_QUIT;
-            mMenuItemCount = 2;
+
+            if (instance->IsCloudSaveEnabled() &&
+                    dataStateMachine->getLevelLoaded() > mSavedLevel) {
+                mMenuItems[2] = MENUITEM_RESUME_CLOUD;
+                mMenuItemCount = 3;
+            } else {
+                mMenuItemCount = 2;
+            }
             break;
         case MENU_LEVEL:
             mMenuItems[0] = MENUITEM_RESUME;
@@ -864,6 +874,11 @@ void PlayScene::ShowMenu(int menu) {
             // since we're leaving the menu, reset the frame clock to avoid a skip
             // in the animation
             mFrameClock.Reset();
+    }
+    if (mMenu) {
+        NativeEngine::GetInstance()->SetInputSdkContext(INPUT_CONTEXT_PAUSE_MENU);
+    } else {
+        NativeEngine::GetInstance()->SetInputSdkContext(INPUT_CONTEXT_PLAY_SCENE);
     }
 }
 
@@ -885,10 +900,13 @@ void PlayScene::HandleMenu(int menuItem) {
             break;
         case MENUITEM_START_OVER:
             // start over from scratch
-            NativeEngine::GetInstance()->SaveProgress(/* level = */0);
+            NativeEngine::GetInstance()->SaveProgress(/* level = */ 0, /* forceSave = */ true);
             ShowMenu(MENU_NONE);
             break;
         case MENUITEM_LOADING:
+            ShowMenu(MENU_PAUSE);
+            break;
+        case MENUITEM_RESUME_CLOUD:
             DataLoaderStateMachine *dataStateMachine =
                     NativeEngine::GetInstance()->GetDataStateMachine();
             mSavedLevel = (dataStateMachine->getLevelLoaded() / LEVELS_PER_CHECKPOINT)
@@ -900,7 +918,7 @@ void PlayScene::HandleMenu(int menuItem) {
                 mObstacleGen.SetDifficulty(mDifficulty);
             }
             ShowLevelSign();
-            ShowMenu(MENU_PAUSE);
+            ShowMenu(MENU_NONE);
             break;
     }
 }
@@ -925,6 +943,10 @@ void PlayScene::OnResume() {
             (mMenu == MENU_NONE || mMenu == MENU_PAUSE)) {
         ShowMenu(MENU_LOADING);
     }
+}
+
+void PlayScene::SetInputSdkContext() {
+    NativeEngine::GetInstance()->SetInputSdkContext(INPUT_CONTEXT_PLAY_SCENE);
 }
 
 void PlayScene::OnScreenResized(int /*width*/, int /*height*/) {

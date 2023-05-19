@@ -59,6 +59,10 @@ protected:
     // must be implemented by subclass
     virtual void OnButtonClicked(int buttonId);
 
+    bool OnBackKeyPressed() {
+        return false;
+    }
+
     virtual void RenderBackground();
 
     // transition start time
@@ -110,6 +114,10 @@ public:
     virtual void OnScreenResized(int width, int height);
 
     UiWidget *GetWidgetById(int id);
+
+    void SetInputSdkContext() {
+        NativeEngine::GetInstance()->SetInputSdkContext(INPUT_CONTEXT_UI_SCENE);
+    }
 
 private:
     void UpdateTouchFocus(const struct PointerCoords *coords);

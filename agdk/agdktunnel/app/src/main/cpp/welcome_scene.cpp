@@ -145,6 +145,8 @@ void WelcomeScene::OnButtonClicked(int id) {
         mNameEdit->SetText(sNameEdit.c_str());
         GameActivity_setTextInputState(activity, &mTextInputState.inner);
         GameActivity_showSoftInput(NativeEngine::GetInstance()->GetAndroidApp()->activity, 0);
+        // TODO: Uncomment after maven release
+        // GameActivity_restartInput(NativeEngine::GetInstance()->GetAndroidApp()->activity);
     } else if (id == mTestButtonId) {
         auto activity = NativeEngine::GetInstance()->GetAndroidApp()->activity;
         GameActivity_setWindowFlags(activity,
@@ -189,14 +191,31 @@ void WelcomeScene::DoFrame() {
 
 void WelcomeScene::UpdateWidgetStates() {
     // Build navigation
-    AddNav(mPlayButtonId, UI_DIR_LEFT, mStoryButtonId);
+    AddNav(mPlayButtonId, UI_DIR_UP, mNameEdit->GetId());
     AddNav(mPlayButtonId, UI_DIR_RIGHT, mAboutButtonId);
+    AddNav(mPlayButtonId, UI_DIR_LEFT, mStoryButtonId);
 
-    AddNav(mStoryButtonId, UI_DIR_RIGHT, mMemoryButtonId);
-    AddNav(mMemoryButtonId, UI_DIR_RIGHT, mPlayButtonId);
+    AddNav(mStoryButtonId, UI_DIR_UP, mNameEdit->GetId());
+    AddNav(mStoryButtonId, UI_DIR_RIGHT, mPlayButtonId);
+    AddNav(mStoryButtonId, UI_DIR_DOWN, mMemoryButtonId);
 
+    AddNav(mMemoryButtonId, UI_DIR_UP, mStoryButtonId);
+    AddNav(mMemoryButtonId, UI_DIR_RIGHT, mQuitButtonId);
+
+    AddNav(mAboutButtonId, UI_DIR_UP, mTestButtonId);
+    AddNav(mAboutButtonId, UI_DIR_DOWN, mQuitButtonId);
     AddNav(mAboutButtonId, UI_DIR_LEFT, mPlayButtonId);
 
+    AddNav(mQuitButtonId, UI_DIR_UP, mAboutButtonId);
+    AddNav(mQuitButtonId, UI_DIR_LEFT, mMemoryButtonId);
+
+    AddNav(mTestButtonId, UI_DIR_UP, mNameEdit->GetId());
+    AddNav(mTestButtonId, UI_DIR_DOWN, mAboutButtonId);
+    AddNav(mTestButtonId, UI_DIR_LEFT, mPlayButtonId);
+
+    AddNav(mNameEdit->GetId(), UI_DIR_RIGHT, mTestButtonId);
+    AddNav(mNameEdit->GetId(), UI_DIR_DOWN, mPlayButtonId);
+    AddNav(mNameEdit->GetId(), UI_DIR_LEFT, mStoryButtonId);
 }
 
 void WelcomeScene::OnStartGraphics() {
