@@ -30,14 +30,13 @@
 #define COOKED_EVENT_TYPE_BACK 6
 #define COOKED_EVENT_TYPE_TEXT_INPUT 7
 
+// Input SDK contexts for different controls schemes of the game
+#define INPUT_CONTEXT_UI_SCENE 1
+#define INPUT_CONTEXT_PLAY_SCENE 2
+#define INPUT_CONTEXT_PAUSE_MENU 3
+
 #define KEY_ACTION_DOWN 0
 #define KEY_ACTION_UP 1
-
-// Keycode for movement
-#define KEYCODE_W 51
-#define KEYCODE_A 29
-#define KEYCODE_S 47
-#define KEYCODE_D 32
 
 #define KEY_CONTROL_VERTICAL_SENSIVITY 20.0f
 #define KEY_CONTROL_HORIZONTAL_SENSIVITY 30.0f
@@ -76,6 +75,8 @@ CookGameActivityMotionEvent(GameActivityMotionEvent *motionEvent, CookedEventCal
 
 bool CookGameControllerEvent(const int32_t gameControllerIndex, CookedEventCallback callback);
 
-bool isMovementKey(const int32_t keyCode);
+bool isDirectionalKey(const int32_t keyCode);
+
+int32_t getOurKeyFromAndroidKey(const int32_t androidKeyCode);
 
 #endif

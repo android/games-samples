@@ -236,10 +236,10 @@ static bool _cooked_event_callback(struct CookedEvent *event) {
             mgr->OnPointerMove(event->motionPointerId, &coords);
             return true;
         case COOKED_EVENT_TYPE_KEY_DOWN:
-            mgr->OnKeyDown(event->keyCode);
+            mgr->OnKeyDown(getOurKeyFromAndroidKey(event->keyCode));
             return true;
         case COOKED_EVENT_TYPE_KEY_UP:
-            mgr->OnKeyUp(event->keyCode);
+            mgr->OnKeyUp(getOurKeyFromAndroidKey(event->keyCode));
             return true;
         case COOKED_EVENT_TYPE_BACK:
             return mgr->OnBackKeyPressed();
@@ -335,15 +335,17 @@ DataLoaderStateMachine *NativeEngine::BeginSavedGameLoad() {
     return mDataStateMachine;
 }
 
-bool NativeEngine::SaveProgress(int level) {
-    if (level <= mDataStateMachine->getLevelLoaded()) {
-        // nothing to do
-        ALOGI("No need to save level, current = %d, saved = %d",
-              level, mDataStateMachine->getLevelLoaded());
-        return false;
-    } else if (!IsCheckpointLevel(level)) {
-        ALOGI("Current level %d is not a checkpoint level. Nothing to save.", level);
-        return false;
+bool NativeEngine::SaveProgress(int level, bool forceSave) {
+    if (!forceSave) {
+        if (level <= mDataStateMachine->getLevelLoaded()) {
+            // nothing to do
+            ALOGI("No need to save level, current = %d, saved = %d",
+                  level, mDataStateMachine->getLevelLoaded());
+            return false;
+        } else if (!IsCheckpointLevel(level)) {
+            ALOGI("Current level %d is not a checkpoint level. Nothing to save.", level);
+            return false;
+        }
     }
 
     // Save state locally and to the cloud if it is enabled
@@ -919,4 +921,12 @@ bool NativeEngine::InitGLObjects() {
         mHasGLObjects = true;
     }
     return true;
+}
+
+void NativeEngine::SetInputSdkContext(int context) {
+    jclass activityClass = GetJniEnv()->GetObjectClass(mApp->activity->javaGameActivity);
+    jmethodID setInputContextID =
+            GetJniEnv()->GetMethodID(activityClass, "setInputContext", "(I)V");
+    GetJniEnv()->CallVoidMethod(
+            mApp->activity->javaGameActivity, setInputContextID, (jint)context);
 }
