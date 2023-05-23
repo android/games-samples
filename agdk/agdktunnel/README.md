@@ -19,6 +19,10 @@ AGDKTunnel can optionally use the following Play libraries:
 * Play Asset Delivery (via Play core libraries)
 * Input SDK for Google Play Games for PC
 
+AGDKTunnel uses the [Library Wrapper](https://developer.android.com/games/develop/custom/wrapper)
+tool to generate interface files to call the Vibrator API in order to provide haptic
+feedback on in-game collisions.
+
 ## Building
 
 Open the `agdktunnel' directory in Android Studio 2021.2 or higher.
@@ -127,6 +131,20 @@ To enable building the runtime APT assets and use the library at runtime, edit t
 `gradle.properties` file and change: `APTEnabled=false` to `APTEnabled=true`. When switching
 configurations, it is recommended to sync the gradle file, and run
 **Build -> Refresh Linked C++ Projects** and **Build -> Clean Project** before rebuilding.
+
+## Library Wrapper notes
+
+The configuration file used to generate the wrapped Android API is located in
+`agdktunnel/library_wrapper/config.json`. The generated files are located in
+`agdktunnel/app/src/main/cpp/native_wrappers`.
+
+The generation was done by copying the Library Wrapper `lw.jar` file into the root `agdk` directory
+and running the following command from a terminal with `adgk` as the working directory:
+
+`java -jar lw.jar -o "agdktunnel/app/src/main/cpp/native_wrappers" -c "agdktunnel/library_wrapper/config.json"`
+
+For more information on integrating generated wrapper code into your game, see the
+[guide page](https://developer.android.com/games/develop/custom/wrapper-guide).
 
 ## Google Play Games for PC (optional)
 

@@ -22,7 +22,9 @@
 #include "memory_consumer.hpp"
 #include "texture_manager.hpp"
 #include "tuning_manager.hpp"
+#include "vibration_manager.hpp"
 #include "data_loader_machine.hpp"
+#include "java/lang/string.h"
 
 struct NativeEngineSavedState {
     bool mHasFocus;
@@ -56,6 +58,9 @@ public:
     // returns the memory consumer instance
     MemoryConsumer *GetMemoryConsumer() { return mMemoryConsumer; }
 
+    // returns the vibration manager instance
+    VibrationManager *GetVibrationManager() { return mVibrationManager; }
+
     // returns the (singleton) instance
     static NativeEngine *GetInstance();
 
@@ -75,7 +80,12 @@ public:
 
     void SetInputSdkContext(int context);
 
-private:
+    enum SystemService {
+      eVibrator,
+      eVibrationManager
+    };
+
+ private:
     // variables to track Android lifecycle:
     bool mHasFocus, mIsVisible, mHasWindow;
 
@@ -123,6 +133,9 @@ private:
 
     // Memory consumer instance
     MemoryConsumer *mMemoryConsumer;
+
+    // Vibration manager instance
+    VibrationManager *mVibrationManager;
 
     // is this the first frame we're drawing?
     bool mIsFirstFrame;
@@ -177,6 +190,7 @@ private:
     }
 
 public:
+
     // these are public for simplicity because we have internal static callbacks
     void HandleCommand(int32_t cmd);
 

@@ -27,13 +27,13 @@ def usePad = PADEnabled
 def playcoreDir = file('libs/play-core-native-sdk')
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 33
     ndkVersion '23.1.7779620'
 
     defaultConfig {
         applicationId 'com.google.sample.agdktunnel'
         minSdkVersion 24
-        targetSdkVersion 30
+        targetSdkVersion 33
         versionCode     1
         versionName    '1.0.5'
 
@@ -107,7 +107,10 @@ dependencies {
     implementation "androidx.games:games-performance-tuner:1.5.0"
     implementation "androidx.games:games-activity:2.0.0"
     implementation "androidx.games:games-controller:2.0.0"
-    implementation "androidx.games:games-memory-advice:1.0.0-beta01"
+    implementation "androidx.games:games-memory-advice:2.0.0-beta03"
+
+    // Dependency for using APIs wrapped using library wrapper
+    implementation 'com.google.android.gms:play-services-gni-native-c:1.0.0-beta2'
 
     // Google Play Games dependencies
     implementation "com.google.android.gms:play-services-games-v2:17.0.0"

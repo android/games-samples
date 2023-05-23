@@ -16,12 +16,15 @@
 cmake_minimum_required(VERSION 3.4.1)
 project(agdktunnel)
 
+file(GLOB_RECURSE native_wrappers CONFIGURE_DEPENDS "native_wrappers/*.cpp" "native_wrappers/*.cc")
+
 find_package(oboe REQUIRED CONFIG)
 find_package(game-activity REQUIRED CONFIG)
 find_package(games-controller REQUIRED CONFIG)
 find_package(games-frame-pacing REQUIRED CONFIG)
 find_package(games-memory-advice REQUIRED CONFIG)
 find_package(games-performance-tuner REQUIRED CONFIG)
+find_package(com.google.android.gms.gni.c REQUIRED CONFIG)
 
 # Set the base dir
 set(GAMESDK_BASE_DIR "../../../../..")
@@ -49,7 +52,7 @@ set(CMAKE_SHARED_LINKER_FLAGS
 
 # Set common compiler options
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Werror -Wthread-safety" )
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D _LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS -Os -fPIC" )
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D _LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS -O0 -fPIC" )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti" )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGOOGLE_PROTOBUF_NO_RTTI -DHAVE_PTHREAD")
 add_definitions("-DGLM_FORCE_SIZE_T_LENGTH -DGLM_FORCE_RADIANS")
@@ -74,6 +77,7 @@ endif()
 add_library(${CMAKE_PROJECT_NAME} SHARED
      ${PROTOBUF_NANO_SRCS}
      ${PROTOGEN_SRCS}
+     ${native_wrappers}
      android_main.cpp
      anim.cpp
      ascii_to_geom.cpp
@@ -105,6 +109,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
      ui_scene.cpp
      util.cpp
      vertexbuf.cpp
+     vibration_manager.cpp
      welcome_scene.cpp
      ${COMMON_SRC_DIR}/Versions.cpp
      )
@@ -117,6 +122,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 # add lib dependencies
 target_link_libraries(${CMAKE_PROJECT_NAME}
+     PUBLIC com.google.android.gms.gni.c::gni_shared
      android
      atomic
      EGL
@@ -125,10 +131,13 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
      games-controller::paddleboat_static
      games-frame-pacing::swappy_static
      games-performance-tuner::tuningfork_static
-     games-memory-advice::memory_advice
+     games-memory-advice::memory_advice_static
      GLESv3
      glm
      log)
+
+include_directories(./native_wrappers/c)
+include_directories(./native_wrappers/cpp)
 
 if("${USE_ASSET_PACKS}" STREQUAL "false")
     add_definitions("-DNO_ASSET_PACKS")

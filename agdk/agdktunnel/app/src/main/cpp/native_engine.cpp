@@ -26,6 +26,7 @@
 #include "paddleboat/paddleboat.h"
 #include "swappy/swappyGL.h"
 #include "welcome_scene.hpp"
+#include "gni/gni.h"
 
 // verbose debug logs on?
 #define VERBOSE_LOGGING 1
@@ -38,6 +39,9 @@
 
 // max # of GL errors to print before giving up
 #define MAX_GL_ERRORS 200
+
+static const char *VIBRATOR_SYSTEM_STRING = "vibrator";
+static const char *VIBRATOR_MANAGER_SYSTEM_STRING = "vibrator_manager";
 
 static NativeEngine *_singleton = NULL;
 
@@ -118,6 +122,19 @@ NativeEngine::NativeEngine(struct android_app *app) {
     // Memory Advice library. Off by default.
     mMemoryConsumer = new MemoryConsumer(false);
 
+    // Initialize the GNI runtime. This function needs to be called before any
+    // call to the wrapper code (the Vibration Manager depends on this).
+    GniCore_init(app->activity->vm, app->activity->javaGameActivity);
+
+    // Initialize the vibration manager, used to vibrate the device if supported
+    String *vibratorString = String_fromCString(VIBRATOR_SYSTEM_STRING);
+    String *vibrationManagerString = String_fromCString(VIBRATOR_MANAGER_SYSTEM_STRING);
+    mVibrationManager = new VibrationManager(app->activity->javaGameActivity,
+                                             String_getJniReference(vibratorString),
+                                             String_getJniReference(vibrationManagerString));
+    String_destroy(vibratorString);
+    String_destroy(vibrationManagerString);
+
     ALOGI("Calling SwappyGL_init");
     SwappyGL_init(GetJniEnv(), mApp->activity->javaGameActivity);
     SwappyGL_setSwapIntervalNS(SWAPPY_SWAP_60FPS);
@@ -177,6 +194,7 @@ NativeEngine *NativeEngine::GetInstance() {
 
 NativeEngine::~NativeEngine() {
     VLOGD("NativeEngine: destructor running");
+    delete mVibrationManager;
     delete mTuningManager;
     Paddleboat_setControllerStatusCallback(NULL, NULL);
     Paddleboat_destroy(GetJniEnv());
