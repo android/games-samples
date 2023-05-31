@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "vibration_manager.hpp"
+#include "vibration_helper.hpp"
 #include "android/content/context.hpp"
 #include "android/os/vibrator_manager.hpp"
 #include <android/api-level.h>
@@ -24,23 +24,23 @@
 // Add a VibrationAttribute to the vibrate call on API 33 or higher
 #define USE_VIBRATION_ATTRIBUTE_API_LEVEL 33
 
-// Use VibrationManager to obtain a vibrator on API 31 and higher
+// Use VibrationHelper to obtain a vibrator on API 31 and higher
 #define USE_VIBRATION_MANAGER_API_LEVEL 31
 
 // Use the VibrationEffect version of the vibrate call on API 26 or higher
 #define USE_VIBRATION_EFFECT_API_LEVEL 26
 
-// android.os.VibrationAttributes.USAGE_CLASS_FEEDBACK
-#define USAGE_CLASS_FEEDBACK 2
+// android.os.VibrationAttributes.USAGE_MEDIA
+#define USAGE_MEDIA 19
 
 // android.os.VibrationEffect.EFFECT_HEAVY_CLICK
 #define EFFECT_HEAVY_CLICK 5
 
 // Amount of time to vibrate in milliseconds using the legacy vibrate method
-#define VIBRATION_TIME_MILLISECONDS 500
+#define VIBRATION_TIME_MILLISECONDS 30
 
-VibrationManager::VibrationManager(jobject mainActivity, jobject vibratorString,
-                                   jobject vibrationManagerString) {
+VibrationHelper::VibrationHelper(jobject mainActivity, jobject vibratorString,
+                                 jobject vibrationManagerString) {
   mHasVibrator = false;
   mVibrator = NULL;
   mVibrationAttributes = NULL;
@@ -56,11 +56,11 @@ VibrationManager::VibrationManager(jobject mainActivity, jobject vibratorString,
     java::lang::String systemServiceName(vibrationManagerString);
     java::lang::Object& vibratorManagerAsObject = context.getSystemService(systemServiceName);
     android::os::VibratorManager vibratorManager(vibratorManagerAsObject.GetImpl());
-    mVibrator = &vibratorManager.getDefaultVibrator(); //new android::os::Vibrator(vibratorManager.getDefaultVibrator());
+    mVibrator = &vibratorManager.getDefaultVibrator();
   } else {
     java::lang::String systemServiceName(vibratorString);
     java::lang::Object& vibratorAsObject = context.getSystemService(systemServiceName);
-    mVibrator = reinterpret_cast<android::os::Vibrator*>(&vibratorAsObject);
+    mVibrator = new android::os::Vibrator(vibratorAsObject.GetImpl());
   }
 
   if (mVibrator != NULL) {
@@ -71,7 +71,7 @@ VibrationManager::VibrationManager(jobject mainActivity, jobject vibratorString,
       // version of Android, some may have been deprecated. We pick the appropriate
       // combination based on API level
       if (apiLevel >= USE_VIBRATION_ATTRIBUTE_API_LEVEL) {
-        const int32_t usage = USAGE_CLASS_FEEDBACK;
+        const int32_t usage = USAGE_MEDIA;
         mVibrationAttributes = &android::os::VibrationAttributes::createForUsage(
             usage);
       }
@@ -83,7 +83,7 @@ VibrationManager::VibrationManager(jobject mainActivity, jobject vibratorString,
   }
 }
 
-VibrationManager::~VibrationManager() {
+VibrationHelper::~VibrationHelper() {
   if (mVibrationEffect != NULL) {
     delete(mVibrationEffect);
   }
@@ -95,7 +95,7 @@ VibrationManager::~VibrationManager() {
   }
 }
 
-void VibrationManager::DoVibrateEffect() {
+void VibrationHelper::DoVibrateEffect() {
   if (mVibrator != NULL && mHasVibrator) {
     if (mVibrationEffect != NULL && mVibrationAttributes != NULL) {
       mVibrator->vibrate(*mVibrationEffect, *mVibrationAttributes);

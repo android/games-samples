@@ -129,9 +129,9 @@ NativeEngine::NativeEngine(struct android_app *app) {
     // Initialize the vibration manager, used to vibrate the device if supported
     String *vibratorString = String_fromCString(VIBRATOR_SYSTEM_STRING);
     String *vibrationManagerString = String_fromCString(VIBRATOR_MANAGER_SYSTEM_STRING);
-    mVibrationManager = new VibrationManager(app->activity->javaGameActivity,
-                                             String_getJniReference(vibratorString),
-                                             String_getJniReference(vibrationManagerString));
+  mVibrationHelper = new VibrationHelper(app->activity->javaGameActivity,
+                                         String_getJniReference(vibratorString),
+                                         String_getJniReference(vibrationManagerString));
     String_destroy(vibratorString);
     String_destroy(vibrationManagerString);
 
@@ -194,7 +194,7 @@ NativeEngine *NativeEngine::GetInstance() {
 
 NativeEngine::~NativeEngine() {
     VLOGD("NativeEngine: destructor running");
-    delete mVibrationManager;
+    delete mVibrationHelper;
     delete mTuningManager;
     Paddleboat_setControllerStatusCallback(NULL, NULL);
     Paddleboat_destroy(GetJniEnv());

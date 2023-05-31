@@ -22,7 +22,7 @@
 #include "memory_consumer.hpp"
 #include "texture_manager.hpp"
 #include "tuning_manager.hpp"
-#include "vibration_manager.hpp"
+#include "vibration_helper.hpp"
 #include "data_loader_machine.hpp"
 #include "java/lang/string.h"
 
@@ -59,7 +59,7 @@ public:
     MemoryConsumer *GetMemoryConsumer() { return mMemoryConsumer; }
 
     // returns the vibration manager instance
-    VibrationManager *GetVibrationManager() { return mVibrationManager; }
+    VibrationHelper *GetVibrationManager() { return mVibrationHelper; }
 
     // returns the (singleton) instance
     static NativeEngine *GetInstance();
@@ -134,8 +134,8 @@ public:
     // Memory consumer instance
     MemoryConsumer *mMemoryConsumer;
 
-    // Vibration manager instance
-    VibrationManager *mVibrationManager;
+    // Vibration helper instance
+    VibrationHelper *mVibrationHelper;
 
     // is this the first frame we're drawing?
     bool mIsFirstFrame;

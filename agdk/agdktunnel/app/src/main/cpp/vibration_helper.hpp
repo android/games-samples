@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef agdktunnel_vibration_manager_hpp
-#define agdktunnel_vibration_manager_hpp
+#ifndef agdktunnel_vibration_helper_hpp
+#define agdktunnel_vibration_helper_hpp
 
 #include "android/os/vibrator.hpp"
 #include "android/os/vibration_attributes.hpp"
 #include "android/os/vibration_effect.hpp"
 
-class VibrationManager {
+class VibrationHelper {
  public:
-  VibrationManager(jobject mainActivity, jobject vibratorString, jobject vibrationManagerString);
-  ~VibrationManager();
+  VibrationHelper(jobject mainActivity, jobject vibratorString, jobject vibrationManagerString);
+  ~VibrationHelper();
 
   bool HasVibrator() const { return mHasVibrator; }
 
@@ -37,4 +37,4 @@ class VibrationManager {
   bool mHasVibrator;
 };
 
-#endif // agdktunnel_vibration_manager_hpp
+#endif // agdktunnel_vibration_helper_hpp

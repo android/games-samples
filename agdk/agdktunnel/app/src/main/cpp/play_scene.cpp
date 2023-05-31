@@ -661,7 +661,7 @@ void PlayScene::DetectCollisions(float previousY) {
     int row = o->GetRowAt(mPlayerPos.z);
 
     if (o->grid[col][row]) {
-        VibrationManager *vibrationManager = NativeEngine::GetInstance()->GetVibrationManager();
+        VibrationHelper *vibrationManager = NativeEngine::GetInstance()->GetVibrationManager();
         if (vibrationManager->HasVibrator()) {
             vibrationManager->DoVibrateEffect();
         }

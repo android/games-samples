@@ -109,7 +109,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
      ui_scene.cpp
      util.cpp
      vertexbuf.cpp
-     vibration_manager.cpp
+     vibration_helper.cpp
      welcome_scene.cpp
      ${COMMON_SRC_DIR}/Versions.cpp
      )
