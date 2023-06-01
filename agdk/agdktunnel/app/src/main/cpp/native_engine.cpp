@@ -123,15 +123,15 @@ NativeEngine::NativeEngine(struct android_app *app) {
     mMemoryConsumer = new MemoryConsumer(false);
 
     // Initialize the GNI runtime. This function needs to be called before any
-    // call to the wrapper code (the Vibration Manager depends on this).
+    // call to the wrapper code (the VibrationHelper depends on this).
     GniCore_init(app->activity->vm, app->activity->javaGameActivity);
 
-    // Initialize the vibration manager, used to vibrate the device if supported
+    // Initialize the vibration helper, used to vibrate the device if supported
     String *vibratorString = String_fromCString(VIBRATOR_SYSTEM_STRING);
     String *vibrationManagerString = String_fromCString(VIBRATOR_MANAGER_SYSTEM_STRING);
-  mVibrationHelper = new VibrationHelper(app->activity->javaGameActivity,
-                                         String_getJniReference(vibratorString),
-                                         String_getJniReference(vibrationManagerString));
+    mVibrationHelper = new VibrationHelper(app->activity->javaGameActivity,
+                                           String_getJniReference(vibratorString),
+                                           String_getJniReference(vibrationManagerString));
     String_destroy(vibratorString);
     String_destroy(vibrationManagerString);
 

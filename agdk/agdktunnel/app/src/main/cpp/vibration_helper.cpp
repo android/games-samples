@@ -24,7 +24,7 @@
 // Add a VibrationAttribute to the vibrate call on API 33 or higher
 #define USE_VIBRATION_ATTRIBUTE_API_LEVEL 33
 
-// Use VibrationHelper to obtain a vibrator on API 31 and higher
+// Use VibrationManager to obtain a vibrator on API 31 and higher
 #define USE_VIBRATION_MANAGER_API_LEVEL 31
 
 // Use the VibrationEffect version of the vibrate call on API 26 or higher

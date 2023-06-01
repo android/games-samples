@@ -661,10 +661,7 @@ void PlayScene::DetectCollisions(float previousY) {
     int row = o->GetRowAt(mPlayerPos.z);
 
     if (o->grid[col][row]) {
-        VibrationHelper *vibrationManager = NativeEngine::GetInstance()->GetVibrationManager();
-        if (vibrationManager->HasVibrator()) {
-            vibrationManager->DoVibrateEffect();
-        }
+        NativeEngine::GetInstance()->GetVibrationHelper()->DoVibrateEffect();
 #ifndef GOD_MODE
         // crashed against obstacle
         mLives--;

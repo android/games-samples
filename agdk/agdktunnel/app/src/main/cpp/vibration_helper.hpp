@@ -26,8 +26,6 @@ class VibrationHelper {
   VibrationHelper(jobject mainActivity, jobject vibratorString, jobject vibrationManagerString);
   ~VibrationHelper();
 
-  bool HasVibrator() const { return mHasVibrator; }
-
   void DoVibrateEffect();
 
  private:

@@ -58,8 +58,8 @@ public:
     // returns the memory consumer instance
     MemoryConsumer *GetMemoryConsumer() { return mMemoryConsumer; }
 
-    // returns the vibration manager instance
-    VibrationHelper *GetVibrationManager() { return mVibrationHelper; }
+    // returns the vibration helper instance
+    VibrationHelper *GetVibrationHelper() { return mVibrationHelper; }
 
     // returns the (singleton) instance
     static NativeEngine *GetInstance();
