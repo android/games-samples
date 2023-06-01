@@ -56,10 +56,6 @@ public class AGDKTunnelActivity extends GameActivity {
         // See https://developer.android.com/ndk/guides/cpp-support#shared_runtimes
         System.loadLibrary("c++_shared");
 
-        // Optional: reload the memory advice library explicitly (it will be loaded
-        // implicitly when loading agdktunnel library as a dependent library)
-        System.loadLibrary("memory_advice");
-
         // Optional: reload the native library.
         // However this is necessary when any of the following happens:
         //     - agdktunnel library is not configured to the following line in the manifest:
