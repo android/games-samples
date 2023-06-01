@@ -1,0 +1,50 @@
+{
+  "custom_classes": [
+    {
+      "class_name": "class java.lang.CharSequence"
+    },
+    {
+      "class_name": "class java.lang.Object",
+      "methods": [
+        "java.lang.String toString()"
+      ]
+    },
+    {
+      "class_name": "class java.lang.String"
+    },
+    {
+      "class_name": "class android.content.Context",
+      "methods": [
+        "java.lang.Object getSystemService(java.lang.String name)"
+      ]
+    },
+    {
+      "class_name": "class android.os.Vibrator",
+      "methods": [
+        "void cancel()",
+        "boolean hasVibrator()",
+        "void vibrate (long milliseconds)",
+        "void vibrate (android.os.VibrationEffect vibe)",
+        "void vibrate (android.os.VibrationEffect vibe, android.os.VibrationAttributes attributes)"
+      ]
+    },
+    {
+      "class_name": "class android.os.VibratorManager",
+      "methods": [
+        "android.os.Vibrator getDefaultVibrator()"
+      ]
+    },
+    {
+      "class_name": "class android.os.VibrationEffect",
+      "methods": [
+        "static android.os.VibrationEffect createPredefined(int effectId)"
+      ]
+    },
+    {
+      "class_name": "class android.os.VibrationAttributes",
+      "methods": [
+        "static android.os.VibrationAttributes createForUsage(int usage)"
+      ]
+    }
+  ]
+}
