@@ -1,0 +1,72 @@
+/*
+ * Copyright 2020 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'com.android.application'
+
+// Define a path to the extracted Play Core SDK files.
+// If using a relative path, wrap it with file() since CMake requires absolute paths.
+def playcoreDir = file('../../play-core-native-sdk')
+
+android {
+    compileSdkVersion 29
+    ndkVersion '21.2.6472646'
+
+    assetPacks = [ ":InstallPack", ":FastFollowPack", ":OnDemandPack"]
+
+    bundle {
+        texture {
+            enableSplit true
+        }
+    }
+    
+    defaultConfig {
+        applicationId 'com.google.sample.nativepaddemo'
+        minSdkVersion 18
+        targetSdkVersion 29
+        versionCode     1
+        versionName    '1.0'
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_STL=c++_static",
+                          "-DPLAYCORE_LOCATION=$playcoreDir"
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'),
+                          "proguard-rules.pro",
+                          "$playcoreDir/proguard/common.pgcfg",
+                          "$playcoreDir/proguard/per-feature-proguard-files"
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            version '3.10.2'
+            path 'src/main/cpp/CMakeLists.txt'
+        }
+    }
+}
+android.lintOptions {
+        abortOnError  = false
+}
+
+dependencies {
+    // Use the Play Core AAR included with the SDK.
+    implementation files("$playcoreDir/playcore.aar")
+}
+
