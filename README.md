@@ -47,3 +47,8 @@ samples and tools specific to Google Play Games for PC.
 
 Example tooling to help automate configuring a Unity engine project to target
 Google Play Games for PC.
+
+## Codelabs
+
+The **[codelabs/](codelabs)** directory contains two codelabs on learning how
+to use Play Asset Delivery for games written using C++ or the Unity engine.
