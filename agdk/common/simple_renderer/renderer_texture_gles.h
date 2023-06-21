@@ -14,26 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef SIMPLERENDERER_DEBUG_H
-#define SIMPLERENDERER_DEBUG_H
+#ifndef SIMPLERENDERER_TEXTURE_GLES_H_
+#define SIMPLERENDERER_TEXTURE_GLES_H_
 
-#include "common.hpp"
+#include <cstdint>
+#include <GLES3/gl3.h>
+#include "renderer_texture.h"
 
-#define RENDERER_ERROR ALOGE
-#define RENDERER_LOG ALOGI
-#define RENDERER_ASSERT MY_ASSERT
+namespace simple_renderer
+{
+class TextureGLES : public Texture {
+ public:
+  TextureGLES(const Texture::TextureCreationParams& params);
+  virtual ~TextureGLES();
 
-#ifdef NDEBUG
-#define RENDERER_CHECK_GLES(a)
-#define RENDERER_CHECK_VK(b)
-#else
-#define RENDERER_CHECK_GLES(a) RendererCheckGLES(a)
-#define RENDERER_CHECK_VK(a, b) RendererCheckVk(a, b)
-#endif
+  GLuint GetTextureObject() const { return texture_object_; }
 
-namespace simple_renderer {
-bool RendererCheckGLES(const char* message);
-bool RendererCheckVk(int result, const char* message);
-}
+ private:
+  GLuint texture_object_;
+};
+} // namespace simple_renderer
 
-#endif // SIMPLERENDERER_DEBUG_H
+#endif //SIMPLERENDERER_TEXTURE_GLES_H_

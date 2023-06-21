@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Android Open Source Project
+ * Copyright 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,27 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef agdktunnel_indexbuf_hpp
-#define agdktunnel_indexbuf_hpp
+#include "renderer_uniform_buffer.h"
+#include "renderer_debug.h"
 
-#include "common.hpp"
+namespace simple_renderer {
 
-/* Represents an index buffer (IBO). */
-class IndexBuf {
-public:
-    IndexBuf(GLushort *data, int dataSizeBytes);
+const UniformBuffer::UniformBufferElement& UniformBuffer::GetElement(uint32_t index) const {
+  if (index > GetBufferElementCount()) {
+    index = 0;
+  }
+  return element_array_[index];
+}
 
-    ~IndexBuf();
-
-    void BindBuffer();
-
-    void UnbindBuffer();
-
-    int GetCount() { return mCount; }
-
-private:
-    GLuint mIbo;
-    int mCount;
-};
-
-#endif
+}

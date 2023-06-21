@@ -17,6 +17,7 @@
 #include "anim.hpp"
 #include "game_asset_manager.hpp"
 #include "game_asset_manifest.hpp"
+#include "gfx_manager.hpp"
 #include "loader_scene.hpp"
 #include "tuning_manager.hpp"
 #include "welcome_scene.hpp"
@@ -245,5 +246,7 @@ void LoaderScene::OnCreateWidgets() {
 }
 
 void LoaderScene::RenderBackground() {
+    GfxManager *gfxManager = NativeEngine::GetInstance()->GetGfxManager();
+    gfxManager->SetRenderState(GfxManager::kGfxType_BasicTrisNoDepthTest);
     RenderBackgroundAnimation(mShapeRenderer);
 }

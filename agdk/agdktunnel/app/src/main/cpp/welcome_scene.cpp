@@ -16,6 +16,7 @@
 
 #include "anim.hpp"
 #include "dialog_scene.hpp"
+#include "gfx_manager.hpp"
 #include "play_scene.hpp"
 #include "welcome_scene.hpp"
 
@@ -88,6 +89,8 @@ WelcomeScene::~WelcomeScene() {
 }
 
 void WelcomeScene::RenderBackground() {
+    GfxManager *gfxManager = NativeEngine::GetInstance()->GetGfxManager();
+    gfxManager->SetRenderState(GfxManager::kGfxType_BasicTrisNoDepthTest);
     RenderBackgroundAnimation(mShapeRenderer);
 }
 

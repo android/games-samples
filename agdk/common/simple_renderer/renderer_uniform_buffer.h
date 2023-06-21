@@ -17,8 +17,7 @@
 #ifndef SIMPLERENDERER_UNIFORM_BUFFER_H_
 #define SIMPLERENDERER_UNIFORM_BUFFER_H_
 
-#include <cstdint>
-#include <string>
+#include "renderer_buffer.h"
 
 namespace simple_renderer
 {
@@ -28,7 +27,7 @@ namespace simple_renderer
  * Currently the UniformBuffer only supports a small amount of data types, number of elements
  * total size of the uniform buffer.
  */
-class UniformBuffer {
+class UniformBuffer : public RendererBuffer {
  public:
   /** @brief Max number of uniform elements in a uniform buffer */
   static constexpr uint32_t kMaxUniforms = 4;
@@ -49,6 +48,11 @@ class UniformBuffer {
    */
   static constexpr uint32_t kElementStageFragmentFlag = (1U << 1);
 
+  /** @brief Size of a 4 float vector buffer element, in bytes */
+  static constexpr size_t kElementSize_Float4 = (sizeof(float) * 4);
+
+  /** @brief Size of a 16 float 4x4 matrix buffer element, in bytes */
+  static constexpr size_t kElementSize_Matrix44 = (sizeof(float) * 16);
   /**
    * @brief The uniform buffer element types supported by `UniformBuffer`
    */
@@ -111,23 +115,6 @@ class UniformBuffer {
   virtual ~UniformBuffer() {}
 
   /**
-   * @brief Retrieve the debug name string associated with the `UniformBuffer`
-   * @result A string containing the debug name.
-   */
-  const std::string& GetUniformBufferDebugName() { return uniform_buffer_debug_name_; }
-  /**
-   * @brief Set a debug name string to associate with the `UniformBuffer`
-   * @param name A string containing the debug name.
-   */
-  void SetUniformBufferDebugName(const std::string& name) { uniform_buffer_debug_name_ = name; }
-
-  /**
-   * @brief Get the number of elements in the `UniformBuffer`.
-   * @return The number of elements in the `UniformBuffer`
-   */
-  uint32_t GetElementCount() const { return element_count_; }
-
-  /**
    * @brief Get the element description of a `UniformBuffer` element at the specified index.
    * @param index The index of the element, must be less than ::GetElementCount
    * @return The specified `UniformBufferElement` of the `UniformBuffer`
@@ -150,16 +137,14 @@ class UniformBuffer {
 
  protected:
   UniformBuffer(const UniformBufferCreationParams& params) :
-    element_array_(params.element_array),
-    element_count_(params.element_count) {
-    uniform_buffer_debug_name_ = "noname";
+      RendererBuffer(params.element_count, params.data_byte_count, params.data_byte_count),
+    element_array_(params.element_array) {
   }
 
  private:
-  const UniformBufferElement* element_array_;
-  uint32_t element_count_;
+  UniformBuffer() : RendererBuffer(0, 0, 0), element_array_(nullptr) {}
 
-  std::string uniform_buffer_debug_name_;
+  const UniformBufferElement* element_array_;
 };
 }
 

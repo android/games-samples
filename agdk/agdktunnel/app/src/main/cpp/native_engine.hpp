@@ -19,6 +19,7 @@
 
 #include "common.hpp"
 #include "game_asset_manager.hpp"
+#include "gfx_manager.hpp"
 #include "memory_consumer.hpp"
 #include "texture_manager.hpp"
 #include "tuning_manager.hpp"
@@ -48,6 +49,9 @@ public:
 
     // returns the asset manager instance
     GameAssetManager *GetGameAssetManager() { return mGameAssetManager; }
+
+    // returns the graphics resource manager instance
+    GfxManager *GetGfxManager() { return mGfxManager; }
 
     // returns the texture manager instance
     TextureManager *GetTextureManager() { return mTextureManager; }
@@ -133,6 +137,9 @@ public:
 
     // Memory consumer instance
     MemoryConsumer *mMemoryConsumer;
+
+    // Gfx resource manager instance
+    GfxManager *mGfxManager;
 
     // Vibration helper instance
     VibrationHelper *mVibrationHelper;

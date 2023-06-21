@@ -212,6 +212,10 @@ class RenderState {
     bool scissor_test;
   };
 
+   virtual void SetViewport(const RenderState::Viewport& viewport) = 0;
+
+   virtual void SetScissorRect(const RenderState::ScissorRect& scissor_rect) = 0;
+
   /**
    * @brief Base class destructor, do not call directly.
    */

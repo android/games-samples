@@ -17,8 +17,7 @@
 #ifndef SIMPLERENDERER_VERTEX_BUFFER_H_
 #define SIMPLERENDERER_VERTEX_BUFFER_H_
 
-#include <cstdint>
-#include <string>
+#include "renderer_buffer.h"
 
 namespace simple_renderer
 {
@@ -29,7 +28,7 @@ namespace simple_renderer
  * `VertexBuffer` does not currently support dynamically updating vertex buffer data after
  * initial creation.
  */
-class VertexBuffer {
+class VertexBuffer : public RendererBuffer {
  public:
   /**
    * @brief The vertex formats supported by `VertexBuffer`
@@ -74,17 +73,11 @@ class VertexBuffer {
   VertexFormat GetVertexFormat() const { return vertex_format_; }
 
   /**
-   * @brief Get the size of the `VertexBuffer` data.
-   * @return The size of the `VertexBuffer` data in bytes
-   */
-  size_t GetBufferSize() const { return buffer_size_bytes_; }
-
-  /**
    * @brief Get the per-vertex stride, in bytes, of a specific `VertexFormat`
    * @param format A `VertexFormat` enum of the vertex format being queried for stride.
    * @return The stride of the `VertexFormat` in bytes
    */
-  static size_t GetVertexStride(const VertexFormat format) {
+  static size_t GetVertexFormatStride(const VertexFormat format) {
     if (format < kVertexFormat_Count) {
       return kVertexStrides[format];
     }
@@ -103,40 +96,27 @@ class VertexBuffer {
   }
 
   /**
-   * @brief Get the number of vertices in the `VertexBuffer`.
-   * @return The number of vertices in the `VertexBuffer`
+   * @brief Base class destructor, do not call directly.
    */
-  size_t GetVertexCount() const { return GetBufferSize() / GetVertexStride(); }
+  virtual ~VertexBuffer() {}
 
  protected:
-  VertexBuffer(const VertexBufferCreationParams& params)
-               : vertex_format_(params.vertex_format), buffer_size_bytes_(params.data_byte_size) {
+  VertexBuffer(const VertexBufferCreationParams& params) :
+      RendererBuffer(params.data_byte_size / kVertexStrides[params.vertex_format],
+                     params.data_byte_size, kVertexStrides[params.vertex_format]),
+      vertex_format_(params.vertex_format) {
   }
-
-  /**
-   * @brief Retrieve the debug name string associated with the `VertexBuffer`
-   * @result A string containing the debug name.
-   */
-  const std::string& GetVertexBufferDebugName() const { return vertex_buffer_debug_name_; }
-  /**
-   * @brief Set a debug name string to associate with the `VertexBuffer`
-   * @param name A string containing the debug name.
-   */
-  void SetVertexBufferDebugName(const std::string& name) { vertex_buffer_debug_name_ = name; }
 
  private:
   VertexBuffer() :
-      vertex_format_(kVertexFormat_Count),
-      buffer_size_bytes_(0),
-      vertex_buffer_debug_name_("noname") {
+      RendererBuffer(0, 0, 0),
+      vertex_format_(kVertexFormat_Count) {
 
   }
 
   static constexpr size_t kVertexStrides[kVertexFormat_Count] = {
       12, 20, 28, 36 };
   VertexFormat vertex_format_;
-  size_t buffer_size_bytes_;
-  std::string vertex_buffer_debug_name_;
 };
 } // namespace simple_renderer
 

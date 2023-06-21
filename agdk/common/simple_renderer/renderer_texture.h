@@ -100,6 +100,66 @@ class Texture {
   };
 
   /**
+   * @brief The minified filters applicable to a texture
+   */
+  enum TextureMinFilter : uint32_t {
+    /** @brief Nearest texel to coordinates */
+    kMinFilter_Nearest = 0,
+    /** @brief Linear 2x2 average to coordinates */
+    kMinFilter_Linear,
+    /** @brief Nearest texel to coordinates of closest mipmap */
+    kMinFilter_Nearest_Mipmap_Nearest,
+    /** @brief Linear 2x2 average to coordinates of closest mipmap */
+    kMinFilter_Linear_Mipmap_Nearest,
+    /** @brief Nearest texel to coordinates of closest two mipmaps */
+    kMinFilter_Nearest_Mipmap_Linear,
+    /** @brief Linear 2x2 average to coordinates of closest two mipmaps */
+    kMinFilter_Linear_Mipmap_Linear,
+    /** @brief Count of min filters */
+    kMinFilter_Count
+  };
+
+  /**
+   * @brief The magnified filters applicable to a texture
+   */
+  enum TextureMagFilter : uint32_t {
+    /** @brief Nearest texel to coordinates */
+    kMagFilter_Nearest = 0,
+    /** @brief Linear 2x2 average to coordinates */
+    kMagFilter_Linear,
+    /** @brief Count of mag filters */
+    kMagFilter_Count
+  };
+
+  /**
+   * @brief The S coordinate wrap options available for a texture
+   */
+  enum TextureWrapS : uint32_t {
+    /** @brief Repeat texture (wrap) */
+    kWrapS_Repeat = 0,
+    /** @brief Clamp coordinate to edge of texture */
+    kWrapS_ClampToEdge,
+    /** @brief Repeat texture (mirrored) */
+    kWrapS_MirroredRepeat,
+    /** @brief Count of S wraps */
+    kWrapS_Count
+  };
+
+  /**
+   * @brief The T coordinate wrap options available for a texture
+   */
+  enum TextureWrapT : uint32_t {
+    /** @brief Repeat texture (wrap) */
+    kWrapT_Repeat = 0,
+    /** @brief Clamp coordinate to edge of texture */
+    kWrapT_ClampToEdge,
+    /** @brief Repeat texture (mirrored) */
+    kWrapT_MirroredRepeat,
+    /** @brief Count of T wraps */
+    kWrapT_Count
+  };
+
+  /**
    * @brief A structure holding required parameters to create a new `Texture`.
    * Passed to the Renderer::CreateTextureBuffer function.
    */
@@ -108,6 +168,14 @@ class Texture {
     Texture::TextureFormat format;
     /** @brief Compression format of the texture */
     Texture::TextureCompressionType compression_type;
+    /** @brief Minified function of the texture */
+    Texture::TextureMinFilter min_filter;
+    /** @brief Magnified function of the texture */
+    Texture::TextureMagFilter mag_filter;
+    /** @brief Coordinate S wrap mode of the texture */
+    Texture::TextureWrapS wrap_s;
+    /** @brief Coordinate T wrap mode of the texture */
+    Texture::TextureWrapT wrap_t;
     /** @brief Base width of the texture in pixels at mip level 0 */
     uint32_t base_width;
     /** @brief Base height of the texture in pixels at mip level 0 */
@@ -168,10 +236,14 @@ class Texture {
   size_t GetTextureSize(const uint32_t mip_level) const {
     if (mip_level < texture_mip_count_) {
       return texture_sizes_[mip_level];
-    } else {
-      return 0;
-    };
+    }
+    return 0;
   }
+
+  /**
+   * @brief Base class destructor, do not call directly.
+   */
+  virtual ~Texture() {}
 
  protected:
   Texture(const TextureCreationParams& params)

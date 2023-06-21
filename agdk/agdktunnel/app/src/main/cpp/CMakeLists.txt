@@ -42,8 +42,10 @@ if("${USE_APT}" STREQUAL "true")
 endif()
 
 # common include directory for all samples
+set(COMMON_BASE_DIR "../../../../../common")
 set(COMMON_INCLUDE_DIR "../../../../../common/include")
 set(COMMON_SRC_DIR "../../../../../common/src")
+set(SIMPLE_RENDERER_DIR "../../../../../common/simple_renderer")
 
 # Export GameActivity_onCreate(),
 # Refer to: https://github.com/android-ndk/ndk/issues/381.
@@ -73,10 +75,25 @@ else()
     set(PROTOGEN_SRCS "")
 endif()
 
+set(SIMPLE_RENDERER_SRCS
+     ${SIMPLE_RENDERER_DIR}/renderer_debug_gles.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_index_buffer_gles.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_interface.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_gles.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_render_pass_gles.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_render_state_gles.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_resources.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_shader_program_gles.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_texture_gles.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_uniform_buffer.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_uniform_buffer_gles.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_vertex_buffer_gles.cpp)
+
 # now build app's shared lib
 add_library(${CMAKE_PROJECT_NAME} SHARED
      ${PROTOBUF_NANO_SRCS}
      ${PROTOGEN_SRCS}
+     ${SIMPLE_RENDERER_SRCS}
      ${native_wrappers}
      android_main.cpp
      anim.cpp
@@ -84,7 +101,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
      dialog_scene.cpp
      game_asset_manager.cpp
      game_asset_manifest.cpp
-     indexbuf.cpp
+     gfx_manager.cpp
      input_util.cpp
      jni_util.cpp
      loader_scene.cpp
@@ -94,21 +111,17 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
      native_engine.cpp
      obstacle.cpp
      obstacle_generator.cpp
-     our_shader.cpp
      play_scene.cpp
      scene.cpp
      scene_manager.cpp
      sfxman.cpp
-     shader.cpp
      shape_renderer.cpp
      tex_quad.cpp
      text_renderer.cpp
-     texture.cpp
      texture_manager.cpp
      tuning_manager.cpp
      ui_scene.cpp
      util.cpp
-     vertexbuf.cpp
      vibration_helper.cpp
      welcome_scene.cpp
      ${COMMON_SRC_DIR}/Versions.cpp
@@ -116,6 +129,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
      ${THIRD_PARTY_DIR}/glm/glm
+     ${COMMON_BASE_DIR}
      ${COMMON_INCLUDE_DIR}
      ${CMAKE_CURRENT_SOURCE_DIR}
      ${CMAKE_CURRENT_SOURCE_DIR}/data)

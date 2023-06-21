@@ -39,7 +39,6 @@ UiScene::UiScene() {
     mWidgetCount = 0;
     memset(mWidgets, 0, sizeof(mWidgets));
     mFocusWidget = -1;
-    mTrivialShader = NULL;
     mTextRenderer = NULL;
     mShapeRenderer = NULL;
     mDefaultButton = -1;
@@ -66,10 +65,11 @@ UiWidget *UiScene::NewWidget() {
 }
 
 void UiScene::OnStartGraphics() {
-    mTrivialShader = new TrivialShader();
-    mTrivialShader->Compile();
-    mTextRenderer = new TextRenderer(mTrivialShader);
-    mShapeRenderer = new ShapeRenderer(mTrivialShader);
+    GfxManager *gfxManager = NativeEngine::GetInstance()->GetGfxManager();
+    mTextRenderer = new TextRenderer(gfxManager->GetUniformBuffer(
+        GfxManager::kGfxType_BasicThickLinesNoDepthTest));
+    mShapeRenderer = new ShapeRenderer(gfxManager->GetUniformBuffer(
+        GfxManager::kGfxType_BasicTrisNoDepthTest));
 
     for (int i = 0; i < mWidgetCount; ++i) {
         mWidgets[i]->StartGraphics();
@@ -85,7 +85,6 @@ void UiScene::OnStartGraphics() {
 void UiScene::OnKillGraphics() {
     CleanUp(&mTextRenderer);
     CleanUp(&mShapeRenderer);
-    CleanUp(&mTrivialShader);
 
     for (int i = 0; i < mWidgetCount; ++i) {
         mWidgets[i]->KillGraphics();
@@ -112,10 +111,8 @@ UiWidget *UiScene::GetWidgetById(int id) {
 void UiScene::DoFrame() {
     SceneManager *mgr = SceneManager::GetInstance();
 
-    // clear screen
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glDisable(GL_DEPTH_TEST);
+    GfxManager *gfxManager = NativeEngine::GetInstance()->GetGfxManager();
+    gfxManager->SetMainRenderPass();
 
     // render background
     RenderBackground();
@@ -124,8 +121,8 @@ void UiScene::DoFrame() {
     if (mWaitScreen) {
         mTextRenderer->SetFontScale(WAIT_SIGN_SCALE);
         mTextRenderer->SetColor(1.0f, 1.0f, 1.0f);
+        gfxManager->SetRenderState(GfxManager::kGfxType_BasicThickLinesNoDepthTest);
         mTextRenderer->RenderText(S_PLEASE_WAIT, mgr->GetScreenAspect() * 0.5f, 0.5f);
-        glEnable(GL_DEPTH_TEST);
         return;
     }
 
@@ -141,16 +138,15 @@ void UiScene::DoFrame() {
     // render ALL the widgets!
     int i;
     for (i = 0; i < mWidgetCount; ++i) {
-        mWidgets[i]->Render(mTrivialShader, mTextRenderer, mShapeRenderer,
+        mWidgets[i]->Render(mTextRenderer, mShapeRenderer,
                             (mFocusWidget < 0) ? UiWidget::FOCUS_NOT_APPLICABLE :
                             (mFocusWidget == i) ? UiWidget::FOCUS_YES : UiWidget::FOCUS_NO, tf);
     }
 
     // Render memory statistics
+    gfxManager->SetRenderState(GfxManager::kGfxType_BasicThickLinesNoDepthTest);
     NativeEngine::GetInstance()->GetMemoryConsumer()->RenderMemoryStatistics(
         mTextRenderer);
-
-    glEnable(GL_DEPTH_TEST);
 }
 
 void UiScene::RenderBackground() {
@@ -306,12 +302,13 @@ static void _apply_transition(int trans, float f, float *x, float *y, float *w, 
     }
 }
 
-void UiWidget::Render(TrivialShader */*trivialShader*/, TextRenderer *textRenderer,
+void UiWidget::Render(TextRenderer *textRenderer,
                       ShapeRenderer *shapeRenderer, int focus, float transitionFactor) {
     if (!mVisible) {
         // that was easy.
         return;
     }
+    GfxManager *gfxManager = NativeEngine::GetInstance()->GetGfxManager();
 
     bool pulse = IsClickableButton() && (focus != FOCUS_NO);
     float factor = pulse ? SineWave(1.0f - PULSE_AMOUNT, 1.0f + PULSE_AMOUNT,
@@ -333,6 +330,7 @@ void UiWidget::Render(TrivialShader */*trivialShader*/, TextRenderer *textRender
     if (mHasBorder || (focus == FOCUS_YES && !mTransparent)) {
         // draw border
         shapeRenderer->SetColor(color);
+        gfxManager->SetRenderState(GfxManager::kGfxType_BasicTrisNoDepthTest);
         shapeRenderer->RenderRect(x, y, w * factor, h * factor);
         borderSize = BUTTON_BORDER_SIZE;
     }
@@ -340,6 +338,7 @@ void UiWidget::Render(TrivialShader */*trivialShader*/, TextRenderer *textRender
     // draw background
     if (mIsButton && !mTransparent) {
         shapeRenderer->SetColor(mBackColor);
+        gfxManager->SetRenderState(GfxManager::kGfxType_BasicTrisNoDepthTest);
         shapeRenderer->RenderRect(x, y, w * factor * (1.0f - borderSize),
                                   h * factor * (1.0f - borderSize));
     }
@@ -348,6 +347,7 @@ void UiWidget::Render(TrivialShader */*trivialShader*/, TextRenderer *textRender
     if (mText) {
         textRenderer->SetColor(color);
         textRenderer->SetFontScale(fontScale * factor);
+        gfxManager->SetRenderState(GfxManager::kGfxType_BasicThickLinesNoDepthTest);
         textRenderer->RenderText(mText, x, y);
     }
 }

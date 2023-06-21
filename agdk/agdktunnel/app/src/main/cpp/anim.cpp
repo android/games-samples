@@ -35,8 +35,6 @@ void RenderBackgroundAnimation(ShapeRenderer *r) {
         rectsInitted = true;
     }
 
-    glClear(GL_COLOR_BUFFER_BIT);
-
     for (i = 0; i < BG_RECTS; i++) {
         float c = 0.1f + 0.1f * (i % 4);
         r->SetColor(c, c, c);

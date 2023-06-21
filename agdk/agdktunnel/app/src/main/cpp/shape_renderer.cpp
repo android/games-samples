@@ -15,7 +15,10 @@
  */
 
 #include "shape_renderer.hpp"
+#include "gfx_manager.hpp"
 #include "util.hpp"
+
+using namespace simple_renderer;
 
 // geometry
 static GLfloat RECT_VERTICES[] = {
@@ -29,16 +32,29 @@ static GLfloat RECT_VERTICES[] = {
 // indices
 static GLushort RECT_INDICES[] = {0, 1, 2, 0, 2, 3};
 
-ShapeRenderer::ShapeRenderer(TrivialShader *ts) {
-    mTrivialShader = ts;
-    mColor[0] = mColor[1] = mColor[2] = 1.0f;
+ShapeRenderer::ShapeRenderer(std::shared_ptr<simple_renderer::UniformBuffer> uniformBuffer) {
+    mUniformBuffer = uniformBuffer;
+    mColor[0] = mColor[1] = mColor[2] = mColor[3] = 1.0f;
     mGeom = NULL;
 
     // create geometry
-    VertexBuf *vbuf = new VertexBuf(RECT_VERTICES, sizeof(RECT_VERTICES), 7 * sizeof(GLfloat));
-    vbuf->SetColorsOffset(3 * sizeof(GLfloat));
-    IndexBuf *ibuf = new IndexBuf(RECT_INDICES, sizeof(RECT_INDICES));
-    mGeom = new SimpleGeom(vbuf, ibuf);
+//    VertexBuf *vbuf = new VertexBuf(RECT_VERTICES, sizeof(RECT_VERTICES), 7 * sizeof(GLfloat));
+//    vbuf->SetColorsOffset(3 * sizeof(GLfloat));
+//    IndexBuf *ibuf = new IndexBuf(RECT_INDICES, sizeof(RECT_INDICES));
+//    mGeom = new SimpleGeom(vbuf, ibuf);
+
+    IndexBuffer::IndexBufferCreationParams index_params = {
+        RECT_INDICES, sizeof(RECT_INDICES)
+    };
+    VertexBuffer::VertexBufferCreationParams vertex_params = {
+        RECT_VERTICES, VertexBuffer::kVertexFormat_P3C4,
+        sizeof(RECT_VERTICES)
+    };
+    Renderer& renderer = Renderer::GetInstance();
+
+    std::shared_ptr<IndexBuffer> index_buffer = renderer.CreateIndexBuffer(index_params);
+    std::shared_ptr<VertexBuffer> vertex_buffer = renderer.CreateVertexBuffer(vertex_params);
+    mGeom = new SimpleGeom(index_buffer, vertex_buffer);
 }
 
 ShapeRenderer::~ShapeRenderer() {
@@ -53,6 +69,19 @@ void ShapeRenderer::RenderRect(float centerX, float centerY, float width, float 
     modelMat = glm::translate(glm::mat4(1.0f), glm::vec3(centerX, centerY, 0.0f));
     modelMat = glm::scale(modelMat, glm::vec3(width, height, 1.0f));
     mat = orthoMat * modelMat;
-    mTrivialShader->SetTintColor(mColor[0], mColor[1], mColor[2]);
-    mTrivialShader->RenderSimpleGeom(&mat, mGeom);
+
+    const float* matrixData = glm::value_ptr(mat);
+    simple_renderer::Renderer& renderer = simple_renderer::Renderer::GetInstance();
+
+    mUniformBuffer->SetBufferElementData(GfxManager::kBasicUniform_MVP,
+                                         matrixData, UniformBuffer::kElementSize_Matrix44);
+    mUniformBuffer->SetBufferElementData(GfxManager::kBasicUniform_Tint,
+                                         mColor, UniformBuffer::kElementSize_Float4);
+    renderer.BindVertexBuffer(mGeom->vertex_buffer_);
+    if (mGeom->index_buffer_.get() != nullptr) {
+        renderer.BindIndexBuffer(mGeom->index_buffer_);
+        renderer.DrawIndexed(mGeom->index_buffer_->GetBufferElementCount(), 0);
+    } else {
+        renderer.Draw(mGeom->vertex_buffer_->GetBufferElementCount(), 0);
+    }
 }

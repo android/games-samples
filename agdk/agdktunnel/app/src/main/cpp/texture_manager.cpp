@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
+#include "texture_manager.hpp"
 #include "common.hpp"
 #include "game_asset_manager.hpp"
 #include "native_engine.hpp"
-#include "texture_manager.hpp"
-#include <GLES3/gl3.h>
-#include <GLES3/gl3ext.h>
+#include "simple_renderer/renderer_interface.h"
+
+using namespace simple_renderer;
 
 enum TextureFileFormat {
     TEXTUREFILE_KTX = 0,
@@ -28,7 +29,6 @@ enum TextureFileFormat {
 };
 
 // ETC2 bpp sizes
-#if 0
 static const uint32_t ETC2_BitsPerPixel[] = {
         4, // GL_COMPRESSED_RGB8_ETC2
         4, // GL_COMPRESSED_SRGB8_ETC2
@@ -37,7 +37,7 @@ static const uint32_t ETC2_BitsPerPixel[] = {
         8, // GL_COMPRESSED_RGBA8_ETC2_EAC
         8  // GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC
 };
-#endif
+
 // ASTC GL internalformat values
 static const GLenum COMPRESSED_RGBA_ASTC_4x4_KHR = 0x93B0;
 static const GLenum COMPRESSED_RGBA_ASTC_5x4_KHR = 0x93B1;
@@ -71,6 +71,8 @@ struct ASTCHeader {
 
 
 // .ktx file format info
+static const uint32_t ETC2FORMAT_START = 0x9274; // GL_COMPRESSED_RGB8_ETC2
+static const uint32_t ETC2FORMAT_END = 0x9279; // GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC
 static const int KTX_IDENTIFIER_SIZE = 12;
 static const uint8_t KTX_11_IDENTIFIER[KTX_IDENTIFIER_SIZE] = {
         0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A
@@ -124,168 +126,140 @@ static TextureFileFormat GetFileFormat(const uint8_t *fileData, const size_t fil
 }
 
 // .astc texture file loader
-static bool
-CreateFromASTCFile(const uint8_t *fileData, const size_t fileSize, GLuint *textureID) {
-    bool success = false;
-    const ASTCHeader *header = reinterpret_cast<const ASTCHeader *>(fileData);
+static std::shared_ptr<simple_renderer::Texture> CreateFromASTCFile(const char* textureName,
+                                                                    const uint8_t* fileData,
+                                                                    const size_t fileSize) {
+    std::shared_ptr<simple_renderer::Texture> texture = nullptr;
+    const ASTCHeader* header = reinterpret_cast<const ASTCHeader *>(fileData);
     if (header->blockDepth == 1 && header->texDepth[0] == 1) {
-        GLsizei textureWidth =
-                header->texWidth[0] | (header->texWidth[1] << 8) | (header->texWidth[2] << 8);
-        GLsizei textureHeight = header->texHeight[0] | (header->texHeight[1] << 8) |
-                                (header->texHeight[2] << 8);
-        GLenum textureFormat = 0;
-        const GLsizei textureSize = static_cast<const GLsizei>(fileSize - sizeof(ASTCHeader));
+        const uint32_t texture_size = static_cast<const uint32_t>(fileSize - sizeof(ASTCHeader));
+        Texture::TextureCreationParams params;
+        params.format = Texture::kTextureFormat_ASTC;
+        params.compression_type = Texture::kTextureCompression_Count;
+        params.min_filter = Texture::kMinFilter_Linear;
+        params.mag_filter = Texture::kMagFilter_Linear;
+        params.wrap_s = Texture::kWrapS_Repeat;
+        params.wrap_t = Texture::kWrapT_Repeat;
+        params.base_width =
+            header->texWidth[0] | (header->texWidth[1] << 8) |
+                (header->texWidth[2] << 8);
+        params.base_height =
+            header->texHeight[0] | (header->texHeight[1] << 8) |
+                (header->texHeight[2] << 8);
+        params.mip_count = 1;
+        params.texture_sizes = &texture_size;
+        params.texture_data = (fileData + sizeof(ASTCHeader));
 
         switch (header->blockWidth) {
             case 4:
-                if (header->blockHeight == 4) textureFormat = COMPRESSED_RGBA_ASTC_4x4_KHR;
-                break;
+                if (header->blockHeight == 4)
+                    params.compression_type = Texture::kTextureCompression_ASTC_LDR_4x4;
+            break;
             case 5:
-                if (header->blockHeight == 4) textureFormat = COMPRESSED_RGBA_ASTC_5x4_KHR;
-                else if (header->blockHeight == 5) textureFormat = COMPRESSED_RGBA_ASTC_5x5_KHR;
-                break;
+                if (header->blockHeight == 4)
+                    params.compression_type = Texture::kTextureCompression_ASTC_LDR_5x4;
+                else if (header->blockHeight == 5)
+                    params.compression_type = Texture::kTextureCompression_ASTC_LDR_5x5;
+            break;
             case 6:
-                if (header->blockHeight == 5) textureFormat = COMPRESSED_RGBA_ASTC_6x5_KHR;
-                else if (header->blockHeight == 6) textureFormat = COMPRESSED_RGBA_ASTC_6x6_KHR;
-                break;
-            case 8:
-                if (header->blockHeight == 5) textureFormat = COMPRESSED_RGBA_ASTC_8x5_KHR;
-                else if (header->blockHeight == 6) textureFormat = COMPRESSED_RGBA_ASTC_8x6_KHR;
-                else if (header->blockHeight == 8) textureFormat = COMPRESSED_RGBA_ASTC_8x8_KHR;
-                break;
-            case 10:
-                if (header->blockHeight == 5) textureFormat = COMPRESSED_RGBA_ASTC_10x5_KHR;
+                if (header->blockHeight == 5)
+                    params.compression_type = Texture::kTextureCompression_ASTC_LDR_6x5;
                 else if (header->blockHeight == 6)
-                    textureFormat = COMPRESSED_RGBA_ASTC_10x6_KHR;
+                    params.compression_type = Texture::kTextureCompression_ASTC_LDR_6x6;
+            break;
+            case 8:
+                if (header->blockHeight == 5)
+                    params.compression_type = Texture::kTextureCompression_ASTC_LDR_8x5;
+                else if (header->blockHeight == 6)
+                    params.compression_type = Texture::kTextureCompression_ASTC_LDR_8x6;
                 else if (header->blockHeight == 8)
-                    textureFormat = COMPRESSED_RGBA_ASTC_10x8_KHR;
+                    params.compression_type = Texture::kTextureCompression_ASTC_LDR_8x8;
+            break;
+            case 10:
+                if (header->blockHeight == 5)
+                    params.compression_type = Texture::kTextureCompression_ASTC_LDR_10x5;
+                else if (header->blockHeight == 6)
+                    params.compression_type = Texture::kTextureCompression_ASTC_LDR_10x6;
+                else if (header->blockHeight == 8)
+                    params.compression_type = Texture::kTextureCompression_ASTC_LDR_10x8;
                 else if (header->blockHeight == 10)
-                    textureFormat = COMPRESSED_RGBA_ASTC_10x10_KHR;
-                break;
+                    params.compression_type = Texture::kTextureCompression_ASTC_LDR_10x10;
+            break;
             case 12:
-                if (header->blockHeight == 10) textureFormat = COMPRESSED_RGBA_ASTC_12x10_KHR;
+                if (header->blockHeight == 10)
+                    params.compression_type = Texture::kTextureCompression_ASTC_LDR_12x10;
                 else if (header->blockHeight == 12)
-                    textureFormat = COMPRESSED_RGBA_ASTC_12x12_KHR;
-                break;
+                    params.compression_type = Texture::kTextureCompression_ASTC_LDR_12x12;
+            break;
             default:
                 break;
         }
-
-        if (textureFormat > 0) {
-            const void *textureData = reinterpret_cast<const void *>(header + 1);
-            glGetError();
-            glGenTextures(1, textureID);
-            glBindTexture(GL_TEXTURE_2D, *textureID);
-            glCompressedTexImage2D(GL_TEXTURE_2D, 0, textureFormat, textureWidth, textureHeight,
-                                   0, textureSize, textureData);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            GLenum glErr = glGetError();
-            if (glErr == GL_NO_ERROR) {
-                success = true;
-            } else {
-                ALOGE("CreateFromASTCFile glCompressedTexImage2D error %d", glErr);
+        // Check for valid compression type
+        if (params.compression_type != Texture::kTextureCompression_Count) {
+            texture = simple_renderer::Renderer::GetInstance().CreateTexture(params);
+            if (texture.get() != nullptr) {
+                texture->SetTextureDebugName(textureName);
             }
         }
     }
-    return success;
+    return texture;
 }
 
 // .ktx texture file loader
 // This is not a robust KTX loader, ala libktx. It is only intended to load the KTX 1.1
 // ETC2 format, mip-mapped 2D texture files included with this example
-static bool
-CreateFromKTXFile(const uint8_t *fileData, const size_t /*fileSize*/, GLuint *textureID,
-                  uint32_t *textureMipCount) {
-    bool success = false;
-    const KTXHeader *header = reinterpret_cast<const KTXHeader *>(fileData);
-    // end of key-value data is padded to four-byte alignment
-    const size_t textureOffset = (sizeof(KTXHeader) + header->bytesOfKeyValueData + 3) & (~3);
-    const uint32_t *textureSize = reinterpret_cast<const uint32_t *>(fileData + textureOffset);
-    const uint8_t *textureData = reinterpret_cast<const uint8_t *>(textureSize + 1);
+static std::shared_ptr<simple_renderer::Texture> CreateFromKTXFile(const char* texture_name,
+                                                                   const uint8_t* file_data, const size_t file_size) {
+    std::shared_ptr<simple_renderer::Texture> texture = nullptr;
+    const KTXHeader* header = reinterpret_cast<const KTXHeader *>(file_data);
+    if (header->glInternalFormat >= ETC2FORMAT_START && header->glInternalFormat <= ETC2FORMAT_END) {
+        // end of key-value data is padded to four-byte alignment
+        const size_t texture_offset = (sizeof(KTXHeader) + header->bytesOfKeyValueData + 3) & (~3);
+        const uint32_t* texture_size = reinterpret_cast<const uint32_t *>(file_data + texture_offset);
+        const uint8_t* texture_data = reinterpret_cast<const uint8_t *>(texture_size + 1);
 
-    uint32_t currentMipWidth = header->pixelWidth;
-    uint32_t currentMipHeight = header->pixelHeight;
-    if (header->glInternalFormat >= GL_COMPRESSED_RGB8_ETC2 &&
-        header->glInternalFormat <= GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC) {
-        const GLint minFilter = header->numberOfMipmapLevels > 1 ?
-                                GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
-        // Clear error
-        glGetError();
-
-        glGenTextures(1, textureID);
-        glBindTexture(GL_TEXTURE_2D, *textureID);
-
-        uint32_t actualMipCount = 0;
-        for (uint32_t currentMipLevel = 0; currentMipLevel < header->numberOfMipmapLevels;
-             ++currentMipLevel) {
-            const uint32_t currentMipSize = *textureSize;
-            glCompressedTexImage2D(GL_TEXTURE_2D, currentMipLevel, header->glInternalFormat,
-                                   currentMipWidth, currentMipHeight,
-                                   0, currentMipSize, textureData);
-
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-            GLenum glErr = glGetError();
-            if (glErr == GL_NO_ERROR) {
-                success = true;
-            } else {
-                success = false;
-                ALOGE("CreateFromKTXFile glCompressedTexImage2D error %d", glErr);
-                break;
-            }
-            textureSize = reinterpret_cast<const uint32_t *>(textureData + currentMipSize);
-            textureData = reinterpret_cast<const uint8_t *>(textureSize + 1);
-
-            currentMipWidth >>= 1;
-            currentMipHeight >>= 1;
-            ++actualMipCount;
-            // Drop out if we fall block the 4x4 block size
-            if (currentMipWidth <= 4 || currentMipHeight <= 4) {
-                break;
-            }
+        Texture::TextureCreationParams params;
+        params.format = simple_renderer::Texture::kTextureFormat_ETC2;
+        params.compression_type = static_cast<Texture::TextureCompressionType>(
+            Texture::kTextureCompression_ETC2_RGB8 +
+                (header->glInternalFormat - ETC2FORMAT_START));
+        params.min_filter = Texture::kMinFilter_Linear;
+        params.mag_filter = Texture::kMagFilter_Linear;
+        params.wrap_s = Texture::kWrapS_Repeat;
+        params.wrap_t = Texture::kWrapT_Repeat;
+        params.base_width = header->pixelWidth;
+        params.base_height = header->pixelHeight;
+        params.mip_count = 1; // only load the first mip (header->number_of_mipmap_levels);
+        params.texture_sizes = texture_size;
+        params.texture_data = texture_data;
+        texture = simple_renderer::Renderer::GetInstance().CreateTexture(params);
+        if (texture.get() != nullptr) {
+            texture->SetTextureDebugName(texture_name);
         }
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, actualMipCount - 1);
-        *textureMipCount = actualMipCount;
     }
-    return success;
+    return texture;
 }
 
 TextureManager::TextureManager() {
     mDeviceSupportsASTC = false;
     mLastTextureFormat = TEXTUREFORMAT_ETC2;
 
-    GLint extensionCount = 0;
-
-    glGetIntegerv(GL_NUM_EXTENSIONS, &extensionCount);
-    for (GLint i = 0; i < extensionCount; i++) {
-        const GLubyte *extensionString = glGetStringi(GL_EXTENSIONS, i);
-        if (strcmp(reinterpret_cast<const char *>(extensionString), ASTC_EXTENSION_STRING) == 0) {
-            mDeviceSupportsASTC = true;
-            break;
-        }
-    }
+    mDeviceSupportsASTC = simple_renderer::Renderer::GetInstance().GetFeatureAvailable(
+        simple_renderer::Renderer::kFeature_ASTC);
     ALOGI("ASTC Textures: %s", (mDeviceSupportsASTC ? "Supported" : "Not Supported"));
 }
 
 TextureManager::~TextureManager() {
-    glBindTexture(GL_TEXTURE_2D, 0);
     for (std::vector<TextureReference>::iterator iter = mTextures.begin(); iter != mTextures.end();
          ++iter) {
-        GLuint textureID = static_cast<GLuint>(iter->mTextureReference);
-        glDeleteTextures(1, &textureID);
+        simple_renderer::Renderer::GetInstance().DestroyTexture(iter->mTextureReference);
     }
     mTextures.clear();
 }
 
 bool TextureManager::IsTextureLoaded(const char *textureName) {
     TextureManager::TextureReference textureRef = FindReferenceForName(textureName);
-    return (textureRef.mTextureReference != TextureManager::INVALID_TEXTURE_REF);
+    return (textureRef.mTextureReference != nullptr);
 }
 
 bool TextureManager::LoadTexture(const char *textureName) {
@@ -307,27 +281,25 @@ bool TextureManager::LoadTexture(const char *textureName) {
 
 bool TextureManager::CreateTexture(const char *textureName, const size_t textureSize,
                                    const uint8_t *textureData) {
-    bool success = false;
+    std::shared_ptr<simple_renderer::Texture> newTexture = nullptr;
     const TextureFileFormat fileFormat = GetFileFormat(textureData, textureSize);
-    GLuint textureID = 0;
-    uint32_t textureMipCount = 1;
 
     if (fileFormat == TEXTUREFILE_ASTC && mDeviceSupportsASTC) {
-        success = CreateFromASTCFile(textureData, textureSize, &textureID);
+      newTexture = CreateFromASTCFile(textureName, textureData, textureSize);
         mLastTextureFormat = TEXTUREFORMAT_ASTC;
     } else if (fileFormat == TEXTUREFILE_KTX) {
-        success = CreateFromKTXFile(textureData, textureSize, &textureID, &textureMipCount);
+      newTexture = CreateFromKTXFile(textureName, textureData, textureSize);
         mLastTextureFormat = TEXTUREFORMAT_ETC2;
     } else {
         ALOGE("TextureManager: unknown texture file format in file: %s", textureName);
     }
 
-    if (success) {
-        mTextures.push_back(TextureManager::TextureReference(textureMipCount, textureName,
-                                                             static_cast<uint64_t>(textureID)));
+    if (newTexture.get() != nullptr) {
+        mTextures.push_back(TextureManager::TextureReference(1, textureName,
+                                                             newTexture));
     }
     free((void *) textureData);
-    return success;
+    return (newTexture.get() != nullptr);
 }
 
 uint32_t TextureManager::GetTextureMipCount(const char *textureName) {
@@ -335,7 +307,7 @@ uint32_t TextureManager::GetTextureMipCount(const char *textureName) {
     return textureRef.mTextureMipCount;
 }
 
-uint64_t TextureManager::GetTextureReference(const char *textureName) {
+std::shared_ptr<simple_renderer::Texture> TextureManager::GetTexture(const char *textureName) {
     TextureManager::TextureReference textureRef = FindReferenceForName(textureName);
     return textureRef.mTextureReference;
 }
@@ -347,6 +319,6 @@ TextureManager::TextureReference TextureManager::FindReferenceForName(const char
             return *iter;
         }
     }
-    TextureManager::TextureReference emptyReference(0, NULL, INVALID_TEXTURE_REF);
+    TextureManager::TextureReference emptyReference(0, NULL, nullptr);
     return emptyReference;
 }

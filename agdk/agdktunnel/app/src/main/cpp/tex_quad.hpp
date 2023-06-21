@@ -18,13 +18,14 @@
 #define agdktunnel_texquad_hpp
 
 #include "engine.hpp"
-#include "our_shader.hpp"
+#include "simple_renderer/renderer_texture.h"
+#include "simple_renderer/renderer_uniform_buffer.h"
 
 // Represents a simple 2D textured quad (that can be used to render an icon, for example)
 class TexQuad {
 private:
-    Texture *mTexture;
-    OurShader *mOurShader;
+    std::shared_ptr<simple_renderer::Texture> mTexture;
+    std::shared_ptr<simple_renderer::UniformBuffer> mUniformBuffer;
     SimpleGeom *mGeom;
     float mWidth, mHeight;
     float mScale;
@@ -33,10 +34,11 @@ private:
 
     void CreateGeom(float umin, float vmin, float umax, float vmax);
 
-    void Init(Texture *t, OurShader *shader, float aspect,
-              float umin, float vmin, float umax, float vmax) {
+    void Init(std::shared_ptr<simple_renderer::Texture> t,
+              std::shared_ptr<simple_renderer::UniformBuffer> uniform,
+              float aspect, float umin, float vmin, float umax, float vmax) {
         mTexture = t;
-        mOurShader = shader;
+        mUniformBuffer = uniform;
         mAspect = aspect;
         mWidth = mAspect;
         mHeight = 1.0f;
@@ -46,14 +48,16 @@ private:
     }
 
 public:
-    TexQuad(Texture *t, OurShader *shader, float aspect, float umin, float vmin,
-            float umax, float vmax) {
-        Init(t, shader, aspect, umin, vmin, umax, vmax);
+    TexQuad(std::shared_ptr<simple_renderer::Texture> t,
+            std::shared_ptr<simple_renderer::UniformBuffer> uniform,
+            float aspect, float umin, float vmin, float umax, float vmax) {
+        Init(t, uniform, aspect, umin, vmin, umax, vmax);
     }
 
-    TexQuad(Texture *t, OurShader *shader, float umin, float vmin, float umax,
-            float vmax) {
-        Init(t, shader, (umax - umin) / (vmax - vmin), umin, vmin, umax, vmax);
+    TexQuad(std::shared_ptr<simple_renderer::Texture> t,
+            std::shared_ptr<simple_renderer::UniformBuffer> uniform,
+            float umin, float vmin, float umax, float vmax) {
+        Init(t, uniform, (umax - umin) / (vmax - vmin), umin, vmin, umax, vmax);
     }
 
     float GetCenterX() { return mCenterX; }

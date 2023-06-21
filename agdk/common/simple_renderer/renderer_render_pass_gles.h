@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Android Open Source Project
+ * Copyright 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,22 @@
  * limitations under the License.
  */
 
-#include "indexbuf.hpp"
+#ifndef SIMPLERENDERER_RENDER_PASS_GLES_H_
+#define SIMPLERENDERER_RENDER_PASS_GLES_H_
 
-IndexBuf::IndexBuf(GLushort *data, int dataSizeBytes) {
-    mCount = dataSizeBytes / sizeof(GLushort);
+#include "renderer_render_pass.h"
 
-    glGenBuffers(1, &mIbo);
-    BindBuffer();
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, dataSizeBytes, data, GL_STATIC_DRAW);
-    UnbindBuffer();
+namespace simple_renderer {
+class RenderPassGLES : public RenderPass {
+ public:
+
+  RenderPassGLES(const RenderPassCreationParams& params);
+  virtual ~RenderPassGLES();
+
+  virtual void BeginRenderPass();
+  virtual void EndRenderPass();
+ private:
+};
 }
 
-IndexBuf::~IndexBuf() {
-    glDeleteBuffers(1, &mIbo);
-    mIbo = 0;
-}
-
-void IndexBuf::BindBuffer() {
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIbo);
-}
-
-void IndexBuf::UnbindBuffer() {
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-}
+#endif // SIMPLERENDERER_RENDER_PASS_GLES_H_

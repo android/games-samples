@@ -17,8 +17,7 @@
 #ifndef SIMPLERENDERER_INDEX_BUFFER_H_
 #define SIMPLERENDERER_INDEX_BUFFER_H_
 
-#include <cstdint>
-#include <string>
+#include "renderer_buffer.h"
 
 namespace simple_renderer
 {
@@ -29,7 +28,7 @@ namespace simple_renderer
  * `IndexBuffer` does not currently support dynamically updating index buffer data after
  * initial creation.
  */
-class IndexBuffer {
+class IndexBuffer : public RendererBuffer {
  public:
   /**
    * @brief A structure holding required parameters to create a new `IndexBuffer`.
@@ -44,43 +43,19 @@ class IndexBuffer {
     size_t data_byte_size;
   };
 
-  /**
-   * @brief Get the size of the `IndexBuffer` data.
-   * @return The size of the `IndexBuffer` data in bytes
-   */
-  size_t GetBufferSize() const { return buffer_size_bytes_; }
-  /**
-   * @brief Get the size of an `IndexBuffer` index data element.
-   * @return The size of an `IndexBuffer` data element in bytes (currently will always be 2).
-   */
-  size_t GetIndexElementSize() const { return sizeof(uint16_t); }
-  /**
-   * @brief Get the number of indices in the `IndexBuffer`.
-   * @return The number of indices in the `IndexBuffer`
-   */
-  size_t GetIndexCount() const { return GetBufferSize() / GetIndexElementSize(); }
-
-  /**
-   * @brief Retrieve the debug name string associated with the `IndexBuffer`
-   * @result A string containing the debug name.
-   */
-  const std::string& GetIndexBufferDebugName() const { return index_buffer_debug_name_; }
-  /**
-   * @brief Set a debug name string to associate with the `IndexBuffer`
-   * @param name A string containing the debug name.
-   */
-  void SetIndexBufferDebugName(const std::string& name) { index_buffer_debug_name_ = name; }
+  virtual ~IndexBuffer() {}
 
  protected:
   IndexBuffer(const IndexBufferCreationParams& params) :
-      buffer_size_bytes_(params.data_byte_size),
-      index_buffer_debug_name_("noname") {
+      RendererBuffer(params.data_byte_size / kIndexElementSize,
+                     params.data_byte_size, kIndexElementSize) {
   }
 
  private:
-  IndexBuffer() : buffer_size_bytes_(0) {}
-  size_t buffer_size_bytes_;
-  std::string index_buffer_debug_name_;
+  // At the moment we only support 16-bit index values
+  static constexpr size_t kIndexElementSize = sizeof(uint16_t);
+
+  IndexBuffer() : RendererBuffer(0, 0, 0) {}
 };
 } // namespace simple_renderer
 

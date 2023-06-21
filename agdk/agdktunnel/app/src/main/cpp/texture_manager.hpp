@@ -18,7 +18,9 @@
 #define agdktunnel_texturemanager_hpp
 
 #include <cstdint>
+#include <memory>
 #include <vector>
+#include "simple_renderer/renderer_texture.h"
 #include "util.hpp"
 
 class GameAssetManager;
@@ -50,7 +52,7 @@ public:
 
     uint32_t GetTextureMipCount(const char *textureName);
 
-    uint64_t GetTextureReference(const char *textureName);
+    std::shared_ptr<simple_renderer::Texture> GetTexture(const char *textureName);
 
     TextureFormat GetTextureFormatInUse() { return mLastTextureFormat; }
 
@@ -60,13 +62,14 @@ private:
         TextureReference() = default;
 
         TextureReference(const uint32_t textureMipCount,
-                         const char *textureName, const uint64_t textureReference) :
+                         const char *textureName,
+                         std::shared_ptr<simple_renderer::Texture> textureReference) :
                 mTextureMipCount(textureMipCount),
                 mTextureName(textureName), mTextureReference(textureReference) {}
 
         uint32_t mTextureMipCount;
         const char *mTextureName;
-        uint64_t mTextureReference;
+        std::shared_ptr<simple_renderer::Texture> mTextureReference;
     };
 
     TextureReference FindReferenceForName(const char *textureName);

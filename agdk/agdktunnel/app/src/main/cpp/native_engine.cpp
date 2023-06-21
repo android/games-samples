@@ -27,6 +27,8 @@
 #include "swappy/swappyGL.h"
 #include "welcome_scene.hpp"
 #include "gni/gni.h"
+#include "simple_renderer/renderer_interface.h"
+#include "simple_renderer/renderer_gles.h"
 
 // verbose debug logs on?
 #define VERBOSE_LOGGING 1
@@ -97,6 +99,7 @@ NativeEngine::NativeEngine(struct android_app *app) {
                                              app->activity->vm,
                                              app->activity->javaGameActivity);
     mTextureManager = NULL;
+    mGfxManager = NULL;
 
     if (app->savedState != NULL) {
         // we are starting with previously saved state -- restore it
@@ -194,6 +197,12 @@ NativeEngine *NativeEngine::GetInstance() {
 
 NativeEngine::~NativeEngine() {
     VLOGD("NativeEngine: destructor running");
+    if (mGfxManager != NULL) {
+        delete mGfxManager;
+        mGfxManager = NULL;
+        simple_renderer::Renderer::ShutdownInstance();
+    }
+
     delete mVibrationHelper;
     delete mTuningManager;
     Paddleboat_setControllerStatusCallback(NULL, NULL);
@@ -754,11 +763,22 @@ bool NativeEngine::PrepareToRender() {
 
         // configure our global OpenGL settings
         ConfigureOpenGL();
+    }
 
+    if (mGfxManager == NULL) {
+        int width, height;
+        eglQuerySurface(mEglDisplay, mEglSurface, EGL_WIDTH, &width);
+        eglQuerySurface(mEglDisplay, mEglSurface, EGL_HEIGHT, &height);
+        // Initialize renderer and resources once we have a valid surface to render to
+        simple_renderer::Renderer::SetRendererAPI(simple_renderer::Renderer::kAPI_GLES);
+        simple_renderer::RendererGLES::SetEGLResources(mEglContext, mEglDisplay,
+                                                       mEglSurface);
+        mGfxManager = new GfxManager(false, width, height);
         if (mTextureManager == NULL) {
             mTextureManager = new TextureManager();
         }
     }
+
     if (!mHasGLObjects) {
         ALOGI("NativeEngine: creating OpenGL objects.");
         if (!InitGLObjects()) {

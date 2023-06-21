@@ -45,6 +45,14 @@ class Renderer {
     kAPI_Vulkan ///< Use the Vulkan 1.0 API
   };
 
+  /**
+   * @brief RenderFeature enum to pass to ::GetFeatureAvailable to determine
+   * if the device supports a particular feature
+   */
+  enum RendererFeature : int32_t {
+    kFeature_ASTC = 0 ///< Does the device support ASTC textures
+  };
+
 /**
  * @brief Retrieve the graphics API in use by the renderer.
  * @return `RendererAPI` enum value of the active graphics API
@@ -73,6 +81,14 @@ class Renderer {
  * @brief Class destructor, do not call directly, use ::ShutdownInstance.
  */
   virtual ~Renderer();
+
+/**
+ * @brief Determine if a feature is available for the current API on the currently
+ * running device
+ * @param feature Enum of the feature to query
+ * @return true if supported, false if unsupported
+ */
+  virtual bool GetFeatureAvailable(const RendererFeature feature) = 0;
 
 /**
  * @brief Tell the renderer to set up to begin rendering a frame of draw calls.

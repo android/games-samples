@@ -65,6 +65,11 @@ class ShaderProgram {
    */
   void SetVertexDebugName(const std::string& name) { vertex_debug_name_ = name; }
 
+  /**
+   * @brief Base class destructor, do not call directly.
+   */
+  virtual ~ShaderProgram() {}
+
  protected:
   ShaderProgram() {
     fragment_debug_name_ = "noname";

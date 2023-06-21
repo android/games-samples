@@ -48,8 +48,7 @@ protected:
     // clicked if the user presses ENTER on the DPAD when not in focus mode.
     int mDefaultButton;
 
-    // renderers and shaders we need
-    TrivialShader *mTrivialShader;
+    // renderers we need
     TextRenderer *mTextRenderer;
     ShapeRenderer *mShapeRenderer;
 
@@ -325,7 +324,7 @@ public:
     static const int FOCUS_YES = 1;
     static const int FOCUS_NO = 2;
 
-    void Render(TrivialShader *trivialShader, TextRenderer *textRenderer,
+    void Render(TextRenderer *textRenderer,
                 ShapeRenderer *shapeRenderer, int focus, float transitionFactor);
 };
 

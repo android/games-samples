@@ -15,6 +15,9 @@
  */
 
 #include "tex_quad.hpp"
+#include "gfx_manager.hpp"
+
+using namespace simple_renderer;
 
 static void _put_vertex(float *v, float x, float y, float tex_u, float tex_v) {
     // position
@@ -40,7 +43,7 @@ void TexQuad::CreateGeom(float umin, float vmin, float umax, float vmax) {
     GLfloat *geom = new GLfloat[vertices];
     int geom_size = sizeof(GLfloat) * vertices;
     GLushort *indices = new GLushort[6]; // 6 indices
-    int indices_size = sizeof(GLushort) * 6;
+    const size_t indices_size = sizeof(GLushort) * 6;
     float left = -mAspect * 0.5f;
     float right = mAspect * 0.5f;
     float bottom = -0.5f;
@@ -66,12 +69,19 @@ void TexQuad::CreateGeom(float umin, float vmin, float umax, float vmax) {
     indices[5] = 3;
 
     // prepare geometry
-    VertexBuf *vbuf = new VertexBuf(geom, geom_size, stride_bytes);
-    vbuf->SetColorsOffset(3 * sizeof(GLfloat));
-    vbuf->SetTexCoordsOffset(7 * sizeof(GLfloat));
-    IndexBuf *ibuf = new IndexBuf(indices, indices_size);
-    mGeom = new SimpleGeom(vbuf, ibuf);
 
+    IndexBuffer::IndexBufferCreationParams index_params = {
+        indices, indices_size
+    };
+    VertexBuffer::VertexBufferCreationParams vertex_params = {
+        geom, VertexBuffer::kVertexFormat_P3T2C4,
+        static_cast<size_t>(4 * stride_bytes)
+    };
+    Renderer& renderer = Renderer::GetInstance();
+
+    std::shared_ptr<IndexBuffer> index_buffer = renderer.CreateIndexBuffer(index_params);
+    std::shared_ptr<VertexBuffer> vertex_buffer = renderer.CreateVertexBuffer(vertex_params);
+    mGeom = new SimpleGeom(index_buffer, vertex_buffer);
     // clean up our temporary buffers
     delete[] geom;
     geom = NULL;
@@ -84,9 +94,6 @@ void TexQuad::Render(glm::mat4 *transform) {
     glm::mat4 orthoMat = glm::ortho(0.0f, aspect, 0.0f, 1.0f);
     glm::mat4 modelMat, mat;
 
-    bool hadDepthTest = glIsEnabled(GL_DEPTH_TEST);
-    glDisable(GL_DEPTH_TEST);
-
     modelMat = glm::translate(glm::mat4(1.0f), glm::vec3(mCenterX, mCenterY, 0.0f));
     modelMat = glm::scale(modelMat, glm::vec3(mScale * mHeight, mScale * mHeight, 0.0f));
     if (transform) {
@@ -95,12 +102,17 @@ void TexQuad::Render(glm::mat4 *transform) {
         mat = orthoMat * modelMat;
     }
 
-    mOurShader->BeginRender(mGeom->vbuf);
-    mOurShader->SetTexture(mTexture);
-    mOurShader->Render(mGeom->ibuf, &mat);
-    mOurShader->EndRender();
+    const float* matrixData = glm::value_ptr(mat);
+    simple_renderer::Renderer& renderer = simple_renderer::Renderer::GetInstance();
 
-    if (hadDepthTest) {
-        glEnable(GL_DEPTH_TEST);
-    }
+    mUniformBuffer->SetBufferElementData(GfxManager::kOurUniform_MVP,
+                                         matrixData, UniformBuffer::kElementSize_Matrix44);
+    const float tintData[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    mUniformBuffer->SetBufferElementData(GfxManager::kOurUniform_Tint,
+                                         tintData, UniformBuffer::kElementSize_Float4);
+    renderer.BindIndexBuffer(mGeom->index_buffer_);
+    renderer.BindVertexBuffer(mGeom->vertex_buffer_);
+    renderer.BindTexture(mTexture);
+    renderer.DrawIndexed(mGeom->index_buffer_->GetBufferElementCount(), 0);
+
 }

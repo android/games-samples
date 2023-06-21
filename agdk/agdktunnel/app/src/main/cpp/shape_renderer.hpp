@@ -18,18 +18,19 @@
 #define agdktunnel_shape_renderer_hpp
 
 #include "engine.hpp"
+#include "simple_renderer/renderer_uniform_buffer.h"
 
 /* Convenience class that renders shapes (currently, only rects). The
  * coordinate system is the "normalized 2D coordinate system" -- see
  * README for more info. */
 class ShapeRenderer {
 private:
-    TrivialShader *mTrivialShader;
-    float mColor[3];
+    std::shared_ptr<simple_renderer::UniformBuffer> mUniformBuffer;
+    float mColor[4];
     SimpleGeom *mGeom;
 
 public:
-    ShapeRenderer(TrivialShader *trivialShader);
+    ShapeRenderer(std::shared_ptr<simple_renderer::UniformBuffer> uniformBuffer);
 
     ~ShapeRenderer();
 

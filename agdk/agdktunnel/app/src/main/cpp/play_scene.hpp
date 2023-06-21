@@ -68,12 +68,8 @@ public:
     virtual void SetInputSdkContext();
 
 protected:
-    // shaders
-    OurShader *mOurShader;
-    TrivialShader *mTrivialShader;
-
     // the wall texture
-    Texture *mWallTextures[MAX_WALL_TEXTURES];
+    std::shared_ptr<simple_renderer::Texture> mWallTextures[MAX_WALL_TEXTURES];
 
     // shape and text renderers we use when rendering the HUD
     ShapeRenderer *mShapeRenderer;
@@ -240,16 +236,16 @@ protected:
     void GenObstacles();
 
     // renders the tunnel walls
-    void RenderTunnel();
+    void RenderTunnel(GfxManager *gfxManager);
 
     // renders the obstacles
-    void RenderObstacles();
+    void RenderObstacles(GfxManager *gfxManager);
 
     // renders the HUD (score, lives, etc)
-    void RenderHUD();
+    void RenderHUD(GfxManager *gfxManager);
 
     // renders the currently active menu
-    void RenderMenu();
+    void RenderMenu(GfxManager *gfxManager);
 
     // Shift tunnel sections if needed (this means discarding the ones the
     // player has already past and generating the obstacles for the new ones

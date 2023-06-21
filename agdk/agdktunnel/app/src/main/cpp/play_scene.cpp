@@ -18,7 +18,7 @@
 #include "anim.hpp"
 #include "ascii_to_geom.hpp"
 #include "game_consts.hpp"
-#include "our_shader.hpp"
+#include "gfx_manager.hpp"
 #include "play_scene.hpp"
 #include "texture_manager.hpp"
 #include "util.hpp"
@@ -30,11 +30,17 @@
 #include "data/strings.inl"
 #include "data/tunnel_geom.inl"
 
+using namespace simple_renderer;
+
 #define WALL_TEXTURE_SIZE 64
 
 // colors for menus
 static const float MENUITEM_SEL_COLOR[] = {1.0f, 1.0f, 0.0f};
 static const float MENUITEM_COLOR[] = {1.0f, 1.0f, 1.0f};
+
+static const float DEFAULT_TINT[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+static const float LIGHT_OFF[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+static const float LIGHT_POS[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 
 // obstacle colors
 static const float OBS_COLORS[] = {
@@ -62,8 +68,6 @@ static const char *TONE_BONUS[] = {
 PlayScene::PlayScene(int savedLevel) : Scene() {
     mSavedLevel = (savedLevel / LEVELS_PER_CHECKPOINT) * LEVELS_PER_CHECKPOINT;
     ALOGI("Normalized check-point: level %d", mSavedLevel);
-    mOurShader = NULL;
-    mTrivialShader = NULL;
     mTextRenderer = NULL;
     mShapeRenderer = NULL;
 #ifdef TOUCH_INDICATOR_MODE
@@ -152,45 +156,62 @@ static unsigned char *_gen_wall_texture() {
 }
 
 void PlayScene::OnStartGraphics() {
-    // build shaders
-    mOurShader = new OurShader();
-    mOurShader->Compile();
-    mTrivialShader = new TrivialShader();
-    mTrivialShader->Compile();
-
     // build projection matrix
     UpdateProjectionMatrix();
 
-    // build tunnel geometry
-    mTunnelGeom = new SimpleGeom(
-            new VertexBuf(TUNNEL_GEOM, sizeof(TUNNEL_GEOM), TUNNEL_GEOM_STRIDE),
-            new IndexBuf(TUNNEL_GEOM_INDICES, sizeof(TUNNEL_GEOM_INDICES)));
-    mTunnelGeom->vbuf->SetColorsOffset(TUNNEL_GEOM_COLOR_OFFSET);
-    mTunnelGeom->vbuf->SetTexCoordsOffset(TUNNEL_GEOM_TEXCOORD_OFFSET);
+    GfxManager *gfxManager = NativeEngine::GetInstance()->GetGfxManager();
 
-    // build cube geometry (to draw obstacles)
-    mCubeGeom = new SimpleGeom(new VertexBuf(CUBE_GEOM, sizeof(CUBE_GEOM), CUBE_GEOM_STRIDE));
-    mCubeGeom->vbuf->SetColorsOffset(CUBE_GEOM_COLOR_OFFSET);
-    mCubeGeom->vbuf->SetTexCoordsOffset(CUBE_GEOM_TEXCOORD_OFFSET);
+    // build tunnel geometry
+    IndexBuffer::IndexBufferCreationParams tunnelIndexParams = {
+        TUNNEL_GEOM_INDICES, sizeof(TUNNEL_GEOM_INDICES)
+    };
+    VertexBuffer::VertexBufferCreationParams tunnelVertexParams = {
+        TUNNEL_GEOM, VertexBuffer::kVertexFormat_P3T2C4,
+        sizeof(TUNNEL_GEOM)
+    };
+    Renderer& renderer = Renderer::GetInstance();
+
+    std::shared_ptr<IndexBuffer> indexBuffer = renderer.CreateIndexBuffer(tunnelIndexParams);
+    std::shared_ptr<VertexBuffer> vertexBuffer = renderer.CreateVertexBuffer(tunnelVertexParams);
+    mTunnelGeom = new SimpleGeom(indexBuffer, vertexBuffer);
+
+    VertexBuffer::VertexBufferCreationParams cubeVertexParams = {
+        CUBE_GEOM, VertexBuffer::kVertexFormat_P3T2C4,
+        sizeof(CUBE_GEOM)
+    };
+
+    std::shared_ptr<VertexBuffer> cubeVertexBuffer = renderer.CreateVertexBuffer(cubeVertexParams);
+    mCubeGeom = new SimpleGeom(nullptr, cubeVertexBuffer);
 
     // make the wall texture
     TextureManager *textureManager = NativeEngine::GetInstance()->GetTextureManager();
-    char textureName[32];
+    char textureName[64];
     for (int wallIndex = 0; wallIndex < MAX_WALL_TEXTURES; ++wallIndex) {
-        snprintf(textureName, 32, "textures/wall%d.tex", wallIndex + 1);
-        uint64_t textureReference = textureManager->GetTextureReference(
-                textureName);
-        if (textureReference != TextureManager::INVALID_TEXTURE_REF) {
-            uint32_t mipCount = textureManager->GetTextureMipCount(textureName);
-            mWallTextures[wallIndex] = new Texture(static_cast<GLuint>(textureReference), mipCount);
+#if defined NO_ASSET_PACKS
+        snprintf(textureName, 64, "no_asset_packs_textures/wall%d.ktx", wallIndex + 1);
+#else
+        snprintf(textureName, 64, "textures/wall%d.tex", wallIndex + 1);
+#endif
+        std::shared_ptr<Texture> textureReference = textureManager->GetTexture(textureName);
+        if (textureReference.get() != nullptr) {
+            mWallTextures[wallIndex] = textureReference;
             ++mActiveWallTextureCount;
         }
     }
-    // If no loaded wall texutures, use a random noise texture
+
+    // If no loaded wall textures, use a random noise texture
     if (mActiveWallTextureCount == 0) {
-        mWallTextures[0] = new Texture();
-        mWallTextures[0]->InitFromRawRGB(WALL_TEXTURE_SIZE, WALL_TEXTURE_SIZE, false,
-                                         _gen_wall_texture());
+        void *tempWallTexture = _gen_wall_texture();
+        const uint32_t textureSize = WALL_TEXTURE_SIZE * WALL_TEXTURE_SIZE * 3;
+        simple_renderer::Texture::TextureCreationParams textureParams = {
+            simple_renderer::Texture::kTextureFormat_RGB_888,
+            simple_renderer::Texture::kTextureCompression_None,
+            Texture::kMinFilter_Linear, Texture::kMagFilter_Linear,
+            Texture::kWrapS_Repeat,Texture::kWrapT_Repeat,
+            WALL_TEXTURE_SIZE, WALL_TEXTURE_SIZE, 1,
+            &textureSize, tempWallTexture
+        };
+        mWallTextures[0] = renderer.CreateTexture(textureParams);
         ++mActiveWallTextureCount;
     }
 
@@ -201,10 +222,13 @@ void PlayScene::OnStartGraphics() {
     mLifeGeom = AsciiArtToGeom(ART_LIFE, LIFE_ICON_SCALE);
 
     // create text renderer and shape renderer
-    mTextRenderer = new TextRenderer(mTrivialShader);
-    mShapeRenderer = new ShapeRenderer(mTrivialShader);
+    mTextRenderer = new TextRenderer(gfxManager->GetUniformBuffer(
+        GfxManager::kGfxType_BasicThickLinesNoDepthTest));
+    mShapeRenderer = new ShapeRenderer(gfxManager->GetUniformBuffer(
+        GfxManager::kGfxType_BasicTrisNoDepthTest));
 #ifdef TOUCH_INDICATOR_MODE
-    mRectRenderer = new ShapeRenderer(mTrivialShader);
+    mRectRenderer = new ShapeRenderer(gfxManager->GetUniformBuffer(
+        GfxManager::kGfxType_BasicTrisNoDepthTest));
 #endif // TOUCH_INDICATOR_MODE
 }
 
@@ -214,12 +238,11 @@ void PlayScene::OnKillGraphics() {
 #ifdef TOUCH_INDICATOR_MODE
     CleanUp(&mRectRenderer);
 #endif // TOUCH_INDICATOR_MODE
-    CleanUp(&mOurShader);
-    CleanUp(&mTrivialShader);
     CleanUp(&mTunnelGeom);
     CleanUp(&mCubeGeom);
+    Renderer& renderer = Renderer::GetInstance();
     for (int i = 0; i < mActiveWallTextureCount; ++i) {
-        CleanUp(&mWallTextures[i]);
+        renderer.DestroyTexture(mWallTextures[i]);
     }
     mActiveWallTextureCount = 0;
     CleanUp(&mLifeGeom);
@@ -229,10 +252,9 @@ void PlayScene::DoFrame() {
     float deltaT = mFrameClock.ReadDelta();
     float previousY = mPlayerPos.y;
 
-    // clear screen
-    glClearColor(0.0, 0.0, 0.0, 1.0);
-    glEnable(GL_DEPTH_TEST);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    GfxManager *gfxManager = NativeEngine::GetInstance()->GetGfxManager();
+    gfxManager->SetMainRenderPass();
+    gfxManager->SetRenderState(GfxManager::kGfxType_OurTris);
 
     // rotate the view matrix according to current roll angle
     glm::vec3 upVec = glm::vec3(-sin(mRollAngle), 0, cos(mRollAngle));
@@ -241,10 +263,10 @@ void PlayScene::DoFrame() {
     mViewMat = glm::lookAt(mPlayerPos, mPlayerPos + mPlayerDir, upVec);
 
     // render tunnel walls
-    RenderTunnel();
+    RenderTunnel(gfxManager);
 
     // render obstacles
-    RenderObstacles();
+    RenderObstacles(gfxManager);
 
     if (mMenu) {
         if (mMenu == MENU_LOADING) {
@@ -261,13 +283,13 @@ void PlayScene::DoFrame() {
             }
         }
 
-        RenderMenu();
+        RenderMenu(gfxManager);
         // nothing more to do
         return;
     }
 
     // render HUD (lives, score, etc)
-    RenderHUD();
+    RenderHUD(gfxManager);
 
     // deduct from the time remaining to remove a sign from the screen
     if (mSignText && mSignExpires) {
@@ -388,17 +410,34 @@ static void _get_obs_color(int style, float *r, float *g, float *b) {
     *b = OBS_COLORS[style * 3 + 2];
 }
 
-void PlayScene::RenderTunnel() {
+void PlayScene::RenderTunnel(GfxManager *gfxManager) {
     glm::mat4 modelMat;
     glm::mat4 mvpMat;
     int i, oi;
 
-    mOurShader->BeginRender(mTunnelGeom->vbuf);
-    mOurShader->SetTexture(mWallTextures[0]);
+    Renderer& renderer = Renderer::GetInstance();
+    std::shared_ptr<UniformBuffer> ourBuffer =
+        gfxManager->GetUniformBuffer(GfxManager::kGfxType_OurTris);
+
+    bool useIndexBuffer = (mTunnelGeom->index_buffer_.get() != NULL);
+    if (useIndexBuffer) {
+        renderer.BindIndexBuffer(mTunnelGeom->index_buffer_);
+    }
+    renderer.BindTexture(mWallTextures[0]);
+    renderer.BindVertexBuffer(mTunnelGeom->vertex_buffer_);
+
+    ourBuffer->SetBufferElementData(GfxManager::kOurUniform_Tint,
+                                    DEFAULT_TINT, UniformBuffer::kElementSize_Float4);
+    ourBuffer->SetBufferElementData(GfxManager::kOurUniform_PointLightColor,
+                                    LIGHT_OFF, UniformBuffer::kElementSize_Float4);
+    ourBuffer->SetBufferElementData(GfxManager::kOurUniform_PointLightPos,
+                                    LIGHT_POS, UniformBuffer::kElementSize_Float4);
+
     for (i = mFirstSection, oi = 0; i <= mFirstSection + RENDER_TUNNEL_SECTION_COUNT; ++i, ++oi) {
         float segCenterY = GetSectionCenterY(i);
         modelMat = glm::translate(glm::mat4(1.0), glm::vec3(0.0, segCenterY, 0.0));
         mvpMat = mProjMat * mViewMat * modelMat;
+        const float* matrixData = glm::value_ptr(mvpMat);
 
         Obstacle *o = oi >= mObstacleCount ? NULL : GetObstacleAt(oi);
 
@@ -407,26 +446,45 @@ void PlayScene::RenderTunnel() {
         if (o) {
             float red, green, blue;
             _get_obs_color(o->style, &red, &green, &blue);
-            mOurShader->EnablePointLight(glm::vec3(0.0, 0.0f, 0.0f), red, green, blue);
+            const float lightColor[4] = {red, green, blue, 1.0f};
+            ourBuffer->SetBufferElementData(GfxManager::kOurUniform_PointLightColor,
+                                            lightColor, UniformBuffer::kElementSize_Float4);
+
         } else {
-            mOurShader->DisablePointLight();
+            ourBuffer->SetBufferElementData(GfxManager::kOurUniform_PointLightColor,
+                                            LIGHT_OFF, UniformBuffer::kElementSize_Float4);
+
         }
 
         // render tunnel section
-        mOurShader->Render(mTunnelGeom->ibuf, &mvpMat);
+        ourBuffer->SetBufferElementData(GfxManager::kOurUniform_MVP,
+                                        matrixData, UniformBuffer::kElementSize_Matrix44);
+
+        if (useIndexBuffer) {
+            renderer.DrawIndexed(mTunnelGeom->index_buffer_->GetBufferElementCount(), 0);
+        } else {
+            renderer.Draw(mTunnelGeom->vertex_buffer_->GetBufferElementCount(), 0);
+        }
     }
-    mOurShader->EndRender();
 }
 
-void PlayScene::RenderObstacles() {
+void PlayScene::RenderObstacles(GfxManager *gfxManager) {
     int i;
     int r, c;
     float red, green, blue;
     glm::mat4 modelMat;
     glm::mat4 mvpMat;
 
-    mOurShader->BeginRender(mCubeGeom->vbuf);
-    mOurShader->SetTexture(mWallTextures[0]);
+    Renderer& renderer = Renderer::GetInstance();
+    std::shared_ptr<UniformBuffer> ourBuffer =
+        gfxManager->GetUniformBuffer(GfxManager::kGfxType_OurTris);
+    renderer.BindTexture(mWallTextures[0]);
+    renderer.BindVertexBuffer(mCubeGeom->vertex_buffer_);
+
+    ourBuffer->SetBufferElementData(GfxManager::kOurUniform_Tint,
+                                    DEFAULT_TINT, UniformBuffer::kElementSize_Float4);
+    ourBuffer->SetBufferElementData(GfxManager::kOurUniform_PointLightColor,
+                                    LIGHT_OFF, UniformBuffer::kElementSize_Float4);
 
     for (i = 0; i < mObstacleCount; i++) {
         Obstacle *o = GetObstacleAt(i);
@@ -448,25 +506,36 @@ void PlayScene::RenderObstacles() {
 
                     // set up color
                     _get_obs_color(o->style, &red, &green, &blue);
-                    mOurShader->SetTintColor(red, green, blue);
 
                     // render box
-                    mOurShader->Render(&mvpMat);
+                    const float* matrixData = glm::value_ptr(mvpMat);
+                    const float tintColor[4] = {red, green, blue, 1.0f};
+                    ourBuffer->SetBufferElementData(GfxManager::kOurUniform_MVP,
+                                                    matrixData,
+                                                    UniformBuffer::kElementSize_Matrix44);
+                    ourBuffer->SetBufferElementData(GfxManager::kOurUniform_Tint,
+                                                    tintColor, UniformBuffer::kElementSize_Float4);
+                    renderer.Draw(mCubeGeom->vertex_buffer_->GetBufferElementCount(), 0);
                 } else if (isBonus) {
                     modelMat = glm::translate(glm::mat4(1.0f), o->GetBoxCenter(c, r, posY));
                     modelMat = glm::scale(modelMat, glm::vec3(OBS_BONUS_SIZE, OBS_BONUS_SIZE,
                                                               OBS_BONUS_SIZE));
                     modelMat = glm::rotate(modelMat, Clock() * 90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
                     mvpMat = mProjMat * mViewMat * modelMat;
-                    mOurShader->SetTintColor(SineWave(0.8f, 1.0f, 0.5f, 0.0f),
-                                             SineWave(0.8f, 1.0f, 0.5f, 0.0f),
-                                             SineWave(0.8f, 1.0f, 0.5f, 0.0f)); // shimmering color
-                    mOurShader->Render(&mvpMat); // render
+                    const float* matrixData = glm::value_ptr(mvpMat);
+                    const float tintColor[4] = {SineWave(0.8f, 1.0f, 0.5f, 0.0f),
+                                                SineWave(0.8f, 1.0f, 0.5f, 0.0f),
+                                                SineWave(0.8f, 1.0f, 0.5f, 0.0f), 1.0f};
+                    ourBuffer->SetBufferElementData(GfxManager::kOurUniform_MVP,
+                                                    matrixData,
+                                                    UniformBuffer::kElementSize_Matrix44);
+                    ourBuffer->SetBufferElementData(GfxManager::kOurUniform_Tint,
+                                                    tintColor, UniformBuffer::kElementSize_Float4);
+                    renderer.Draw(mCubeGeom->vertex_buffer_->GetBufferElementCount(), 0);
                 }
             }
         }
     }
-    mOurShader->EndRender();
 }
 
 void PlayScene::GenObstacles() {
@@ -554,13 +623,13 @@ void PlayScene::OnPointerMove(int pointerId, const struct PointerCoords *coords)
     }
 }
 
-void PlayScene::RenderHUD() {
+void PlayScene::RenderHUD(GfxManager *gfxManager) {
+    gfxManager->SetRenderState(GfxManager::kGfxType_BasicThickLinesNoDepthTest);
+
     float aspect = SceneManager::GetInstance()->GetScreenAspect();
     glm::mat4 orthoMat = glm::ortho(0.0f, aspect, 0.0f, 1.0f);
     glm::mat4 modelMat;
     glm::mat4 mat;
-
-    glDisable(GL_DEPTH_TEST);
 
     // render score digits
     int i, unit;
@@ -596,15 +665,14 @@ void PlayScene::RenderHUD() {
         mTextRenderer->ResetMatrix();
     }
 
-    // render life icons
-    glLineWidth(LIFE_LINE_WIDTH);
     float lifeX = LIFE_POS_X < 0.0f ? aspect + LIFE_POS_X : LIFE_POS_X;
     modelMat = glm::translate(glm::mat4(1.0), glm::vec3(lifeX, LIFE_POS_Y, 0.0f));
     modelMat = glm::scale(modelMat, glm::vec3(1.0f, LIFE_SCALE_Y, 1.0f));
     int ubound = (mBlinkingHeart && BlinkFunc(0.2f)) ? mLives + 1 : mLives;
     for (int idx = 0; idx < ubound; idx++) {
         mat = orthoMat * modelMat;
-        mTrivialShader->RenderSimpleGeom(&mat, mLifeGeom);
+        gfxManager->RenderSimpleGeom(GfxManager::kGfxType_BasicThickLinesNoDepthTest,
+                                     glm::value_ptr(mat), mLifeGeom);
         modelMat = glm::translate(modelMat, glm::vec3(LIFE_SPACING_X, 0.0f, 0.0f));
     }
 
@@ -616,18 +684,13 @@ void PlayScene::RenderHUD() {
     }
     mRectRenderer->RenderRect(0.18f, 0.18f, 0.3f, 0.3f);
 #endif // TOUCH_INDICATOR_MODE
-
-    glEnable(GL_DEPTH_TEST);
 }
 
-void PlayScene::RenderMenu() {
+void PlayScene::RenderMenu(GfxManager *gfxManager) {
     float aspect = SceneManager::GetInstance()->GetScreenAspect();
-    // NCT_COMMENT glm::mat4 modelMat;
-    // NCT_COMMENT glm::mat4 mat;
-
-    glDisable(GL_DEPTH_TEST);
-
+    gfxManager->SetRenderState(GfxManager::kGfxType_BasicTrisNoDepthTest);
     RenderBackgroundAnimation(mShapeRenderer);
+    gfxManager->SetRenderState(GfxManager::kGfxType_BasicThickLinesNoDepthTest);
 
     float scaleFactor = SineWave(1.0f, MENUITEM_PULSE_AMOUNT, MENUITEM_PULSE_PERIOD, 0.0f);
 
@@ -641,8 +704,6 @@ void PlayScene::RenderMenu() {
         mTextRenderer->RenderText(mMenuItemText[mMenuItems[i]], x, y);
     }
     mTextRenderer->ResetColor();
-
-    glEnable(GL_DEPTH_TEST);
 }
 
 void PlayScene::DetectCollisions(float previousY) {
