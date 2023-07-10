@@ -1,4 +1,4 @@
-﻿package com.unity.InputCapture;
+package com.unity.InputCapture;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -25,8 +25,10 @@ public class InputCapture
                 case MotionEvent.ACTION_MOVE:
                     posX += event.getRawX();
                     posY += event.getRawY();
-                    deltaX = event.getX();
-                    deltaY = event.getY();
+
+                    // sum up deltas in case we get more than 1 per frame
+                    deltaX += event.getRawX() * event.getXPrecision();
+                    deltaY += event.getRawY() * event.getYPrecision();
                     return true;
                     
                 case MotionEvent.ACTION_SCROLL:
@@ -235,5 +237,11 @@ public class InputCapture
             return true;
         }
         return onCapturedPointerListener.middleButton;
+    }
+
+    public void FinishFrame() {
+        // clear deltas so we properly go to 0 if we get no updates
+        onCapturedPointerListener.deltaX = 0;
+        onCapturedPointerListener.deltaY = 0;
     }
 }

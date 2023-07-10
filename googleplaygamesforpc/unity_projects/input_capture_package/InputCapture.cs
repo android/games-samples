@@ -138,6 +138,8 @@ public class InputCapture
 		m_MouseButtonLeft.Update(nativeHandle.Call<bool>("GetMouseButtonLeft"));
 		m_MouseButtonRight.Update(nativeHandle.Call<bool>("GetMouseButtonRight"));
 		m_MouseButtonMiddle.Update(nativeHandle.Call<bool>("GetMouseButtonMiddle"));
+
+		nativeHandle.Call("FinishFrame");
 	}
 
 	public void EnableMouseCapture(EnableMouseCaptureFinished finished)  {
