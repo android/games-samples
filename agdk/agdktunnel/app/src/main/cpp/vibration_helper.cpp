@@ -75,7 +75,7 @@ VibrationHelper::VibrationHelper(jobject mainActivity, jobject vibratorString,
         mVibrationAttributes = &android::os::VibrationAttributes::createForUsage(
             usage);
       }
-      if (apiLevel >- USE_VIBRATION_EFFECT_API_LEVEL) {
+      if (apiLevel >= USE_VIBRATION_EFFECT_API_LEVEL) {
         const int32_t effect = EFFECT_HEAVY_CLICK;
         mVibrationEffect = &android::os::VibrationEffect::createPredefined(effect);
       }
