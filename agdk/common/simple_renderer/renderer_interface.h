@@ -24,6 +24,7 @@
 #include "renderer_texture.h"
 #include "renderer_uniform_buffer.h"
 #include "renderer_vertex_buffer.h"
+#include "display_manager.h"
 
 #include <cstdint>
 #include <memory>
@@ -57,20 +58,36 @@ class Renderer {
  * @brief Retrieve the graphics API in use by the renderer.
  * @return `RendererAPI` enum value of the active graphics API
  */
-  static RendererAPI GetRendererAPI();
+  static RendererAPI GetRendererAPI() { return Renderer::renderer_api_; }
+
 /**
  * @brief Set the graphics API that the renderer should use. This should be called
  * prior to calling ::GetInstance for the first time.
  * @param api `RendererAPI` enum value of the graphics API to use
  */
   static void SetRendererAPI(const RendererAPI api);
+
+/**
+ * @brief Retrieve the Display Manager swapchain in use by the renderer.
+ * @return Handle to a Display Manager swapchain
+ */
+  static base_game_framework::DisplayManager::SwapchainHandle GetSwapchainHandle() {
+    return Renderer::swapchain_handle_;
+  }
+
+/**
+ * @brief Set a handle to the Display Manager swapchain  that the renderer should use.
+ * This should be called prior to calling ::GetInstance for the first time.
+ * @param api `swapchain_handle` Handle to a Display Manager swapchain
+ */
+  static void SetSwapchainHandle(
+      base_game_framework::DisplayManager::SwapchainHandle swapchain_handle);
+
 /**
  * @brief Retrieve an instance of the renderer interface. The first time this is called
  * it will construct and initialize the renderer. Before calling for the first time you must
- * call Renderer::SetRendererAPI to set the graphics API to use, and either
- * RendererGLES::SetGLESResources or RendererVk::SetVkResources to set the appropriate
- * API resources for the renderer to use.
- * @return `RendererAPI` enum value of the active graphics API
+ * call Renderer::SetRendererAPI to set the graphics API to use.
+ * @return Reference to the `Renderer` interface class.
  */
   static Renderer& GetInstance();
 /**
@@ -93,7 +110,8 @@ class Renderer {
 /**
  * @brief Tell the renderer to set up to begin rendering a frame of draw calls.
  */
-  virtual void BeginFrame() = 0;
+  virtual void BeginFrame(
+      const base_game_framework::DisplayManager::SwapchainHandle swapchain_handle) = 0;
 /**
  * @brief Tell the renderer all draw calls for this frame have been completed.
  */
@@ -146,12 +164,12 @@ class Renderer {
  * @brief Create a renderer `IndexBuffer`.
  * @param params A reference to a `IndexBufferCreationParams` struct with creation parameters.
  * @return A shared pointer to a renderer `IndexBuffer`.
- * */
+ */
   virtual std::shared_ptr<IndexBuffer> CreateIndexBuffer(
       const IndexBuffer::IndexBufferCreationParams& params) = 0;
 /**
  * @brief Destroy a renderer `IndexBuffer`.
- * @param A shared pointer to a renderer `IndexBuffer`. Do not retain any other
+ * @param index_buffer A shared pointer to a renderer `IndexBuffer`. Do not retain any other
  * instances of the shared pointer after calling the destroy function. The resources
  * is not immediately deleted, but put in a delete queue. Deletion will happen at the
  * next ::BeginFrame or ::ShutdownInstance.
@@ -162,12 +180,12 @@ class Renderer {
  * @brief Create a renderer `RenderPass`.
  * @param params A reference to a `RenderPassCreationParams` struct with creation parameters.
  * @return A shared pointer to a renderer `RenderPass`.
- * */
+ */
   virtual std::shared_ptr<RenderPass> CreateRenderPass(
       const RenderPass::RenderPassCreationParams& params) = 0;
 /**
  * @brief Destroy a renderer `RenderPass`.
- * @param A shared pointer to a renderer `RenderPass`. Do not retain any other
+ * @param render_pass A shared pointer to a renderer `RenderPass`. Do not retain any other
  * instances of the shared pointer after calling the destroy function. The resources
  * is not immediately deleted, but put in a delete queue. Deletion will happen at the
  * next ::BeginFrame or ::ShutdownInstance.
@@ -178,12 +196,12 @@ class Renderer {
  * @brief Create a renderer `RenderState`.
  * @param params A reference to a `RenderStateCreationParams` struct with creation parameters.
  * @return A shared pointer to a renderer `RenderState`.
- * */
+ */
   virtual std::shared_ptr<RenderState> CreateRenderState(
       const RenderState::RenderStateCreationParams& params) = 0;
 /**
  * @brief Destroy a renderer `RenderState`.
- * @param A shared pointer to a renderer `RenderState`. Do not retain any other
+ * @param render_state A shared pointer to a renderer `RenderState`. Do not retain any other
  * instances of the shared pointer after calling the destroy function. The resources
  * is not immediately deleted, but put in a delete queue. Deletion will happen at the
  * next ::BeginFrame or ::ShutdownInstance.
@@ -194,12 +212,12 @@ class Renderer {
  * @brief Create a renderer `ShaderProgram`.
  * @param params A reference to a `ShaderProgramCreationParams` struct with creation parameters.
  * @return A shared pointer to a renderer `ShaderProgram`.
- * */
+ */
   virtual std::shared_ptr<ShaderProgram> CreateShaderProgram(
       const ShaderProgram::ShaderProgramCreationParams& params) = 0;
 /**
  * @brief Destroy a renderer `ShaderProgram`.
- * @param A shared pointer to a renderer `ShaderProgram`. Do not retain any other
+ * @param shader_program A shared pointer to a renderer `ShaderProgram`. Do not retain any other
  * instances of the shared pointer after calling the destroy function. The resources
  * is not immediately deleted, but put in a delete queue. Deletion will happen at the
  * next ::BeginFrame or ::ShutdownInstance.
@@ -210,12 +228,12 @@ class Renderer {
  * @brief Create a renderer `Texture`.
  * @param params A reference to a `TextureCreationParams` struct with creation parameters.
  * @return A shared pointer to a renderer `Texture`.
- * */
+ */
   virtual std::shared_ptr<Texture> CreateTexture(
       const Texture::TextureCreationParams& params) = 0;
 /**
  * @brief Destroy a renderer `Texture`.
- * @param A shared pointer to a renderer `Texture`. Do not retain any other
+ * @param texture A shared pointer to a renderer `Texture`. Do not retain any other
  * instances of the shared pointer after calling the destroy function. The resources
  * is not immediately deleted, but put in a delete queue. Deletion will happen at the
  * next ::BeginFrame or ::ShutdownInstance.
@@ -226,12 +244,12 @@ class Renderer {
  * @brief Create a renderer `UniformBuffer`.
  * @param params A reference to a `UniformBufferCreationParams` struct with creation parameters.
  * @return A shared pointer to a renderer `UniformBuffer`.
- * */
+ */
   virtual std::shared_ptr<UniformBuffer> CreateUniformBuffer(
       const UniformBuffer::UniformBufferCreationParams& params) = 0;
 /**
  * @brief Destroy a renderer `UniformBuffer`.
- * @param A shared pointer to a renderer `UniformBuffer`. Do not retain any other
+ * @param uniform_buffer A shared pointer to a renderer `UniformBuffer`. Do not retain any other
  * instances of the shared pointer after calling the destroy function. The resources
  * is not immediately deleted, but put in a delete queue. Deletion will happen at the
  * next ::BeginFrame or ::ShutdownInstance.
@@ -242,12 +260,12 @@ class Renderer {
  * @brief Create a renderer `VertexBuffer`.
  * @param params A reference to a `VertexBufferCreationParams` struct with creation parameters.
  * @return A shared pointer to a renderer `VertexBuffer`.
- * */
+ */
   virtual std::shared_ptr<VertexBuffer> CreateVertexBuffer(
       const VertexBuffer::VertexBufferCreationParams& params) = 0;
 /**
  * @brief Destroy a renderer `VertexBuffer`.
- * @param A shared pointer to a renderer `VertexBuffer`. Do not retain any other
+ * @param vertex_buffer A shared pointer to a renderer `VertexBuffer`. Do not retain any other
  * instances of the shared pointer after calling the destroy function. The resources
  * is not immediately deleted, but put in a delete queue. Deletion will happen at the
  * next ::BeginFrame or ::ShutdownInstance.
@@ -261,6 +279,7 @@ class Renderer {
 
  private:
   static RendererAPI renderer_api_;
+  static base_game_framework::DisplayManager::SwapchainHandle swapchain_handle_;
   static std::unique_ptr<Renderer> instance_;
 };
 }

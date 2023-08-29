@@ -53,6 +53,10 @@ class UniformBuffer : public RendererBuffer {
 
   /** @brief Size of a 16 float 4x4 matrix buffer element, in bytes */
   static constexpr size_t kElementSize_Matrix44 = (sizeof(float) * 16);
+
+  /** @brief Constant for unused stage fields in UniformBufferStageRanges */
+  static constexpr uint32_t kUnusedStageRange = 0xFFFFFFFF;
+
   /**
    * @brief The uniform buffer element types supported by `UniformBuffer`
    */
@@ -63,14 +67,14 @@ class UniformBuffer : public RendererBuffer {
     kBufferElement_Matrix44
   };
 
-  /**
-   * @brief The data update pattern for the `UniformBuffer`
-   */
-  enum UniformBufferUpdateType : uint32_t {
-    /** @brief Uniform buffer data is not modified after creation */
-    kBufferUpdateStatic = 0,
-    /** @brief Uniform buffer data is modified per draw call */
-    kBufferUpdateDynamicPerDraw
+  enum UniformBufferFlags : uint32_t {
+    /**
+     * @brief If set, Uniform buffer data is modified per draw call,
+     * otherwise is assumed static after creation
+     */
+    kBufferFlag_UpdateDynamicPerDraw = (1U << 0),
+    /** @brief Deliver via push constant on Vulkan (only method supported currently */
+    kBufferFlag_UsePushConstants = (1U << 1)
   };
 
   /**
@@ -90,6 +94,25 @@ class UniformBuffer : public RendererBuffer {
   };
 
   /**
+   * @brief A structure that defines stage specific usage ranges of the
+   * `UniformBuffer`. This is used when a buffer is fed to a shader
+   * via Vulkan push constants, and each stage uses part of the buffer.
+   * Overlap (buffer fields live in both stages) is supported.
+   * Set the kUnusedStageRange constant in offset/size fields for
+   * stages that don't use the buffer data
+   */
+  struct UniformBufferStageRanges {
+    /** @brief Byte offset in the buffer to the start of vertex shader data */
+    uint32_t vertex_stage_offset;
+    /** @brief Byte size of vertex shader data in the buffer */
+    uint32_t vertex_stage_size;
+    /** @brief Byte offset in the buffer to the start of fragment shader data */
+    uint32_t fragment_stage_offset;
+    /** @brief Byte size of fragment shader data in the buffer */
+    uint32_t fragment_stage_size;
+  };
+
+  /**
    * @brief A structure holding required parameters to create a new `UniformBuffer`.
    * Passed to the Renderer::CreateUniformBuffer function.
    */
@@ -103,10 +126,12 @@ class UniformBuffer : public RendererBuffer {
     const UniformBufferElement* element_array;
     /** @brief The number of elements in the `element_array` */
     uint32_t element_count;
+    /** @brief Uniform buffer bitflags defined by the UniformBufferFlags enum */
+    uint32_t buffer_flags;
+    /** @brief The stage usage ranges of the buffer data */
+    UniformBufferStageRanges stage_ranges;
     /** @brief The size of the uniform buffer data in bytes */
     size_t data_byte_count;
-    /** @brief The update frequency of the uniform buffer data */
-    UniformBufferUpdateType update_type;
   };
 
   /**

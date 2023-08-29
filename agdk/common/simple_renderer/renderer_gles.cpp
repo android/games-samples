@@ -23,23 +23,30 @@
 #include "renderer_texture_gles.h"
 #include "renderer_uniform_buffer_gles.h"
 #include "renderer_vertex_buffer_gles.h"
+#include "display_manager.h"
+#include "gles/graphics_api_gles_resources.h"
+
+using namespace base_game_framework;
 
 namespace simple_renderer {
 
 static const char *kAstcExtensionString = "GL_OES_texture_compression_astc";
 
-EGLContext RendererGLES::egl_context_ = nullptr;
-EGLDisplay RendererGLES::egl_display_ = nullptr;
-EGLSurface RendererGLES::egl_surface_ = nullptr;
-
-void RendererGLES::SetEGLResources(EGLContext context, EGLDisplay display, EGLSurface surface) {
-  egl_context_ = context;
-  egl_display_ = display;
-  egl_surface_ = surface;
-}
-
 RendererGLES::RendererGLES() {
+  GraphicsAPIResourcesGLES graphics_api_resources_gles;
+  SwapchainFrameResourcesGLES swapchain_frame_resources_gles;
+  DisplayManager& display_manager = DisplayManager::GetInstance();
+  display_manager.GetGraphicsAPIResourcesGLES(graphics_api_resources_gles);
+  const base_game_framework::DisplayManager::SwapchainFrameHandle frame_handle =
+      display_manager.GetCurrentSwapchainFrame(Renderer::GetSwapchainHandle());
+  display_manager.GetSwapchainFrameResourcesGLES(frame_handle, swapchain_frame_resources_gles);
+  egl_context_ = graphics_api_resources_gles.egl_context;
+  egl_display_ = swapchain_frame_resources_gles.egl_display;
+  egl_surface_ = swapchain_frame_resources_gles.egl_surface;
 
+  // Call BeginFrame to make sure the context is set in case the user starts creating resources
+  // immediately after initialization
+  BeginFrame(Renderer::GetSwapchainHandle());
 }
 
 RendererGLES::~RendererGLES() {
@@ -71,7 +78,8 @@ bool RendererGLES::GetFeatureAvailable(const RendererFeature feature) {
   return supported;
 }
 
-void RendererGLES::BeginFrame() {
+void RendererGLES::BeginFrame(
+    const base_game_framework::DisplayManager::SwapchainHandle /*swapchain_handle*/) {
   resources_.ProcessDeleteQueue();
   EGLBoolean result = eglMakeCurrent(egl_display_, egl_surface_, egl_surface_, egl_context_);
   if (result == EGL_FALSE) {

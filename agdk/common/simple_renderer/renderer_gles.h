@@ -26,26 +26,17 @@ namespace simple_renderer {
 
 /**
  * @brief A subclass implementation of the base Renderer class for the
- * OpenGL ES API. This class should not be used directly, except to call the
- * static function ::SetEGLResources to configure OpenGL resources prior to
- * the first call to Renderer::GetInstance.
+ * OpenGL ES API. This class should not be used directly.
  */
 class RendererGLES : public Renderer {
  public:
-/**
- * @brief Set pointers to resources needed by the renderer to use the OpenGL ES API.
- * @param context Pointer to the `EGLContext` that should be used by the renderer.
- * @param display Pointer to the `EGLDisplay` that should be used by the renderer.
- * @param surface Pointer to the `EGLSurface` that should be used by the renderer.
- */
-  static void SetEGLResources(EGLContext context, EGLDisplay display, EGLSurface surface);
-
   RendererGLES();
   virtual ~RendererGLES();
 
   virtual bool GetFeatureAvailable(const RendererFeature feature);
 
-  virtual void BeginFrame();
+  virtual void BeginFrame(
+      const base_game_framework::DisplayManager::SwapchainHandle swapchain_handle);
   virtual void EndFrame();
 
   virtual void Draw(const uint32_t vertex_count, const uint32_t first_vertex);
@@ -96,9 +87,9 @@ class RendererGLES : public Renderer {
   std::shared_ptr<RenderPass> render_pass_;
   std::shared_ptr<RenderState> render_state_;
 
-  static EGLContext egl_context_;
-  static EGLDisplay egl_display_;
-  static EGLSurface egl_surface_;
+  EGLContext egl_context_;
+  EGLDisplay egl_display_;
+  EGLSurface egl_surface_;
 };
 
 } // namespace simple_renderer

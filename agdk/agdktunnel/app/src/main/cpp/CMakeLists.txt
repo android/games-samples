@@ -46,6 +46,9 @@ set(COMMON_BASE_DIR "../../../../../common")
 set(COMMON_INCLUDE_DIR "../../../../../common/include")
 set(COMMON_SRC_DIR "../../../../../common/src")
 set(SIMPLE_RENDERER_DIR "../../../../../common/simple_renderer")
+set(BGF_ROOT_DIR "../../../../../common/base_game_framework")
+set(BGF_SRC_DIR ${BGF_ROOT_DIR}/src)
+set(BGF_INCLUDE_DIR ${BGF_ROOT_DIR}/include)
 
 # Export GameActivity_onCreate(),
 # Refer to: https://github.com/android-ndk/ndk/issues/381.
@@ -75,6 +78,16 @@ else()
     set(PROTOGEN_SRCS "")
 endif()
 
+set(BGF_SRCS
+     ${BGF_SRC_DIR}/debug_manager.cpp
+     ${BGF_SRC_DIR}/display_manager.cpp
+     ${BGF_SRC_DIR}/graphics_api_features.cpp
+     ${BGF_SRC_DIR}/android/display_manager_android.cpp
+     ${BGF_SRC_DIR}/android/platform_util_gles_android.cpp
+     ${BGF_SRC_DIR}/android/platform_util_log_android.cpp
+     ${BGF_SRC_DIR}/android/platform_util_android.cpp
+     ${BGF_SRC_DIR}/gles/graphics_api_gles.cpp)
+
 set(SIMPLE_RENDERER_SRCS
      ${SIMPLE_RENDERER_DIR}/renderer_debug_gles.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_index_buffer_gles.cpp
@@ -93,6 +106,7 @@ set(SIMPLE_RENDERER_SRCS
 add_library(${CMAKE_PROJECT_NAME} SHARED
      ${PROTOBUF_NANO_SRCS}
      ${PROTOGEN_SRCS}
+     ${BGF_SRCS}
      ${SIMPLE_RENDERER_SRCS}
      ${native_wrappers}
      android_main.cpp
@@ -131,6 +145,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
      ${THIRD_PARTY_DIR}/glm/glm
      ${COMMON_BASE_DIR}
      ${COMMON_INCLUDE_DIR}
+     ${BGF_INCLUDE_DIR}
+     ${BGF_SRC_DIR}
      ${CMAKE_CURRENT_SOURCE_DIR}
      ${CMAKE_CURRENT_SOURCE_DIR}/data)
 

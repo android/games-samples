@@ -24,11 +24,12 @@
 #include "game-activity/GameActivity.h"
 #include "memory_advice/memory_advice.h"
 #include "paddleboat/paddleboat.h"
-#include "swappy/swappyGL.h"
 #include "welcome_scene.hpp"
 #include "gni/gni.h"
+#include "android/platform_util_android.h"
 #include "simple_renderer/renderer_interface.h"
-#include "simple_renderer/renderer_gles.h"
+
+using namespace base_game_framework;
 
 // verbose debug logs on?
 #define VERBOSE_LOGGING 1
@@ -39,8 +40,9 @@
 #define VLOGD
 #endif
 
-// max # of GL errors to print before giving up
-#define MAX_GL_ERRORS 200
+// TODO: remove after merging SimpleRender vulkan implementation
+// so we can actually use Vulkan
+static bool s_disable_vulkan = true;
 
 static const char *VIBRATOR_SYSTEM_STRING = "vibrator";
 static const char *VIBRATOR_MANAGER_SYSTEM_STRING = "vibrator_manager";
@@ -80,19 +82,20 @@ static void _GameControllerStatusCallback(const int32_t controllerIndex,
 NativeEngine::NativeEngine(struct android_app *app) {
     ALOGI("NativeEngine: initializing.");
     mApp = app;
-    mHasFocus = mIsVisible = mHasWindow = false;
-    mHasGLObjects = false;
-    mEglDisplay = EGL_NO_DISPLAY;
-    mEglSurface = EGL_NO_SURFACE;
-    mEglContext = EGL_NO_CONTEXT;
-    mEglConfig = 0;
+    mHasFocus = mHasStarted = mDisplayInitialized = false;
+    mHasSwapchain = false;
+    mHasGfxObjects = false;
     mSurfWidth = mSurfHeight = 0;
     mGameControllerIndex = -1;
     mApiVersion = 0;
+    mScreenDensity = 0;
     mActiveAxisIds = 0;
     mJniEnv = NULL;
     mAppJniEnv = NULL;
     memset(&mState, 0, sizeof(mState));
+    mSwapchainFrameHandle = DisplayManager::kInvalid_swapchain_handle;
+    mSwapchainHandle = DisplayManager::kInvalid_swapchain_handle;
+    mIsVulkan = false;
     mIsFirstFrame = true;
 
     mGameAssetManager = new GameAssetManager(app->activity->assetManager,
@@ -138,13 +141,6 @@ NativeEngine::NativeEngine(struct android_app *app) {
     String_destroy(vibratorString);
     String_destroy(vibrationManagerString);
 
-    ALOGI("Calling SwappyGL_init");
-    SwappyGL_init(GetJniEnv(), mApp->activity->javaGameActivity);
-    SwappyGL_setSwapIntervalNS(SWAPPY_SWAP_60FPS);
-#ifdef SWAPPY_OFF_MODE
-    SwappyGL_setMaxAutoSwapIntervalNS(0);
-#endif // SWAPPY_OFF_MODE
-
     mTuningManager = new TuningManager(GetJniEnv(), app->activity->javaGameActivity, app->config);
 
     WelcomeScene::InitAboutText(GetJniEnv(), app->activity->javaGameActivity);
@@ -188,6 +184,11 @@ NativeEngine::NativeEngine(struct android_app *app) {
             mApp->activity->javaGameActivity, isPlayGamesServicesLinkedID);
 
     mDataStateMachine = new DataLoaderStateMachine(mCloudSaveEnabled, internalStoragePath);
+
+    // Temp init code until rest of BaseGameFramework refactoring goes in
+    PlatformUtilAndroid::SetAndroidApp(app);
+    PlatformUtilAndroid::SetMainThreadJniEnv(GetJniEnv());
+    PlatformUtilAndroid::SetActivityClassObject(app->activity->javaGameActivity);
 }
 
 NativeEngine *NativeEngine::GetInstance() {
@@ -197,21 +198,27 @@ NativeEngine *NativeEngine::GetInstance() {
 
 NativeEngine::~NativeEngine() {
     VLOGD("NativeEngine: destructor running");
+    if (mTextureManager != NULL) {
+        delete mTextureManager;
+    }
+
     if (mGfxManager != NULL) {
         delete mGfxManager;
         mGfxManager = NULL;
         simple_renderer::Renderer::ShutdownInstance();
     }
 
+    if (mDisplayInitialized) {
+        // Temp destruct code until rest of BaseGameFramework refactoring goes in
+        DisplayManager::GetInstance().ShutdownSwapchain(mSwapchainHandle);
+        DisplayManager::GetInstance().ShutdownGraphicsAPI();
+        DisplayManager::ShutdownInstance();
+    }
+
     delete mVibrationHelper;
     delete mTuningManager;
     Paddleboat_setControllerStatusCallback(NULL, NULL);
     Paddleboat_destroy(GetJniEnv());
-    SwappyGL_destroy();
-    if (mTextureManager != NULL) {
-        delete mTextureManager;
-    }
-    KillContext();
     delete mGameAssetManager;
     if (mJniEnv) {
         ALOGI("Detaching current thread from JNI.");
@@ -234,7 +241,7 @@ static void _handle_cmd_proxy(struct android_app *app, int32_t cmd) {
 //}
 
 bool NativeEngine::IsAnimating() {
-    return mHasFocus && mIsVisible && mHasWindow;
+    return mHasFocus && mHasStarted && mHasSwapchain;
 }
 
 static bool _cooked_event_callback(struct CookedEvent *event) {
@@ -281,44 +288,159 @@ static bool _cooked_event_callback(struct CookedEvent *event) {
 void NativeEngine::GameLoop() {
     mApp->userData = this;
     mApp->onAppCmd = _handle_cmd_proxy;
-    //mApp->onInputEvent = _handle_input_proxy;
 
     while (1) {
         int events;
         struct android_poll_source *source;
 
-        // If not animating, block until we get an event; if animating, don't block.
-        while ((ALooper_pollAll(IsAnimating() ? 0 : -1, NULL, &events, (void **) &source)) >= 0) {
+        while ((ALooper_pollAll(0, NULL, &events, (void **) &source)) >= 0) {
 
             // process event
             if (source != NULL) {
                 source->process(source->app, source);
             }
-
             // are we exiting?
             if (mApp->destroyRequested) {
                 return;
             }
         }
 
-        mMemoryConsumer->Update();
-        mGameAssetManager->UpdateGameAssetManager();
-        Paddleboat_update(GetJniEnv());
-        HandleGameActivityInput();
+        if (!mDisplayInitialized) {
+            if (mApp->window == NULL || !AttemptDisplayInitialization()) {
+			    usleep(1000);
+				continue;
+			}
+            mHasStarted = true;
+		} else {
+            mMemoryConsumer->Update();
+            mGameAssetManager->UpdateGameAssetManager();
+            Paddleboat_update(GetJniEnv());
+            HandleGameActivityInput();
 
-        if (mApp->textInputState) {
-            struct CookedEvent ev;
-            ev.type = COOKED_EVENT_TYPE_TEXT_INPUT;
-            ev.textInputState = true;
-            _cooked_event_callback(&ev);
-            mApp->textInputState = 0;
+            if (mApp->textInputState) {
+                struct CookedEvent ev;
+                ev.type = COOKED_EVENT_TYPE_TEXT_INPUT;
+                ev.textInputState = true;
+                _cooked_event_callback(&ev);
+                mApp->textInputState = 0;
+            }
+
+            if (IsAnimating()) {
+                DoFrame();
+            }
+        }
+    }
+}
+
+// We may have to wait for the display to become available, return true once we are
+// able to initialize the display and graphics API
+bool NativeEngine::AttemptDisplayInitialization() {
+    DisplayManager &display_manager = DisplayManager::GetInstance();
+
+    const uint32_t vk_api_flags = display_manager.GetGraphicsAPISupportFlags(
+        DisplayManager::kGraphicsAPI_Vulkan);
+    // Early out if waiting for availability info
+    if ((vk_api_flags & DisplayManager::kGraphics_API_Waiting) != 0) {
+        return false;
+    }
+
+    DisplayManager::GraphicsAPI graphics_api = DisplayManager::kGraphicsAPI_Vulkan;
+    uint32_t requested_features = DisplayManager::kVulkan_1_1_Support;
+    mIsVulkan = true;
+
+    if (vk_api_flags == DisplayManager::kGraphics_API_Unsupported ||
+        ((vk_api_flags & DisplayManager::kVulkan_1_1_Support) == 0) || s_disable_vulkan) {
+        // Fall back to GLES 3 if Vulkan isn't supported, or isn't at
+        // least a Vulkan 1.1+ device
+        graphics_api = DisplayManager::kGraphicsAPI_GLES;
+        requested_features = DisplayManager::kGLES_3_0_Support;
+        mIsVulkan = false;
+
+        const uint32_t gles_api_flags = display_manager.GetGraphicsAPISupportFlags(
+            DisplayManager::kGraphicsAPI_GLES);
+        // Early out if waiting for availability info
+        if ((gles_api_flags & DisplayManager::kGraphics_API_Waiting) != 0) {
+            return false;
         }
 
-        if (IsAnimating()) {
-            DoFrame();
+        if (gles_api_flags == DisplayManager::kGraphics_API_Unsupported ||
+            ((gles_api_flags & DisplayManager::kGLES_3_0_Support) == 0)) {
+            ALOGE("Device does not support Vulkan or OpenGLES 3.0!");
+            MY_ASSERT(false);
+            return false;
         }
     }
 
+    const DisplayManager::InitGraphicsAPIResult init_result = display_manager.InitGraphicsAPI(
+        graphics_api, requested_features);
+    if (init_result != DisplayManager::kInit_GraphicsAPI_Success) {
+        ALOGE("Failed to initialize %s API!",
+              (graphics_api == DisplayManager::kGraphicsAPI_Vulkan ? "Vulkan" : "GLES"));
+        MY_ASSERT(false);
+        return false;
+    }
+
+    return CreateSwapchain();
+}
+
+bool NativeEngine::CreateSwapchain() {
+    DisplayManager &display_manager = DisplayManager::GetInstance();
+    std::unique_ptr<DisplayManager::SwapchainConfigurations> swapchain_configurations =
+        display_manager.GetSwapchainConfigurations();
+
+    const DisplayManager::DisplayColorSpace swapchain_color_space = mIsVulkan ?
+        DisplayManager::kDisplay_Color_Space_SRGB : DisplayManager::kDisplay_Color_Space_Linear;
+    DisplayManager::DisplayFormat display_format(swapchain_color_space,
+                                                 DisplayManager::kDisplay_Depth_Format_D24S8_Packed,
+                                                 DisplayManager::kDisplay_Pixel_Format_RGBA8,
+                                                 DisplayManager::kDisplay_Stencil_Format_D24S8_Packed);
+
+    bool found_display_format = false;
+    for (auto iter = swapchain_configurations->display_formats.begin();
+         iter != swapchain_configurations->display_formats.end(); ++iter) {
+        if (*iter == display_format) {
+            found_display_format = true;
+            break;
+        }
+    }
+
+    if (found_display_format) {
+        mDisplayFormat = display_format;
+        const DisplayManager::InitSwapchainResult swapchain_result = display_manager.InitSwapchain(
+            display_format, swapchain_configurations->display_resolutions[0],
+            swapchain_configurations->display_swap_intervals[0],
+            swapchain_configurations->min_swapchain_frame_count,
+            DisplayManager::kSwapchain_Present_Fifo,
+            &mSwapchainHandle);
+
+        if (swapchain_result == DisplayManager::kInit_Swapchain_Success) {
+            mSwapchainImageCount = swapchain_configurations->min_swapchain_frame_count;
+            mSurfWidth = swapchain_configurations->display_resolutions[0].display_width;
+            mSurfHeight = swapchain_configurations->display_resolutions[0].display_height;
+            mScreenDensity = swapchain_configurations->display_resolutions[0].display_dpi;
+            SceneManager *mgr = SceneManager::GetInstance();
+            mgr->SetScreenSize(mSurfWidth, mSurfHeight);
+            mDisplayInitialized = true;
+            mHasSwapchain = true;
+            ALOGI("Initialized swapchain");
+            mSwapchainFrameHandle = display_manager.GetCurrentSwapchainFrame(mSwapchainHandle);
+            display_manager.SetSwapchainChangedCallback(
+                std::bind(&NativeEngine::SwapchainChanged, this,
+                          std::placeholders::_1, std::placeholders::_2), nullptr);
+            display_manager.SetDisplayChangedCallback(
+                std::bind(&NativeEngine::DisplayResolutionChanged, this,
+                          std::placeholders::_1, std::placeholders::_2),nullptr);
+        } else {
+            ALOGE("Failed to create swapchain");
+            MY_ASSERT(false);
+            return false;
+        }
+    } else {
+        ALOGE("Failed to find compatible display format");
+        MY_ASSERT(false);
+        return false;
+    }
+    return true;
 }
 
 JNIEnv *NativeEngine::GetJniEnv() {
@@ -474,8 +596,6 @@ void NativeEngine::HandleCommand(int32_t cmd) {
             // We have a window!
             VLOGD("NativeEngine: APP_CMD_INIT_WINDOW");
             if (mApp->window != NULL) {
-                mHasWindow = true;
-                SwappyGL_setWindow(mApp->window);
                 if (mApp->savedStateSize == sizeof(mState) && mApp->savedState != nullptr) {
                     mState = *((NativeEngineSavedState *) mApp->savedState);
                     mHasFocus = mState.mHasFocus;
@@ -484,15 +604,19 @@ void NativeEngine::HandleCommand(int32_t cmd) {
                     // passed down from GameActivity when restarting Activity
                     mHasFocus = appState.mHasFocus;
                 }
+                PlatformUtilAndroid::SetNativeWindow(mApp->window);
+                DisplayManager::GetInstance().HandlePlatformDisplayChange(
+                    DisplayManager::kDisplay_Change_Window_Init);
             }
             VLOGD("HandleCommand(%d): hasWindow = %d, hasFocus = %d", cmd,
-                  mHasWindow ? 1 : 0, mHasFocus ? 1 : 0);
+                  (mApp->window != NULL) ? 1 : 0, mHasFocus ? 1 : 0);
             break;
         case APP_CMD_TERM_WINDOW:
             // The window is going away -- kill the surface
             VLOGD("NativeEngine: APP_CMD_TERM_WINDOW");
-            KillSurface();
-            mHasWindow = false;
+            DisplayManager::GetInstance().HandlePlatformDisplayChange(
+                DisplayManager::kDisplay_Change_Window_Terminate);
+            PlatformUtilAndroid::SetNativeWindow(nullptr);
             break;
         case APP_CMD_GAINED_FOCUS:
             VLOGD("NativeEngine: APP_CMD_GAINED_FOCUS");
@@ -516,16 +640,17 @@ void NativeEngine::HandleCommand(int32_t cmd) {
             break;
         case APP_CMD_STOP:
             VLOGD("NativeEngine: APP_CMD_STOP");
-            mIsVisible = false;
             Paddleboat_onStop(GetJniEnv());
             break;
         case APP_CMD_START:
             VLOGD("NativeEngine: APP_CMD_START");
             Paddleboat_onStart(GetJniEnv());
-            mIsVisible = true;
             break;
         case APP_CMD_WINDOW_RESIZED:
-        case APP_CMD_CONFIG_CHANGED:
+            DisplayManager::GetInstance().HandlePlatformDisplayChange(
+                DisplayManager::kDisplay_Change_Window_Resized);
+            break;
+      case APP_CMD_CONFIG_CHANGED:
             VLOGD("NativeEngine: %s", cmd == APP_CMD_WINDOW_RESIZED ?
                                       "APP_CMD_WINDOW_RESIZED" : "APP_CMD_CONFIG_CHANGED");
             // Window was resized or some other configuration changed.
@@ -535,20 +660,20 @@ void NativeEngine::HandleCommand(int32_t cmd) {
             break;
         case APP_CMD_LOW_MEMORY:
             VLOGD("NativeEngine: APP_CMD_LOW_MEMORY");
-            // system told us we have low memory. So if we are not visible, let's
-            // cooperate by deallocating all of our graphic resources.
-            if (!mHasWindow) {
-                VLOGD("NativeEngine: trimming memory footprint (deleting GL objects).");
-                KillGLObjects();
-            }
             break;
         case APP_CMD_CONTENT_RECT_CHANGED:
+            DisplayManager::GetInstance().HandlePlatformDisplayChange(
+                DisplayManager::kDisplay_Change_Window_Content_Rect_Changed);
             VLOGD("NativeEngine: APP_CMD_CONTENT_RECT_CHANGED");
             break;
         case APP_CMD_WINDOW_REDRAW_NEEDED:
+            DisplayManager::GetInstance().HandlePlatformDisplayChange(
+                DisplayManager::kDisplay_Change_Window_Redraw_Needed);
             VLOGD("NativeEngine: APP_CMD_WINDOW_REDRAW_NEEDED");
             break;
         case APP_CMD_WINDOW_INSETS_CHANGED:
+            DisplayManager::GetInstance().HandlePlatformDisplayChange(
+                DisplayManager::kDisplay_Change_Window_Insets_Changed);
             VLOGD("NativeEngine: APP_CMD_WINDOW_INSETS_CHANGED");
             ARect insets;
             // Log all the insets types
@@ -562,10 +687,6 @@ void NativeEngine::HandleCommand(int32_t cmd) {
             VLOGD("NativeEngine: (unknown command).");
             break;
     }
-
-    VLOGD("NativeEngine: STATUS: F%d, V%d, W%d, EGL: D %p, S %p, CTX %p, CFG %p",
-          mHasFocus, mIsVisible, mHasWindow, mEglDisplay, mEglSurface, mEglContext,
-          mEglConfig);
 }
 
 bool NativeEngine::HandleInput(AInputEvent */*event*/) {
@@ -581,6 +702,7 @@ void NativeEngine::SetActiveGameControllerIndex(const int32_t controllerIndex) {
 }
 
 void NativeEngine::HandleGameActivityInput() {
+    CheckForNewAxis();
     // If we get any key or motion events that were handled by a game controller,
     // read controller data and cook it into an event
     bool cookGameControllerEvent = false;
@@ -642,255 +764,54 @@ void NativeEngine::CheckForNewAxis() {
     }
 }
 
-bool NativeEngine::InitDisplay() {
-    if (mEglDisplay != EGL_NO_DISPLAY) {
-        // nothing to do
-        ALOGI("NativeEngine: no need to init display (already had one).");
-        return true;
-    }
-
-    ALOGI("NativeEngine: initializing display.");
-    mEglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    if (EGL_FALSE == eglInitialize(mEglDisplay, 0, 0)) {
-        ALOGE("NativeEngine: failed to init display, error %d", eglGetError());
-        return false;
-    }
-    return true;
-}
-
-bool NativeEngine::InitSurface() {
-    // need a display
-    MY_ASSERT(mEglDisplay != EGL_NO_DISPLAY);
-
-    if (mEglSurface != EGL_NO_SURFACE) {
-        // nothing to do
-        ALOGI("NativeEngine: no need to init surface (already had one).");
-        return true;
-    }
-
-    ALOGI("NativeEngine: initializing surface.");
-
-    EGLint numConfigs;
-
-    const EGLint attribs[] = {
-            EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT, // request OpenGL ES 3.0
-            EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-            EGL_BLUE_SIZE, 8,
-            EGL_GREEN_SIZE, 8,
-            EGL_RED_SIZE, 8,
-            EGL_DEPTH_SIZE, 16,
-            EGL_NONE
-    };
-
-    // since this is a simple sample, we have a trivial selection process. We pick
-    // the first EGLConfig that matches:
-    eglChooseConfig(mEglDisplay, attribs, &mEglConfig, 1, &numConfigs);
-
-    // create EGL surface
-    mEglSurface = eglCreateWindowSurface(mEglDisplay, mEglConfig, mApp->window, NULL);
-    if (mEglSurface == EGL_NO_SURFACE) {
-        ALOGE("Failed to create EGL surface, EGL error %d", eglGetError());
-        return false;
-    }
-
-    ALOGI("NativeEngine: successfully initialized surface.");
-    return true;
-}
-
-bool NativeEngine::InitContext() {
-    // need a display
-    MY_ASSERT(mEglDisplay != EGL_NO_DISPLAY);
-
-    EGLint attribList[] = {EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE}; // OpenGL ES 3.0
-
-    if (mEglContext != EGL_NO_CONTEXT) {
-        // nothing to do
-        ALOGI("NativeEngine: no need to init context (already had one).");
-        return true;
-    }
-
-    ALOGI("NativeEngine: initializing context.");
-
-    // create EGL context
-    mEglContext = eglCreateContext(mEglDisplay, mEglConfig, NULL, attribList);
-    if (mEglContext == EGL_NO_CONTEXT) {
-        ALOGE("Failed to create EGL context, EGL error %d", eglGetError());
-        return false;
-    }
-
-    ALOGI("NativeEngine: successfully initialized context.");
-
-    return true;
-}
-
-void NativeEngine::ConfigureOpenGL() {
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glEnable(GL_DEPTH_TEST);
-    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-}
-
-
 bool NativeEngine::PrepareToRender() {
-    if (mEglDisplay == EGL_NO_DISPLAY || mEglSurface == EGL_NO_SURFACE ||
-        mEglContext == EGL_NO_CONTEXT) {
-
-        // create display if needed
-        if (!InitDisplay()) {
-            ALOGE("NativeEngine: failed to create display.");
-            return false;
-        }
-
-        // create surface if needed
-        if (!InitSurface()) {
-            ALOGE("NativeEngine: failed to create surface.");
-            return false;
-        }
-
-        // create context if needed
-        if (!InitContext()) {
-            ALOGE("NativeEngine: failed to create context.");
-            return false;
-        }
-
-        ALOGI("NativeEngine: binding surface and context (display %p, surface %p, context %p)",
-              mEglDisplay, mEglSurface, mEglContext);
-
-        // bind them
-        if (EGL_FALSE == eglMakeCurrent(mEglDisplay, mEglSurface, mEglSurface, mEglContext)) {
-            ALOGE("NativeEngine: eglMakeCurrent failed, EGL error %d", eglGetError());
-            HandleEglError(eglGetError());
-        }
-
-        // configure our global OpenGL settings
-        ConfigureOpenGL();
+    // Early out conditions
+    if (mDisplayInitialized == false) {
+        return mDisplayInitialized;
+    }
+    // Make sure our context is set for rendering using the 'swapchain'
+    DisplayManager& display_manager = DisplayManager::GetInstance();
+    if (!display_manager.GetSwapchainValid(mSwapchainHandle)) {
+        return false;
     }
 
     if (mGfxManager == NULL) {
-        int width, height;
-        eglQuerySurface(mEglDisplay, mEglSurface, EGL_WIDTH, &width);
-        eglQuerySurface(mEglDisplay, mEglSurface, EGL_HEIGHT, &height);
-        // Initialize renderer and resources once we have a valid surface to render to
-        simple_renderer::Renderer::SetRendererAPI(simple_renderer::Renderer::kAPI_GLES);
-        simple_renderer::RendererGLES::SetEGLResources(mEglContext, mEglDisplay,
-                                                       mEglSurface);
-        mGfxManager = new GfxManager(false, width, height);
-        if (mTextureManager == NULL) {
-            mTextureManager = new TextureManager();
-        }
+        InitializeGfxManager();
     }
 
-    if (!mHasGLObjects) {
+    if (!mHasGfxObjects) {
         ALOGI("NativeEngine: creating OpenGL objects.");
-        if (!InitGLObjects()) {
+        if (!InitGfxObjects()) {
             ALOGE("NativeEngine: unable to initialize OpenGL objects.");
             return false;
         }
     }
 
     // ready to render
-    return true;
+    return mDisplayInitialized;
 }
 
-void NativeEngine::KillGLObjects() {
-    if (mHasGLObjects) {
+void NativeEngine::InitializeGfxManager() {
+    // Initialize renderer and resources once we have a valid surface to render to
+    simple_renderer::Renderer::SetSwapchainHandle(mSwapchainHandle);
+    if (mIsVulkan) {
+        simple_renderer::Renderer::SetRendererAPI(simple_renderer::Renderer::kAPI_Vulkan);
+    } else {
+        simple_renderer::Renderer::SetRendererAPI(simple_renderer::Renderer::kAPI_GLES);
+    }
+    mGfxManager = new GfxManager(mIsVulkan, mSurfWidth, mSurfHeight);
+    if (mTextureManager == NULL) {
+        mTextureManager = new TextureManager();
+    }
+}
+
+void NativeEngine::KillGfxObjects() {
+    if (mHasGfxObjects) {
         SceneManager *mgr = SceneManager::GetInstance();
         mgr->KillGraphics();
-        mHasGLObjects = false;
+        mHasGfxObjects = false;
     }
 }
-
-void NativeEngine::KillSurface() {
-    ALOGI("NativeEngine: killing surface.");
-    eglMakeCurrent(mEglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    if (mEglSurface != EGL_NO_SURFACE) {
-        eglDestroySurface(mEglDisplay, mEglSurface);
-        mEglSurface = EGL_NO_SURFACE;
-    }
-    ALOGI("NativeEngine: Surface killed successfully.");
-}
-
-void NativeEngine::KillContext() {
-    ALOGI("NativeEngine: killing context.");
-
-    // since the context is going away, we have to kill the GL objects
-    KillGLObjects();
-
-    eglMakeCurrent(mEglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-
-    if (mEglContext != EGL_NO_CONTEXT) {
-        eglDestroyContext(mEglDisplay, mEglContext);
-        mEglContext = EGL_NO_CONTEXT;
-    }
-    ALOGI("NativeEngine: Context killed successfully.");
-}
-
-void NativeEngine::KillDisplay() {
-    // causes context and surface to go away too, if they are there
-    ALOGI("NativeEngine: killing display.");
-    KillContext();
-    KillSurface();
-
-    if (mEglDisplay != EGL_NO_DISPLAY) {
-        ALOGI("NativeEngine: terminating display now.");
-        eglTerminate(mEglDisplay);
-        mEglDisplay = EGL_NO_DISPLAY;
-    }
-    ALOGI("NativeEngine: display killed successfully.");
-}
-
-bool NativeEngine::HandleEglError(EGLint error) {
-    switch (error) {
-        case EGL_SUCCESS:
-            // nothing to do
-            return true;
-        case EGL_CONTEXT_LOST:
-            ALOGW("NativeEngine: egl error: EGL_CONTEXT_LOST. Recreating context.");
-            KillContext();
-            return true;
-        case EGL_BAD_CONTEXT:
-            ALOGW("NativeEngine: egl error: EGL_BAD_CONTEXT. Recreating context.");
-            KillContext();
-            return true;
-        case EGL_BAD_DISPLAY:
-            ALOGW("NativeEngine: egl error: EGL_BAD_DISPLAY. Recreating display.");
-            KillDisplay();
-            return true;
-        case EGL_BAD_SURFACE:
-            ALOGW("NativeEngine: egl error: EGL_BAD_SURFACE. Recreating display.");
-            KillSurface();
-            return true;
-        default:
-            ALOGW("NativeEngine: unknown egl error: %d", error);
-            return false;
-    }
-}
-
-static void _log_opengl_error(GLenum err) {
-    switch (err) {
-        case GL_NO_ERROR:
-            ALOGE("*** OpenGL error: GL_NO_ERROR");
-            break;
-        case GL_INVALID_ENUM:
-            ALOGE("*** OpenGL error: GL_INVALID_ENUM");
-            break;
-        case GL_INVALID_VALUE:
-            ALOGE("*** OpenGL error: GL_INVALID_VALUE");
-            break;
-        case GL_INVALID_OPERATION:
-            ALOGE("*** OpenGL error: GL_INVALID_OPERATION");
-            break;
-        case GL_INVALID_FRAMEBUFFER_OPERATION:
-            ALOGE("*** OpenGL error: GL_INVALID_FRAMEBUFFER_OPERATION");
-            break;
-        case GL_OUT_OF_MEMORY:
-            ALOGE("*** OpenGL error: GL_OUT_OF_MEMORY");
-            break;
-        default:
-            ALOGE("*** OpenGL error: error %d", err);
-            break;
-    }
-}
-
 
 void NativeEngine::DoFrame() {
     // prepare to render (create context, surfaces, etc, if needed)
@@ -900,23 +821,10 @@ void NativeEngine::DoFrame() {
         return;
     }
 
+    simple_renderer::Renderer& renderer = simple_renderer::Renderer::GetInstance();
+    renderer.BeginFrame(mSwapchainHandle);
+
     SceneManager *mgr = SceneManager::GetInstance();
-
-    // how big is the surface? We query every frame because it's cheap, and some
-    // strange devices out there change the surface size without calling any callbacks...
-    int width, height;
-    eglQuerySurface(mEglDisplay, mEglSurface, EGL_WIDTH, &width);
-    eglQuerySurface(mEglDisplay, mEglSurface, EGL_HEIGHT, &height);
-
-    if (width != mSurfWidth || height != mSurfHeight) {
-        // notify scene manager that the surface has changed size
-        ALOGI("NativeEngine: surface changed size %dx%d --> %dx%d", mSurfWidth, mSurfHeight,
-              width, height);
-        mSurfWidth = width;
-        mSurfHeight = height;
-        mgr->SetScreenSize(mSurfWidth, mSurfHeight);
-        glViewport(0, 0, mSurfWidth, mSurfHeight);
-    }
 
     // if this is the first frame, install the welcome scene
     if (mIsFirstFrame) {
@@ -927,36 +835,22 @@ void NativeEngine::DoFrame() {
     // render!
     mgr->DoFrame();
 
-    // swap buffers
-    if (!SwappyGL_swap(mEglDisplay, mEglSurface)) {        // failed to swap buffers...
-        ALOGW("NativeEngine: SwappyGL_swap failed, EGL error %d", eglGetError());
-        HandleEglError(eglGetError());
-    }
+    renderer.EndFrame();
 
-    // print out GL errors, if any
-    GLenum e;
-    static int errorsPrinted = 0;
-    while ((e = glGetError()) != GL_NO_ERROR) {
-        if (errorsPrinted < MAX_GL_ERRORS) {
-            _log_opengl_error(e);
-            ++errorsPrinted;
-            if (errorsPrinted >= MAX_GL_ERRORS) {
-                ALOGE("*** NativeEngine: TOO MANY OPENGL ERRORS. NO LONGER PRINTING.");
-            }
-        }
-    }
+    // swap buffers
+    DisplayManager& display_manager = DisplayManager::GetInstance();
+    mSwapchainFrameHandle = display_manager.PresentCurrentSwapchainFrame(mSwapchainHandle);
 }
 
 android_app *NativeEngine::GetAndroidApp() {
     return mApp;
 }
 
-bool NativeEngine::InitGLObjects() {
-    if (!mHasGLObjects) {
+bool NativeEngine::InitGfxObjects() {
+    if (!mHasGfxObjects) {
         SceneManager *mgr = SceneManager::GetInstance();
         mgr->StartGraphics();
-        _log_opengl_error(glGetError());
-        mHasGLObjects = true;
+        mHasGfxObjects = true;
     }
     return true;
 }
@@ -967,4 +861,31 @@ void NativeEngine::SetInputSdkContext(int context) {
             GetJniEnv()->GetMethodID(activityClass, "setInputContext", "(I)V");
     GetJniEnv()->CallVoidMethod(
             mApp->activity->javaGameActivity, setInputContextID, (jint)context);
+}
+
+void NativeEngine::SwapchainChanged(const DisplayManager::SwapchainChangeMessage reason,
+                                    void* user_data) {
+    if (reason == DisplayManager::kSwapchain_Gained_Window) {
+        mHasSwapchain = true;
+    } else if (reason == DisplayManager::kSwapchain_Lost_Window) {
+        mHasSwapchain = false;
+    }
+}
+
+void NativeEngine::DisplayResolutionChanged(const DisplayManager::DisplayChangeInfo
+                              &display_change_info, void *user_data) {
+    if (display_change_info.change_message == DisplayManager::kDisplay_Change_Window_Resized) {
+        const int32_t width = display_change_info.display_resolution.display_width;
+        const int32_t height = display_change_info.display_resolution.display_height;
+        if (width != mSurfWidth || height != mSurfHeight) {
+            // notify scene manager that the surface has changed size
+            ALOGI("NativeEngine: surface changed size %dx%d --> %dx%d", mSurfWidth, mSurfHeight,
+                  width, height);
+            mSurfWidth = width;
+            mSurfHeight = height;
+            mScreenDensity = display_change_info.display_resolution.display_dpi;
+            SceneManager::GetInstance()->SetScreenSize(mSurfWidth, mSurfHeight);
+            // TODO: Make sure changes are passed through to renderer
+        }
+    }
 }

@@ -28,14 +28,14 @@ def playcoreDir = file('libs/play-core-native-sdk')
 
 android {
     compileSdkVersion 33
-    ndkVersion '23.1.7779620'
+    ndkVersion '25.2.9519653'
 
     defaultConfig {
         applicationId 'com.google.sample.agdktunnel'
         minSdkVersion 24
         targetSdkVersion 33
         versionCode     1
-        versionName    '1.0.5'
+        versionName    '1.1'
 
         externalNativeBuild {
             cmake {
@@ -45,7 +45,6 @@ android {
             }
         }
         ndk {
-            // Skip deprecated ABIs. Only required when using NDK 16 or earlier.
             abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
         }
     }

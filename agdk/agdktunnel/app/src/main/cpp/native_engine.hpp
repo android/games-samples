@@ -17,6 +17,7 @@
 #ifndef agdktunnel_native_engine_hpp
 #define agdktunnel_native_engine_hpp
 
+#include "display_manager.h"
 #include "common.hpp"
 #include "game_asset_manager.hpp"
 #include "gfx_manager.hpp"
@@ -89,21 +90,25 @@ public:
       eVibrationManager
     };
 
- private:
+private:
     // variables to track Android lifecycle:
-    bool mHasFocus, mIsVisible, mHasWindow;
+    // variables to track Android lifecycle:
+    bool mHasFocus, mHasStarted, mDisplayInitialized;
+
+    // has active swapchain
+    bool mHasSwapchain;
+
+    // True if we are to exit main loop and shutdown
+    bool mQuitting;
 
     // are our OpenGL objects (textures, etc) currently loaded?
-    bool mHasGLObjects;
+    bool mHasGfxObjects;
 
     // android API version (0 if not yet queried)
     int mApiVersion;
 
-    // EGL stuff
-    EGLDisplay mEglDisplay;
-    EGLSurface mEglSurface;
-    EGLContext mEglContext;
-    EGLConfig mEglConfig;
+    // Screen density
+    int mScreenDensity;
 
     // known surface size
     int mSurfWidth, mSurfHeight;
@@ -144,6 +149,17 @@ public:
     // Vibration helper instance
     VibrationHelper *mVibrationHelper;
 
+    base_game_framework::DisplayManager::SwapchainFrameHandle mSwapchainFrameHandle;
+
+    base_game_framework::DisplayManager::SwapchainHandle mSwapchainHandle;
+
+    base_game_framework::DisplayManager::DisplayFormat mDisplayFormat;
+
+    int mSwapchainImageCount;
+
+    // Are we using Vulkan?
+    bool mIsVulkan;
+
     // is this the first frame we're drawing?
     bool mIsFirstFrame;
 
@@ -153,27 +169,25 @@ public:
     // state machine instance to query the status of the current load of data
     DataLoaderStateMachine *mDataStateMachine;
 
-    // initialize the display
-    bool InitDisplay();
+    // Initial display and graphics API setup
+    bool AttemptDisplayInitialization();
 
-    // initialize surface. Requires display to have been initialized first.
-    bool InitSurface();
+    bool CreateSwapchain();
 
-    // initialize context. Requires display to have been initialized first.
-    bool InitContext();
+    void InitializeGfxManager();
 
-    // kill context
-    void KillContext();
+    // BaseGameFramework callbacks
 
-    void KillSurface();
+    // Display Manager
+    void SwapchainChanged(const base_game_framework::DisplayManager::SwapchainChangeMessage reason,
+                          void* user_data);
 
-    void KillDisplay(); // also causes context and surface to get killed
+    void DisplayResolutionChanged(const base_game_framework::DisplayManager::DisplayChangeInfo
+                                  &display_change_info, void* user_data);
 
-    bool HandleEglError(EGLint error);
+    bool InitGfxObjects();
 
-    bool InitGLObjects();
-
-    void KillGLObjects();
+    void KillGfxObjects();
 
     void ConfigureOpenGL();
 

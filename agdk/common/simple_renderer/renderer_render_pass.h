@@ -32,6 +32,18 @@ namespace simple_renderer {
 class RenderPass {
  public:
   /**
+   * @brief Bitflags for attachment status for the render pass
+   */
+  enum RenderPassAttachmentFlags : uint32_t {
+    /** @brief Has a color attachment if set */
+    kRenderPassAttachment_Color = (1U << 0),
+    /** @brief Has a color attachment if set */
+    kRenderPassAttachment_Depth = (1U << 1),
+    /** @brief Has a color attachment if set */
+    kRenderPassAttachment_Stencil = (1U << 2)
+  };
+
+  /**
    * @brief Load options for the color attachment when beginning a render pass
    */
   enum RenderPassColorLoadOperation : uint32_t {
@@ -108,6 +120,8 @@ class RenderPass {
     RenderPassStencilLoadOperation stencil_load;
     /** @brief The operation to perform when storing the stencil buffer attachment */
     RenderPassStencilStoreOperation stencil_store;
+    /** @brief Bitflags (RenderPassAttachmentFlags) of active attachments */
+    uint32_t attachment_flags;
     /** @brief The RGBA values to use when clearing a color attachment */
     float color_clear[4];
     /** @brief The depth value to use when clearing a depth buffer attachment */

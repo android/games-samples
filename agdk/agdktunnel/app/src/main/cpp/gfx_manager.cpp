@@ -65,6 +65,7 @@ static constexpr UniformBuffer::UniformBufferElement basic_uniform_elements[] = 
       0, 1, "u_Tint" }
 };
 static constexpr size_t kBasicUniformSize = 64 + 16;
+static constexpr uint32_t kBasicUniformOffset = 0;
 
 static constexpr UniformBuffer::UniformBufferElement our_uniform_elements[] = {
     { UniformBuffer::kBufferElement_Matrix44, UniformBuffer::kElementStageVertexFlag,
@@ -78,6 +79,12 @@ static constexpr UniformBuffer::UniformBufferElement our_uniform_elements[] = {
       0, 3, "u_Tint" }
 };
 static constexpr size_t kOurUniformSize = 64 + 16 + 16 + 16;
+// uMVP, u_PointLightPos are only used by the vertex shader, u_Tint only by the fragment shader,
+// but u_PointLightColor is used by both
+static constexpr uint32_t kOurUniformVertexOffset = 0;
+static constexpr uint32_t kOurUniformVertexSize = 64 + 16;
+static constexpr uint32_t kOurUniformFragmentOffset = 64 + 16;
+static constexpr uint32_t kOurUniformFragmentSize = 16 + 16;
 
 GfxManager::GfxManager(bool useVulkan, const int32_t width, const int32_t height) {
   CreateRenderResources(useVulkan, width, height);
@@ -132,6 +139,8 @@ void GfxManager::CreateRenderPasses() {
       RenderPass::kRenderPassDepthStore_DontCare,
       RenderPass::kRenderPassStencilLoad_DontCare,
       RenderPass::kRenderPassStencilStore_DontCare,
+      (RenderPass::kRenderPassAttachment_Color | RenderPass::kRenderPassAttachment_Depth |
+       RenderPass::kRenderPassAttachment_Stencil),
       { 0.0f, 0.0f, 0.0f, 1.0f },
       1.0f,
       0
@@ -141,6 +150,13 @@ void GfxManager::CreateRenderPasses() {
 
 void GfxManager::CreateRenderStates(const int32_t width, const int32_t height) {
   Renderer& renderer = Renderer::GetInstance();
+
+  const base_game_framework::GraphicsAPIFeatures& api_features =
+      base_game_framework::DisplayManager::GetInstance().GetGraphicsAPIFeatures();
+  const float text_line_width =
+      api_features.HasGraphicsFeature(
+          base_game_framework::GraphicsAPIFeatures::kGraphicsFeature_Wide_Lines) ?
+          TEXT_LINE_WIDTH : NORMAL_LINE_WIDTH;
 
   RenderState::RenderStateCreationParams basicStateParams {
       {0, 0, width, height},
@@ -162,7 +178,7 @@ void GfxManager::CreateRenderStates(const int32_t width, const int32_t height) {
   basicStateParams.state_uniform = mUniformBuffers[kGfxType_BasicLinesNoDepthTest];
   mRenderStates[kGfxType_BasicLinesNoDepthTest] = renderer.CreateRenderState(basicStateParams);
 
-  basicStateParams.line_width = TEXT_LINE_WIDTH;
+  basicStateParams.line_width = text_line_width;
   basicStateParams.state_uniform = mUniformBuffers[kGfxType_BasicThickLinesNoDepthTest];
   mRenderStates[kGfxType_BasicThickLinesNoDepthTest] = renderer.CreateRenderState(basicStateParams);
 
@@ -201,8 +217,12 @@ void GfxManager::CreateUniformBuffers() {
   Renderer& renderer = Renderer::GetInstance();
 
   UniformBuffer::UniformBufferCreationParams basicUniformParams = {
-      basic_uniform_elements, ARRAY_COUNTOF(basic_uniform_elements), kBasicUniformSize,
-      UniformBuffer::kBufferUpdateDynamicPerDraw
+      basic_uniform_elements, ARRAY_COUNTOF(basic_uniform_elements),
+      (UniformBuffer::kBufferFlag_UpdateDynamicPerDraw |
+          UniformBuffer::kBufferFlag_UsePushConstants),
+      {kBasicUniformOffset, kBasicUniformSize,
+       UniformBuffer::kUnusedStageRange, UniformBuffer::kUnusedStageRange},
+      kBasicUniformSize
   };
   // Separate buffer object for each render type, but they share the same layout
   mUniformBuffers[kGfxType_BasicLines] = renderer.CreateUniformBuffer(basicUniformParams);
@@ -214,8 +234,12 @@ void GfxManager::CreateUniformBuffers() {
   mUniformBuffers[kGfxType_BasicTrisNoDepthTest] = renderer.CreateUniformBuffer(basicUniformParams);
 
   UniformBuffer::UniformBufferCreationParams ourUniformParams = {
-      our_uniform_elements, ARRAY_COUNTOF(our_uniform_elements), kOurUniformSize,
-      UniformBuffer::kBufferUpdateDynamicPerDraw
+      our_uniform_elements, ARRAY_COUNTOF(our_uniform_elements),
+      (UniformBuffer::kBufferFlag_UpdateDynamicPerDraw |
+                  UniformBuffer::kBufferFlag_UsePushConstants),
+      {kOurUniformVertexOffset, kOurUniformVertexSize,
+       kOurUniformFragmentOffset, kOurUniformFragmentSize},
+      kOurUniformSize
   };
   mUniformBuffers[kGfxType_OurTris] = renderer.CreateUniformBuffer(ourUniformParams);
   mUniformBuffers[kGfxType_OurTrisNoDepthTest] = renderer.CreateUniformBuffer(ourUniformParams);

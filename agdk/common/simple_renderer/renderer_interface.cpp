@@ -21,10 +21,17 @@
 namespace simple_renderer {
 
 Renderer::RendererAPI Renderer::renderer_api_ = Renderer::kAPI_GLES;
+base_game_framework::DisplayManager::SwapchainHandle Renderer::swapchain_handle_ =
+    base_game_framework::DisplayManager::kInvalid_swapchain_handle;
 std::unique_ptr<Renderer> Renderer::instance_ = nullptr;
 
 void Renderer::SetRendererAPI(const RendererAPI api) {
   Renderer::renderer_api_ = api;
+}
+
+void Renderer::SetSwapchainHandle(
+    base_game_framework::DisplayManager::SwapchainHandle swapchain_handle) {
+  Renderer::swapchain_handle_ = swapchain_handle;
 }
 
 Renderer &Renderer::GetInstance() {
