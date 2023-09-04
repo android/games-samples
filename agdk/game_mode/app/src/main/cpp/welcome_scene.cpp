@@ -56,9 +56,9 @@ void WelcomeScene::OnInstall() {
 
 void WelcomeScene::OnStartGraphics() {
   // 2. Game State: Finish Loading, showing the attract screen which is
-  // interruptible
+  // interruptable
   GameModeManager::getInstance().SetGameState(
-      false, GAME_STATE_GAMEPLAY_INTERRUPTIBLE);
+      false, GAME_STATE_GAMEPLAY_INTERRUPTABLE);
 }
 
 void WelcomeScene::OnKillGraphics() {
@@ -77,7 +77,7 @@ void WelcomeScene::OnScreenResized(int width, int height) {}
 //--------------------------------------------------------------------------------
 // Process each frame's status updates.
 // - Initiate the OpenGL rendering.
-// - Monitor the device's thermal staus using ADPF API.
+// - Monitor the device's thermal status using ADPF API.
 // - Update physics using BulletPhysics.
 // - Render cubes.
 // - Render UI using ImGUI (Show device's thermal status).

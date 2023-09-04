@@ -908,7 +908,7 @@ namespace ndk_helper {
             return *this;
         }
 
-        // Non destuctive version
+        // Non destructive version
         Quaternion Conjugated() {
             Quaternion ret;
             ret.x_ = -x_;

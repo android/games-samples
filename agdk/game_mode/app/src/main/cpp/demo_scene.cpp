@@ -105,7 +105,7 @@ void DemoScene::OnStartGraphics() {
   transition_start_ = Clock();
 
   // 2. Game State: Finish Loading, showing the attract screen which is not
-  // interruptible
+  // interruptable
   GameModeManager::getInstance().SetGameState(
       false, GAME_STATE_GAMEPLAY_UNINTERRUPTIBLE);
 }
@@ -500,7 +500,7 @@ void DemoScene::DeleteRigidBodies() {
 }
 
 //--------------------------------------------------------------------------------
-// Update phycis world and render boxes.
+// Update physics world and render boxes.
 //--------------------------------------------------------------------------------
 void DemoScene::UpdatePhysics() {
   if (recreate_physics_obj_) {

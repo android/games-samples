@@ -67,7 +67,7 @@ struct SHADER_PARAMS {
   GLuint matrix_view_;
 };
 
-// Box renerer implementation.
+// Box renderer implementation.
 class BoxRenderer {
  public:
   // Ctor.
@@ -82,7 +82,7 @@ class BoxRenderer {
   // Update camera etc for each frame.
   void Update(float dTime);
 
-  // Bind camera interface to the rendrer.
+  // Bind camera interface to the renderer.
   bool Bind(ndk_helper::TapCamera *camera);
 
   // Unload shaders and buffers.

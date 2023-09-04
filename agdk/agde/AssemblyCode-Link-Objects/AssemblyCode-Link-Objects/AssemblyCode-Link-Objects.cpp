@@ -20,7 +20,7 @@
 extern "C" int get_id(void);
 
 // example of using the functions implemented in static lib and inside this shared lib.
-std::string get_platfom_info(void) {
+std::string get_platform_info(void) {
 
     std::string str("Platform ID = ");
     str += std::to_string(get_id()) + ", Magic Number = "

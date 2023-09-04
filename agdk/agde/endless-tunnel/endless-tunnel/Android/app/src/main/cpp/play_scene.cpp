@@ -523,7 +523,7 @@ void PlayScene::GenObstacles() {
 void PlayScene::ShiftIfNeeded() {
     // is it time to discard a section and shift forward?
     while (mPlayerPos.y > GetSectionEndY(mFirstSection) + SHIFT_THRESH) {
-        // shift to the next turnnel section
+        // shift to the next tunnel section
         mFirstSection++;
 
         // discard obstacle corresponding to the deleted section
@@ -578,8 +578,8 @@ void PlayScene::OnPointerMove(int pointerId, const struct PointerCoords *coords)
         UpdateMenuSelFromTouch(x, y);
     }
     else if (mSteering == STEERING_TOUCH && pointerId == mPointerId) {
-        float deltaX = (x - mPointerAnchorX) * TOUCH_CONTROL_SENSIVITY / rangeY;
-        float deltaY = -(y - mPointerAnchorY) * TOUCH_CONTROL_SENSIVITY / rangeY;
+        float deltaX = (x - mPointerAnchorX) * TOUCH_CONTROL_SENSITIVITY / rangeY;
+        float deltaY = -(y - mPointerAnchorY) * TOUCH_CONTROL_SENSITIVITY / rangeY;
         float rotatedDx = cos(mRollAngle) * deltaX - sin(mRollAngle) * deltaY;
         float rotatedDy = sin(mRollAngle) * deltaX + cos(mRollAngle) * deltaY;
 
@@ -767,8 +767,8 @@ bool PlayScene::OnBackKeyPressed() {
 
 void PlayScene::OnJoy(float joyX, float joyY) {
     if (!mSteering || mSteering == STEERING_JOY) {
-        float deltaX = joyX * JOYSTICK_CONTROL_SENSIVITY;
-        float deltaY = joyY * JOYSTICK_CONTROL_SENSIVITY;
+        float deltaX = joyX * JOYSTICK_CONTROL_SENSITIVITY;
+        float deltaY = joyY * JOYSTICK_CONTROL_SENSITIVITY;
         float rotatedDx = cos(-mRollAngle) * deltaX - sin(-mRollAngle) * deltaY;
         float rotatedDy = sin(-mRollAngle) * deltaX + cos(-mRollAngle) * deltaY;
         mShipSteerX = rotatedDx;

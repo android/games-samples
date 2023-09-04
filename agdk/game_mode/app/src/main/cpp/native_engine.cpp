@@ -78,7 +78,7 @@ NativeEngine::NativeEngine(struct android_app *app) {
   MY_ASSERT(_singleton == NULL);
   _singleton = this;
 
-  // Initialize Swappy to adjuest swap timing properly.
+  // Initialize Swappy to adjust swap timing properly.
   ALOGI("Calling SwappyGL_init");
   SwappyGL_init(GetJniEnv(), mApp->activity->javaGameActivity);
   SwappyGL_setSwapIntervalNS(SWAPPY_SWAP_60FPS);

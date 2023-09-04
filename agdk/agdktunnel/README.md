@@ -78,7 +78,7 @@ You can ignore subdirectories for OSes you aren't using.
 
 ##### Note for macOS developers
 
-Precompiled versions of the `protoc` compiler arenot codesigned or notarized.
+Precompiled versions of the `protoc` compiler are not codesigned or notarized.
 You may need to allow execution of the relevant
 files using the **System Preferences -> Security & Privacy** control panel, adjust your
 Gatekeeper settings or compile your own protoc.

@@ -210,7 +210,7 @@ bool TeapotRenderer::LoadShaders(SHADER_PARAMS *params, const char *strVsh,
         glDeleteProgram(program);
         return false;
     } else {
-        LOGI("SUCESS: %s\n", strVsh);
+        LOGI("SUCCESS: %s\n", strVsh);
     }
 
     // Create and compile fragment shader
@@ -220,7 +220,7 @@ bool TeapotRenderer::LoadShaders(SHADER_PARAMS *params, const char *strVsh,
         glDeleteProgram(program);
         return false;
     } else {
-        LOGI("SUCESS: %s\n", strFsh);
+        LOGI("SUCCESS: %s\n", strFsh);
     }
 
     // Attach vertex shader to program

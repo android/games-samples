@@ -44,7 +44,7 @@ namespace ndk_helper {
               camera_rotation_start_(0.f),
               camera_rotation_now_(0.f),
               momentum_(false),
-              momemtum_steps_(0.f),
+              momentum_steps_(0.f),
               flip_z_(0.f) {
         // Init offset
         InitParameters();
@@ -86,7 +86,7 @@ namespace ndk_helper {
 
     void TapCamera::Update() {
         if (momentum_) {
-            float momenttum_steps = momemtum_steps_;
+            float momentum_steps = momentum_steps_;
 
             // Momentum rotation
             Vec2 v = vec_drag_delta_;
@@ -104,8 +104,8 @@ namespace ndk_helper {
             vec_offset_delta_ = vec_offset_delta_ * MOMENTUM_FACTOR_DECREASE_SHIFT;
 
             // Count steps
-            momemtum_steps_ = momenttum_steps * MOMENTUM_FACTOR_DECREASE;
-            if (momemtum_steps_ < MOMENTUM_FACTOR_THRESHOLD) {
+            momentum_steps_ = momentum_steps * MOMENTUM_FACTOR_DECREASE;
+            if (momentum_steps_ < MOMENTUM_FACTOR_THRESHOLD) {
                 momentum_ = false;
             }
         } else {
@@ -124,10 +124,10 @@ namespace ndk_helper {
 
     void TapCamera::Update(const double time) {
         if (momentum_) {
-            const float MOMENTAM_UNIT = 0.0166f;
+            const float MOMENTUM_UNIT = 0.0166f;
             // Activate every 16.6msec
-            if (time - time_stamp_ >= MOMENTAM_UNIT) {
-                float momenttum_steps = momemtum_steps_;
+            if (time - time_stamp_ >= MOMENTUM_UNIT) {
+                float momentum_steps = momentum_steps_;
 
                 // Momentum rotation
                 Vec2 v = vec_drag_delta_;
@@ -145,8 +145,8 @@ namespace ndk_helper {
                 vec_offset_delta_ = vec_offset_delta_ * MOMENTUM_FACTOR_DECREASE_SHIFT;
 
                 // Count steps
-                momemtum_steps_ = momenttum_steps * MOMENTUM_FACTOR_DECREASE;
-                if (momemtum_steps_ < MOMENTUM_FACTOR_THRESHOLD) {
+                momentum_steps_ = momentum_steps * MOMENTUM_FACTOR_DECREASE;
+                if (momentum_steps_ < MOMENTUM_FACTOR_THRESHOLD) {
                     momentum_ = false;
                 }
                 time_stamp_ = time;
@@ -200,7 +200,7 @@ namespace ndk_helper {
 
         dragging_ = false;
         momentum_ = true;
-        momemtum_steps_ = 1.0f;
+        momentum_steps_ = 1.0f;
     }
 
     void TapCamera::Drag(const Vec2 &v) {
@@ -214,7 +214,7 @@ namespace ndk_helper {
     }
 
     //----------------------------------------------------------
-    // Pinch controll
+    // Pinch control
     //----------------------------------------------------------
     void TapCamera::BeginPinch(const Vec2 &v1, const Vec2 &v2) {
         if (dragging_) EndDrag();
@@ -244,7 +244,7 @@ namespace ndk_helper {
     void TapCamera::EndPinch() {
         pinching_ = false;
         momentum_ = true;
-        momemtum_steps_ = 1.f;
+        momentum_steps_ = 1.f;
         vec_offset_ += vec_offset_now_;
         camera_rotation_ += camera_rotation_now_;
         vec_offset_now_ = Vec3();
@@ -291,7 +291,7 @@ namespace ndk_helper {
     }
 
     //----------------------------------------------------------
-    // Trackball controll
+    // Trackball control
     //----------------------------------------------------------
     void TapCamera::BallUpdate() {
         if (dragging_) {
