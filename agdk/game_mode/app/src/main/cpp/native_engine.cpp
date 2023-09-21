@@ -647,6 +647,12 @@ static void _log_opengl_error(GLenum err) {
   }
 }
 
+void NativeEngine::CheckNativeWindowSizes() {
+    int width = ANativeWindow_getWidth(mApp->window);
+    int height = ANativeWindow_getHeight(mApp->window);
+    ALOGI("NativeWindow width: %d height: %d", width, height);
+}
+
 void NativeEngine::CheckGameMode() {
   GameModeManager &gameModeManager = GameModeManager::getInstance();
   int game_mode = gameModeManager.GetGameMode();
@@ -745,6 +751,7 @@ void NativeEngine::DoFrame() {
   SceneManager *mgr = SceneManager::GetInstance();
   //  ImGuiManager *guiManager = NativeEngine::GetInstance()->GetImGuiManager();
 
+  CheckNativeWindowSizes();
   CheckGameMode();
   SwitchToPreferredDisplaySize();
 

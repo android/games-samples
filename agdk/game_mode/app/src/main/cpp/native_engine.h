@@ -139,6 +139,7 @@ class NativeEngine {
 
   void DoFrame();
 
+  void CheckNativeWindowSizes();
   void CheckGameMode();
   void SwitchToPreferredDisplaySize();
 

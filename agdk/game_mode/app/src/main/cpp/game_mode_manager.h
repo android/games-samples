@@ -78,7 +78,7 @@ class GameModeManager {
 
   int game_mode_ = 0;
 
-  std::shared_ptr<android_app> app_;
+  android_app* app_;
 
   jobject obj_gamemanager_;
   jmethodID gamemgr_setgamestate_;

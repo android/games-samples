@@ -78,7 +78,8 @@ const char* GameModeManager::GetGameModeString() {
 
 // Invoke the API first to set the android_app instance.
 void GameModeManager::SetApplication(android_app* app) {
-  app_.reset(app);
+//  app_.reset(app);
+    app_ = app;
 
   // Initialize JNI reference.
   Initialize();

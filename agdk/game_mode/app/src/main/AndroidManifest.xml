@@ -25,7 +25,8 @@
       android:fullBackupContent="false"
       android:icon="@mipmap/ic_launcher"
       android:label="@string/app_name"
-      android:appCategory="game">
+      android:appCategory="game"
+      android:resizeableActivity="true">
 
     <!-- ENABLING GAME MODES -->
     <!-- Here is how to enable Game Mode API if you're targeting API Level 33 (recommended) -->
