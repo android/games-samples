@@ -13,17 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// Include the Volk loader source code here
+// add the platform defines first so volk gets our platform
+// specific Vulkan defines
+#include "platform_defines.h"
+#define VOLK_IMPLEMENTATION
+#include "volk.h"
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
 
-#ifndef BASEGAMEFRAMEWORK_PLATFORM_DEFINES_H_
-#define BASEGAMEFRAMEWORK_PLATFORM_DEFINES_H_
-
-#if defined ANDROID
-#define BGF_ANDROID 1
-#define BGF_DISPLAY_MANAGER_GLES 1
-#define BGF_DISPLAY_MANAGER_VULKAN 1
-#define VK_USE_PLATFORM_ANDROID_KHR 1
-#define VK_KHR_android_surface 1
-#include "android/platform_types_android.h"
-#endif
-
-#endif // BASEGAMEFRAMEWORK_PLATFORM_DEFINES_H_

@@ -100,6 +100,10 @@ void RendererGLES::EndFrame() {
   render_pass_ = nullptr;
 }
 
+void RendererGLES::SwapchainRecreated() {
+
+}
+
 void RendererGLES::EndRenderPass() {
   // Unbind any current render state
   if (render_state_ != nullptr) {

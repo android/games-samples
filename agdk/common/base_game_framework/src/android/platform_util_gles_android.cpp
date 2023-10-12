@@ -135,8 +135,16 @@ void PlatformUtilGLES::GetScreenResolutions(const EGLDisplay display, const EGLS
   CheckEGLError("Calling eglQuerySurface width");
   eglQuerySurface(display, surface, EGL_HEIGHT, &display_height);
   CheckEGLError("Calling eglQuerySurface height");
+
+  // TODO: fix with utils::getDeviceRotation when integrating rest of BaseGameFramework!
+  // For now, hack assume aspect ratios 4:3 or greater are landscape mode
+  const DisplayManager::DisplayOrientation orientation =
+      ((display_width / display_height) >= (4.0f / 3.0f)) ?
+      DisplayManager::kDisplay_Orientation_Landscape :
+      DisplayManager::kDisplay_Orientation_Portrait;
+
   display_resolutions.push_back(DisplayManager::DisplayResolution(display_width,
-    display_height, PlatformUtilAndroid::GetDisplayDPI()));
+    display_height, PlatformUtilAndroid::GetDisplayDPI(), orientation));
 }
 
 bool PlatformUtilGLES::CheckEGLError(const char *msg) {

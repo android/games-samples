@@ -386,7 +386,7 @@ bool NativeEngine::AttemptDisplayInitialization() {
 bool NativeEngine::CreateSwapchain() {
     DisplayManager &display_manager = DisplayManager::GetInstance();
     std::unique_ptr<DisplayManager::SwapchainConfigurations> swapchain_configurations =
-        display_manager.GetSwapchainConfigurations();
+        display_manager.GetSwapchainConfigurations(DisplayManager::kDefault_Display);
 
     const DisplayManager::DisplayColorSpace swapchain_color_space = mIsVulkan ?
         DisplayManager::kDisplay_Color_Space_SRGB : DisplayManager::kDisplay_Color_Space_Linear;
@@ -411,6 +411,7 @@ bool NativeEngine::CreateSwapchain() {
             swapchain_configurations->display_swap_intervals[0],
             swapchain_configurations->min_swapchain_frame_count,
             DisplayManager::kSwapchain_Present_Fifo,
+            DisplayManager::kDefault_Display,
             &mSwapchainHandle);
 
         if (swapchain_result == DisplayManager::kInit_Swapchain_Success) {
@@ -869,6 +870,8 @@ void NativeEngine::SwapchainChanged(const DisplayManager::SwapchainChangeMessage
         mHasSwapchain = true;
     } else if (reason == DisplayManager::kSwapchain_Lost_Window) {
         mHasSwapchain = false;
+    } else if (reason == DisplayManager::kSwapchain_Needs_Recreation) {
+        mGfxManager->SwapchainRecreated();
     }
 }
 

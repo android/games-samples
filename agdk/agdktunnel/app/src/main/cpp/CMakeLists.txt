@@ -56,7 +56,8 @@ set(CMAKE_SHARED_LINKER_FLAGS
     "${CMAKE_SHARED_LINKER_FLAGS} -u GameActivity_onCreate")
 
 # Set common compiler options
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Werror -Wthread-safety" )
+set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-nullability-completeness -Wno-thread-safety-analysis -Wno-unused-variable" )
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -Werror -Wno-nullability-completeness -Wno-thread-safety-analysis -Wno-unused-variable" )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D _LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS -O0 -fPIC" )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti" )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGOOGLE_PROTOBUF_NO_RTTI -DHAVE_PTHREAD")
@@ -85,8 +86,12 @@ set(BGF_SRCS
      ${BGF_SRC_DIR}/android/display_manager_android.cpp
      ${BGF_SRC_DIR}/android/platform_util_gles_android.cpp
      ${BGF_SRC_DIR}/android/platform_util_log_android.cpp
+     ${BGF_SRC_DIR}/android/platform_util_vulkan_android.cpp
      ${BGF_SRC_DIR}/android/platform_util_android.cpp
-     ${BGF_SRC_DIR}/gles/graphics_api_gles.cpp)
+     ${BGF_SRC_DIR}/gles/graphics_api_gles.cpp
+     ${BGF_SRC_DIR}/vulkan/graphics_api_vulkan.cpp
+     ${BGF_SRC_DIR}/vulkan/graphics_api_vulkan_loader.cpp
+     ${BGF_SRC_DIR}/vulkan/graphics_api_vulkan_utils.cpp)
 
 set(SIMPLE_RENDERER_SRCS
      ${SIMPLE_RENDERER_DIR}/renderer_debug_gles.cpp
@@ -143,6 +148,8 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
      ${THIRD_PARTY_DIR}/glm/glm
+     ${THIRD_PARTY_DIR}/volk
+     ${THIRD_PARTY_DIR}/VulkanMemoryAllocator/include
      ${COMMON_BASE_DIR}
      ${COMMON_INCLUDE_DIR}
      ${BGF_INCLUDE_DIR}
@@ -163,6 +170,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
      games-performance-tuner::tuningfork_static
      games-memory-advice::memory_advice_static
      GLESv3
+     vulkan
      glm
      log)
 

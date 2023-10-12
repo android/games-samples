@@ -36,7 +36,7 @@ GraphicsAPIGLES::GraphicsAPIGLES()
   , display_changed_user_data_(nullptr)
   , feature_flags_(DisplayManager::kNo_GLES_Support)
   , swapchain_format_()
-  , swapchain_resolution_(0, 0, 0)
+  , swapchain_resolution_(0, 0, 0, DisplayManager::kDisplay_Orientation_Landscape)
   , swapchain_interval_(DisplayManager::kDisplay_Swap_Interval_60FPS)
   , swapchain_frame_count_(0)
   , swapchain_present_mode_(DisplayManager::kSwapchain_Present_Fifo)
@@ -414,7 +414,8 @@ DisplayManager::SwapchainConfigurations *GraphicsAPIGLES::GenerateSwapchainConfi
   DisplayManager::SwapchainConfigurations* swap_configs =
       new DisplayManager::SwapchainConfigurations(display_formats_, display_resolutions_,
                                                   swap_intervals_, kSwapchain_frame_count_gles,
-                                                  kSwapchain_frame_count_gles, present_mode_gles);
+                                                  kSwapchain_frame_count_gles, present_mode_gles,
+                                                  DisplayManager::kDefault_Display);
   return swap_configs;
 }
 

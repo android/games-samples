@@ -39,6 +39,8 @@ class RendererGLES : public Renderer {
       const base_game_framework::DisplayManager::SwapchainHandle swapchain_handle);
   virtual void EndFrame();
 
+  virtual void SwapchainRecreated();
+
   virtual void Draw(const uint32_t vertex_count, const uint32_t first_vertex);
   virtual void DrawIndexed(const uint32_t index_count, const uint32_t first_index);
 

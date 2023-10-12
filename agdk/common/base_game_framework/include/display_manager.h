@@ -53,10 +53,15 @@ struct SwapchainFrameResourcesVk;
  */
 class DisplayManager {
  public:
+  /** @brief Typedef for identifier of a unique display */
+  typedef uint32_t DisplayId;
   /** @brief Typedef for handle to a swapchain active frame */
   typedef uint32_t SwapchainFrameHandle;
   /** @brief Typedef for handle to an active swapchain */
   typedef uint32_t SwapchainHandle;
+
+  /** @brief Constant specifying the default, primary display of a device */
+  static constexpr DisplayId kDefault_Display = 0;
 
   /** @brief Constant returned by ::GetGraphicsAPISupportFlags if an API is unsupported */
   static constexpr uint32_t kGraphics_API_Unsupported = 0;
@@ -183,6 +188,14 @@ class DisplayManager {
     kDisplay_Color_Space_SRGB
   };
 
+  /** @brief Enum of possible display orientations */
+  enum DisplayOrientation : int32_t {
+    /** @brief Landscape orientation */
+    kDisplay_Orientation_Landscape = (1 << 0),
+    /** @brief Portrait orientation */
+    kDisplay_Orientation_Portrait = (1 << 1)
+  };
+
   /** @brief Enum of possible display frame swap intervals */
   enum DisplaySwapInterval : uint64_t {
     /** 165 frames per second swap interval */
@@ -204,7 +217,9 @@ class DisplayManager {
     /** @brief Swapchain initialization successful */
     kInit_Swapchain_Success = 0,
     /** @brief Swapchain initialization failed */
-    kInit_Swapchain_Failure = -2000
+    kInit_Swapchain_Failure = -2000,
+    /** @brief Invalid display id for swapchain */
+    kInit_Swapchain_Invalid_DisplayId = -2001
   };
 
   /** @brief Enum of display changed callback messages */
@@ -253,6 +268,19 @@ class DisplayManager {
     kSwapchain_Present_Fifo_Relaxed
   };
 
+  /** @brief Enum of possible swapchain rotation modes, used for projection
+   * pre-rotation when using Vulkan to match swapchain display native resolution */
+  enum SwapchainRotationMode : int32_t {
+    /** @brief No rotation needed */
+    kSwapchain_Rotation_None = 0,
+    /** @brief 90 degree rotation needed */
+    kSwapchain_Rotation_90,
+    /** @brief 180 degree rotation needed */
+    kSwapchain_Rotation_180,
+    /** @brief 270 degree rotation needed */
+    kSwapchain_Rotation_270
+  };
+
   /** @brief Structure specifying the display format of a swapchain configuration */
   struct DisplayFormat {
     DisplayFormat()
@@ -291,16 +319,19 @@ class DisplayManager {
 
   /** @brief Structure specifying the display resolution of a swapchain configuration */
   struct DisplayResolution {
-    DisplayResolution(const int32_t width, const int32_t height, const int32_t dpi)
+    DisplayResolution(const int32_t width, const int32_t height, const int32_t dpi,
+                      const DisplayOrientation orientation)
       : display_width(width)
       , display_height(height)
-      , display_dpi(dpi) {
+      , display_dpi(dpi)
+      , display_orientation(orientation) {
     }
 
     bool operator==(const DisplayResolution &b) const {
       return (display_width == b.display_width &&
               display_height == b.display_height &&
-              display_dpi == b.display_dpi);
+              display_dpi == b.display_dpi &&
+              display_orientation == b.display_orientation);
     }
 
     /** @brief The display width in pixels */
@@ -309,6 +340,8 @@ class DisplayManager {
     int32_t display_height;
     /** @brief The display density in dots per square inch */
     int32_t display_dpi;
+    /** @brief The orientation of this display resolution */
+    DisplayOrientation display_orientation;
   };
 
   /** @brief Structure holding available configuration options for a display swapchain */
@@ -317,13 +350,14 @@ class DisplayManager {
                             const std::vector<DisplayResolution>& resolutions,
                             const std::vector<DisplaySwapInterval>& swap_intervals,
                             const uint32_t min_count, const uint32_t max_count,
-                            const uint32_t present_modes)
+                            const uint32_t present_modes, const DisplayId display_id)
       : display_formats(formats)
       , display_resolutions(resolutions)
       , display_swap_intervals(swap_intervals)
       , min_swapchain_frame_count(min_count)
       , max_swapchain_frame_count(max_count)
-      , swapchain_present_modes(present_modes){
+      , swapchain_present_modes(present_modes)
+      , swapchain_display_id(display_id) {
     }
     /** @brief An array of display formats supported by the display swapchain */
     const std::vector<DisplayFormat>& display_formats;
@@ -337,6 +371,8 @@ class DisplayManager {
     const uint32_t max_swapchain_frame_count;
     /** @brief A bitmask of `SwapchainPresentMode` values of supported present modes */
     const uint32_t swapchain_present_modes;
+    /** @brief The display ID that the swapchain belongs to */
+    const DisplayId swapchain_display_id;
   };
 
   /** @brief Structure for communicating display changed info in a callback */
@@ -416,6 +452,22 @@ class DisplayManager {
   const GraphicsAPIFeatures& GetGraphicsAPIFeatures();
 
 /**
+ * @brief Get the number of active displays of the device.
+ * @return A count of active displays on the device, can be used with ::GetDisplayId
+ * to retrieve IDs for a display. There will always be at least one primary display
+ * which can be specified with the `DisplayManager::kDefault_Display` constant.
+ */
+  uint32_t GetDisplayCount();
+
+/**
+ * @brief Retrieves the display id for the specified display
+ * @param display_index Index of the display, must be less than the number
+ * returned by ::GetDisplayCount
+ * @return A `DisplayId` id value for the specified display index
+ */
+  DisplayId GetDisplayId(const uint32_t display_index);
+
+/**
  * @brief Retrieves the current frame buffer mode.
  * @return A `DisplayBufferMode` enum with the current buffer mode
  */
@@ -448,10 +500,11 @@ class DisplayManager {
 /**
  * @brief Retrieves the current configurations available for swapchain creation by the
  * active graphics API.
+ * @param The ID of the display to retrieve swapchain configurations from
  * @return A `SwapchainConfigurations` unique pointer, or nullptr if no graphics
  * API is active
  */
-  std::unique_ptr<SwapchainConfigurations> GetSwapchainConfigurations();
+  std::unique_ptr<SwapchainConfigurations> GetSwapchainConfigurations(const DisplayId display_id);
 
 /**
  * @brief Initialize a swapchain for the active graphics API
@@ -468,6 +521,7 @@ class DisplayManager {
                                     const DisplaySwapInterval display_swap_interval,
                                     const uint32_t swapchain_frame_count,
                                     const SwapchainPresentMode present_mode,
+                                    const DisplayId display_id,
                                     SwapchainHandle* swapchain_handle);
 
 /**
@@ -489,6 +543,13 @@ class DisplayManager {
  * @return A `SwapchainFrameHandle` reference to a swapchain frame
  */
   SwapchainFrameHandle GetCurrentSwapchainFrame(const SwapchainHandle swapchain_handle);
+
+/**
+ * @brief Get the current rotation mode of an active swapchain
+ * @param swapchain_handle Handle to the specified swapchain
+ * @return A `SwapchainRotationMode` enum of the rotation mode of the swapchain
+ */
+  SwapchainRotationMode GetSwapchainRotationMode(const SwapchainHandle swapchain_handle);
 
 /**
  * @brief Present the pending frame of a swapchain

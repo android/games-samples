@@ -302,6 +302,10 @@ void GfxManager::RenderSimpleGeom(const GfxType gfxType, const float *mvpMat, Si
   }
 }
 
+void GfxManager::SwapchainRecreated() {
+  simple_renderer::Renderer::GetInstance().SwapchainRecreated();
+}
+
 void GfxManager::UpdateDisplaySize(const int32_t width, const int32_t height) {
   RenderState::ScissorRect scissor_rect = {0, 0, width, height};
   RenderState::Viewport viewport = {0, 0, width, height, 0.0f, 1.0f};

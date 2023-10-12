@@ -118,6 +118,11 @@ class Renderer {
   virtual void EndFrame() = 0;
 
 /**
+ * @brief Tell the renderer the swapchain was recreated
+ */
+  virtual void SwapchainRecreated() = 0;
+
+/**
  * @brief Draw a sequence of vertices using bound resources and the current render state.
  * @param vertex_count Number of vertices to draw from the bound vertex buffer.
  * @param first_vertex Vertex offset into the bound vertex buffer to begin drawing from.

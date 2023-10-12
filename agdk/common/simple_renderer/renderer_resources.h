@@ -50,6 +50,10 @@ class RendererResources {
   std::shared_ptr<VertexBuffer> AddVertexBuffer(VertexBuffer* vertex_buffer);
   void QueueDeleteVertexBuffer(const std::shared_ptr<VertexBuffer>& vertex_buffer);
 
+  auto &GetRenderPasses() {
+    return render_passes_;
+  }
+
  private:
   std::unordered_map<RendererKey, std::shared_ptr<IndexBuffer> > index_buffers_;
   std::unordered_map<RendererKey, std::shared_ptr<RenderPass> > render_passes_;

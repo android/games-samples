@@ -156,8 +156,17 @@ const GraphicsAPIFeatures& DisplayManager::GetGraphicsAPIFeatures() {
   return null_features_;
 }
 
+uint32_t DisplayManager::GetDisplayCount() {
+  // TODO: only one display right now
+  return 1;
+}
+
+DisplayManager::DisplayId DisplayManager::GetDisplayId(const uint32_t /*display_index*/) {
+  return DisplayManager::kDefault_Display;
+}
+
 std::unique_ptr <DisplayManager::SwapchainConfigurations>
-    DisplayManager::GetSwapchainConfigurations() {
+    DisplayManager::GetSwapchainConfigurations(const DisplayId /*display_id*/) {
   if (active_api_ != kGraphicsAPI_None && api_->GetAPIStatus() == kGraphicsAPI_Active) {
     return std::unique_ptr<DisplayManager::SwapchainConfigurations>(
         api_->GenerateSwapchainConfigurations());
@@ -171,8 +180,13 @@ DisplayManager::InitSwapchainResult DisplayManager::InitSwapchain(
                                                   const DisplaySwapInterval display_swap_interval,
                                                   const uint32_t swapchain_frame_count,
                                                   const SwapchainPresentMode present_mode,
+                                                  const DisplayId display_id,
                                                   SwapchainHandle* swapchain_handle) {
   InitSwapchainResult result = kInit_Swapchain_Failure;
+  if (display_id != kDefault_Display) {
+    // Multiple display support is a TODO: require the default constant right now
+    return kInit_Swapchain_Invalid_DisplayId;
+  }
   if (active_api_ != kGraphicsAPI_None && api_->GetAPIStatus() == kGraphicsAPI_Active &&
       swapchain_handle != nullptr) {
     result = api_->InitSwapchain(display_format, display_resolution, display_swap_interval,
@@ -260,6 +274,20 @@ bool DisplayManager::GetSwapchainFrameResourcesVk(const SwapchainFrameHandle fra
   return false;
 }
 #endif // BGF_DISPLAY_MANAGER_VULKAN
+
+DisplayManager::SwapchainRotationMode DisplayManager::GetSwapchainRotationMode(
+    const SwapchainHandle swapchain_handle) {
+#if defined BGF_DISPLAY_MANAGER_VULKAN
+  if (swapchain_handle != kInvalid_swapchain_handle) {
+    if (active_api_ == kGraphicsAPI_Vulkan) {
+      if (api_vulkan_->GetAPIStatus() == kGraphicsAPI_Active) {
+        return api_vulkan_->GetSwapchainRotationMode();
+      }
+    }
+  }
+#endif
+  return DisplayManager::kSwapchain_Rotation_None;
+}
 
 bool DisplayManager::SetDisplayChangedCallback(DisplayChangedCallback callback,
                                                void* user_data) {
