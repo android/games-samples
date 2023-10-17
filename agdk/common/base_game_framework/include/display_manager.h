@@ -144,6 +144,8 @@ class DisplayManager {
     kDisplay_Depth_Format_16F,
     /** @brief 32-bit float depth buffer */
     kDisplay_Depth_Format_32F,
+    /** @brief Format count enum */
+    kDisplay_Depth_Format_Count,
     /** @brief No selected depth buffer format */
     kDisplay_Depth_Format_None = -1
   };
@@ -154,6 +156,8 @@ class DisplayManager {
     kDisplay_Stencil_Format_D24S8_Packed = 0,
     /** 8-bit stencil buffer */
     kDisplay_Stencil_Format_S8,
+    /** @brief Format count enum */
+    kDisplay_Stencil_Format_Count,
     /** @brief No selected stencil buffer format */
     kDisplay_Stencil_Format_None = -1
   };
@@ -176,6 +180,8 @@ class DisplayManager {
     kDisplay_Pixel_Format_RGB565,
     /** @brief ABGR order, 2-bits alpha, 10-bits per color channel, unsigned */
     kDisplay_Pixel_Format_ABGR2_10_10_10,
+    /** @brief Format count enum */
+    kDisplay_Pixel_Format_Count,
     /** @brief No selected pixel buffer format */
     kDisplay_Pixel_Format_None = -1
   };
@@ -407,6 +413,13 @@ class DisplayManager {
  * @brief Shuts down the `DisplayManager`.
  */
   static void ShutdownInstance();
+
+/**
+ * @brief Retrieve an array of common frame swap interval constants. The
+ * array is terminated by a 0 value.
+ * @return Start of a 0 terminated array of swap interval constants in nanoseconds.
+ */
+  static const uint64_t *GetSwapIntervalConstants();
 
 /**
  * @brief Class destructor, do not call directly, use ::ShutdownInstance.

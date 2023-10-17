@@ -28,7 +28,21 @@ namespace base_game_framework {
 // to facilitate multiple swapchain support
 static constexpr DisplayManager::SwapchainHandle kDefault_swapchain_handle = 123;
 
+static constexpr uint64_t kSwap_interval_constants[] = {
+    DisplayManager::kDisplay_Swap_Interval_165FPS,
+    DisplayManager::kDisplay_Swap_Interval_120FPS,
+    DisplayManager::kDisplay_Swap_Interval_90FPS,
+    DisplayManager::kDisplay_Swap_Interval_60FPS,
+    DisplayManager::kDisplay_Swap_Interval_45FPS,
+    DisplayManager::kDisplay_Swap_Interval_30FPS,
+    0L
+};
+
 std::unique_ptr <DisplayManager> DisplayManager::instance_ = nullptr;
+
+const uint64_t *DisplayManager::GetSwapIntervalConstants() {
+  return kSwap_interval_constants;
+}
 
 DisplayManager& DisplayManager::GetInstance() {
   if (!instance_) {

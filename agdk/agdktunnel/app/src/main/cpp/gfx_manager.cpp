@@ -16,6 +16,7 @@
 
 #include "gfx_manager.hpp"
 #include "common.hpp"
+#include "native_engine.hpp"
 #include "data/our_shader.inl"
 
 #define ARRAY_COUNTOF(array) (sizeof(array) / sizeof(array[0]))
@@ -24,6 +25,11 @@ using namespace simple_renderer;
 
 #define NORMAL_LINE_WIDTH (1.0f)
 #define TEXT_LINE_WIDTH (4.0f)
+
+static const char* kOur_SPIRV_Vertex = "shaders/our.vert.spv";
+static const char* kOur_SPIRV_Fragment = "shaders/our.frag.spv";
+static const char* kTrivial_SPIRV_Vertex = "shaders/trivial.vert.spv";
+static const char* kTrivial_SPIRV_Fragment = "shaders/trivial.frag.spv";
 
 // Static utility functions
 static const char* GetOurVertShaderSourceGLES() {
@@ -57,6 +63,17 @@ static const char *GetTrivialFragShaderSourceGLES() {
          "}";
 }
 
+static void LoadSPIRVAsset(const char* asset_filename, void** asset_ptr, size_t* asset_size) {
+  GameAssetManager* asset_manager = NativeEngine::GetInstance()->GetGameAssetManager();
+  *asset_size = asset_manager->GetGameAssetSize(asset_filename);
+  if (*asset_size > 0) {
+    *asset_ptr = malloc(*asset_size);
+    MY_ASSERT(asset_manager->LoadGameAsset(asset_filename, *asset_size, *asset_ptr));
+  } else {
+    MY_ASSERT(false);
+  }
+}
+
 // Uniform buffer data declarations, these need to be persistent for the renderer
 static constexpr UniformBuffer::UniformBufferElement basic_uniform_elements[] = {
     { UniformBuffer::kBufferElement_Matrix44, UniformBuffer::kElementStageVertexFlag,
@@ -71,16 +88,15 @@ static constexpr UniformBuffer::UniformBufferElement our_uniform_elements[] = {
     { UniformBuffer::kBufferElement_Matrix44, UniformBuffer::kElementStageVertexFlag,
       0, 0, "u_MVP" },
     { UniformBuffer::kBufferElement_Float4,
-      UniformBuffer::kElementStageVertexFlag | UniformBuffer::kElementStageFragmentFlag,
+      UniformBuffer::kElementStageVertexFlag,
       0, 1, "u_PointLightPos" },
-    { UniformBuffer::kBufferElement_Float4, UniformBuffer::kElementStageFragmentFlag,
+    { UniformBuffer::kBufferElement_Float4,
+      UniformBuffer::kElementStageVertexFlag | UniformBuffer::kElementStageFragmentFlag,
       0, 2, "u_PointLightColor" },
     { UniformBuffer::kBufferElement_Float4, UniformBuffer::kElementStageFragmentFlag,
       0, 3, "u_Tint" }
 };
 static constexpr size_t kOurUniformSize = 64 + 16 + 16 + 16;
-// uMVP, u_PointLightPos are only used by the vertex shader, u_Tint only by the fragment shader,
-// but u_PointLightColor is used by both
 static constexpr uint32_t kOurUniformVertexOffset = 0;
 static constexpr uint32_t kOurUniformVertexSize = 64 + 16;
 static constexpr uint32_t kOurUniformFragmentOffset = 64 + 16;
@@ -104,16 +120,31 @@ void GfxManager::CreateRenderResources(bool useVulkan, const int32_t width, cons
 void GfxManager::CreateShaderPrograms(bool useVulkan) {
   Renderer& renderer = Renderer::GetInstance();
   if (useVulkan) {
-    // TODO: add spir-v data hookup
     ShaderProgram::ShaderProgramCreationParams trivialShaderParams = {
         0, 0,
         0, 0};
+    LoadSPIRVAsset(kTrivial_SPIRV_Vertex,
+                   &trivialShaderParams.vertex_shader_data,
+                   &trivialShaderParams.vertex_data_byte_count);
+    LoadSPIRVAsset(kTrivial_SPIRV_Fragment,
+                   &trivialShaderParams.fragment_shader_data,
+                   &trivialShaderParams.fragment_data_byte_count);
     mTrivialShaderProgram = renderer.CreateShaderProgram(trivialShaderParams);
+    free(trivialShaderParams.vertex_shader_data);
+    free(trivialShaderParams.fragment_shader_data);
 
     ShaderProgram::ShaderProgramCreationParams ourShaderParams = {
         0, 0,
         0, 0};
+    LoadSPIRVAsset(kOur_SPIRV_Vertex,
+                   &ourShaderParams.vertex_shader_data,
+                   &ourShaderParams.vertex_data_byte_count);
+    LoadSPIRVAsset(kOur_SPIRV_Fragment,
+                   &ourShaderParams.fragment_shader_data,
+                   &ourShaderParams.fragment_data_byte_count);
     mOurShaderProgram = renderer.CreateShaderProgram(ourShaderParams);
+    free(ourShaderParams.vertex_shader_data);
+    free(ourShaderParams.fragment_shader_data);
   } else {
     ShaderProgram::ShaderProgramCreationParams trivialShaderParams = {
         (void*) GetTrivialFragShaderSourceGLES(),

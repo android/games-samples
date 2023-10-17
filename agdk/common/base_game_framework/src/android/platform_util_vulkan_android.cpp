@@ -29,16 +29,6 @@ static constexpr int kMinimum_vk11_api_level = 29;
 // This is a bit of a hack because of how swappy reports extensions
 static char *swappy_extension_strings = nullptr;
 
-static constexpr uint64_t kSwap_interval_constants[] = {
-    DisplayManager::kDisplay_Swap_Interval_165FPS,
-    DisplayManager::kDisplay_Swap_Interval_120FPS,
-    DisplayManager::kDisplay_Swap_Interval_90FPS,
-    DisplayManager::kDisplay_Swap_Interval_60FPS,
-    DisplayManager::kDisplay_Swap_Interval_45FPS,
-    DisplayManager::kDisplay_Swap_Interval_30FPS,
-    0L
-};
-
 bool PlatformUtilVulkan::ActivateSwapchain(VkPhysicalDevice physical_device,
                                            VkDevice device,
                                            VkSwapchainKHR swapchain,
@@ -147,7 +137,7 @@ void PlatformUtilVulkan::GetRefreshRates(VkPhysicalDevice physical_device,
     // Find the closest match between our internal constants, and what swappy returned
     closest_interval = 0;
     uint64_t closest_delta = UINT64_MAX;
-    const uint64_t *current_interval = kSwap_interval_constants;
+    const uint64_t *current_interval = DisplayManager::GetSwapIntervalConstants();
     while (*current_interval > 0) {
       const uint64_t delta = ((*current_interval) > refresh_rate) ?
                              ((*current_interval) - refresh_rate) :

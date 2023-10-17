@@ -242,7 +242,7 @@ void PlayScene::OnKillGraphics() {
     CleanUp(&mCubeGeom);
     Renderer& renderer = Renderer::GetInstance();
     for (int i = 0; i < mActiveWallTextureCount; ++i) {
-        renderer.DestroyTexture(mWallTextures[i]);
+        mWallTextures[i] = nullptr;
     }
     mActiveWallTextureCount = 0;
     CleanUp(&mLifeGeom);
@@ -384,7 +384,7 @@ void PlayScene::DoFrame() {
 
     // did the game expire?
     if (mLives <= 0 && Clock() > mGameOverExpire) {
-        SceneManager::GetInstance()->RequestNewScene(new LoaderScene());
+        SceneManager::GetInstance()->RequestNewScene(new WelcomeScene());
     }
 
     // produce the ambient sound
@@ -416,6 +416,7 @@ void PlayScene::RenderTunnel(GfxManager *gfxManager) {
     int i, oi;
 
     Renderer& renderer = Renderer::GetInstance();
+    const glm::mat4 &rotateMat = SceneManager::GetInstance()->GetRotationMatrix();
     std::shared_ptr<UniformBuffer> ourBuffer =
         gfxManager->GetUniformBuffer(GfxManager::kGfxType_OurTris);
 
@@ -437,6 +438,7 @@ void PlayScene::RenderTunnel(GfxManager *gfxManager) {
         float segCenterY = GetSectionCenterY(i);
         modelMat = glm::translate(glm::mat4(1.0), glm::vec3(0.0, segCenterY, 0.0));
         mvpMat = mProjMat * mViewMat * modelMat;
+        mvpMat = rotateMat * mvpMat;
         const float* matrixData = glm::value_ptr(mvpMat);
 
         Obstacle *o = oi >= mObstacleCount ? NULL : GetObstacleAt(oi);
@@ -476,6 +478,8 @@ void PlayScene::RenderObstacles(GfxManager *gfxManager) {
     glm::mat4 mvpMat;
 
     Renderer& renderer = Renderer::GetInstance();
+    const glm::mat4 &rotateMat = SceneManager::GetInstance()->GetRotationMatrix();
+
     std::shared_ptr<UniformBuffer> ourBuffer =
         gfxManager->GetUniformBuffer(GfxManager::kGfxType_OurTris);
     renderer.BindTexture(mWallTextures[0]);
@@ -503,6 +507,7 @@ void PlayScene::RenderObstacles(GfxManager *gfxManager) {
                     modelMat = glm::translate(glm::mat4(1.0f), o->GetBoxCenter(c, r, posY));
                     modelMat = glm::scale(modelMat, o->GetBoxSize(c, r));
                     mvpMat = mProjMat * mViewMat * modelMat;
+                    mvpMat = rotateMat * mvpMat;
 
                     // set up color
                     _get_obs_color(o->style, &red, &green, &blue);
@@ -522,6 +527,7 @@ void PlayScene::RenderObstacles(GfxManager *gfxManager) {
                                                               OBS_BONUS_SIZE));
                     modelMat = glm::rotate(modelMat, Clock() * 90.0f, glm::vec3(0.0f, 0.0f, 1.0f));
                     mvpMat = mProjMat * mViewMat * modelMat;
+                    mvpMat = rotateMat * mvpMat;
                     const float* matrixData = glm::value_ptr(mvpMat);
                     const float tintColor[4] = {SineWave(0.8f, 1.0f, 0.5f, 0.0f),
                                                 SineWave(0.8f, 1.0f, 0.5f, 0.0f),
@@ -626,7 +632,10 @@ void PlayScene::OnPointerMove(int pointerId, const struct PointerCoords *coords)
 void PlayScene::RenderHUD(GfxManager *gfxManager) {
     gfxManager->SetRenderState(GfxManager::kGfxType_BasicThickLinesNoDepthTest);
 
-    float aspect = SceneManager::GetInstance()->GetScreenAspect();
+    SceneManager *sceneManager = SceneManager::GetInstance();
+    float aspect = sceneManager->GetScreenAspect();
+    const glm::mat4 &rotateMat = sceneManager->GetRotationMatrix();
+
     glm::mat4 orthoMat = glm::ortho(0.0f, aspect, 0.0f, 1.0f);
     glm::mat4 modelMat;
     glm::mat4 mat;
@@ -671,6 +680,8 @@ void PlayScene::RenderHUD(GfxManager *gfxManager) {
     int ubound = (mBlinkingHeart && BlinkFunc(0.2f)) ? mLives + 1 : mLives;
     for (int idx = 0; idx < ubound; idx++) {
         mat = orthoMat * modelMat;
+        mat = rotateMat * mat;
+
         gfxManager->RenderSimpleGeom(GfxManager::kGfxType_BasicThickLinesNoDepthTest,
                                      glm::value_ptr(mat), mLifeGeom);
         modelMat = glm::translate(modelMat, glm::vec3(LIFE_SPACING_X, 0.0f, 0.0f));

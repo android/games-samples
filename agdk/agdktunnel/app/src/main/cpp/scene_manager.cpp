@@ -26,10 +26,15 @@ SceneManager::SceneManager() {
     // start with non-bogus (though not accurate) values
     mScreenWidth = 320;
     mScreenHeight = 240;
+    mRotationMatrix = glm::mat4(1.0f);
 
     mSceneToInstall = NULL;
 
     mHasGraphics = false;
+}
+
+void SceneManager::PrepareShutdown() {
+    InstallScene(NULL);
 }
 
 void SceneManager::RequestNewScene(Scene *newScene) {

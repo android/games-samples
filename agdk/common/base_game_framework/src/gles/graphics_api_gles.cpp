@@ -173,10 +173,21 @@ const EGLint *GraphicsAPIGLES::GenerateEGLConfigAttribList(
   }
 
   switch (display_format.display_depth_format) {
+    case DisplayManager::kDisplay_Depth_Format_16F:
+    case DisplayManager::kDisplay_Depth_Format_16U:
+      depth_size = 16;
+      break;
+    case DisplayManager::kDisplay_Depth_Format_D24S8_Packed:
+      depth_size = 24;
+      break;
     default: break;
   }
 
   switch (display_format.display_stencil_format) {
+    case DisplayManager::kDisplay_Stencil_Format_S8:
+    case DisplayManager::kDisplay_Stencil_Format_D24S8_Packed:
+      stencil_size = 8;
+      break;
     default: break;
   }
 

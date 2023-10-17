@@ -280,6 +280,8 @@ class Renderer {
  protected:
   Renderer();
 
+  virtual void PrepareShutdown() = 0;
+
   static Renderer* GetInstancePtr() { return instance_.get(); }
 
  private:

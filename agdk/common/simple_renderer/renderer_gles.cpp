@@ -50,9 +50,12 @@ RendererGLES::RendererGLES() {
 }
 
 RendererGLES::~RendererGLES() {
-  resources_.ProcessDeleteQueue();
+}
+
+void RendererGLES::PrepareShutdown() {
   render_pass_ = nullptr;
   render_state_ = nullptr;
+  resources_.ProcessDeleteQueue();
 }
 
 bool RendererGLES::GetFeatureAvailable(const RendererFeature feature) {

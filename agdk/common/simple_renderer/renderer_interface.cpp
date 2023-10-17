@@ -16,7 +16,7 @@
 
 #include "renderer_interface.h"
 #include "renderer_gles.h"
-// uncomment when including vk CL #include "renderer_vk.h"
+#include "renderer_vk.h"
 
 namespace simple_renderer {
 
@@ -38,14 +38,15 @@ Renderer &Renderer::GetInstance() {
   if (!instance_) {
     if (renderer_api_ == Renderer::kAPI_GLES) {
       instance_ = std::unique_ptr<Renderer>(new RendererGLES());
-    } /* uncomment when inluding vk cl else if (renderer_api_ == Renderer::kAPI_Vulkan) {
+    } else if (renderer_api_ == Renderer::kAPI_Vulkan) {
       instance_ = std::unique_ptr<Renderer>(new RendererVk());
-    } */
+    }
   }
   return *instance_;
 }
 
 void Renderer::ShutdownInstance() {
+  Renderer::instance_->PrepareShutdown();
   Renderer::instance_.reset();
 }
 

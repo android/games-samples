@@ -95,17 +95,26 @@ set(BGF_SRCS
 
 set(SIMPLE_RENDERER_SRCS
      ${SIMPLE_RENDERER_DIR}/renderer_debug_gles.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_debug_vk.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_index_buffer_gles.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_index_buffer_vk.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_interface.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_gles.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_render_pass_gles.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_render_pass_vk.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_render_state_gles.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_render_state_vk.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_resources.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_shader_program_gles.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_shader_program_vk.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_texture_gles.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_texture_vk.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_uniform_buffer.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_uniform_buffer_gles.cpp
-     ${SIMPLE_RENDERER_DIR}/renderer_vertex_buffer_gles.cpp)
+     ${SIMPLE_RENDERER_DIR}/renderer_uniform_buffer_vk.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_vertex_buffer_gles.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_vertex_buffer_vk.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_vk.cpp)
 
 # now build app's shared lib
 add_library(${CMAKE_PROJECT_NAME} SHARED

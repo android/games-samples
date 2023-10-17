@@ -22,7 +22,7 @@
 
 namespace base_game_framework {
 
-static constexpr VkFormat kColorFormatTableVk[] = {
+static constexpr VkFormat kColorFormatTableVk[DisplayManager::kDisplay_Pixel_Format_Count] = {
     VK_FORMAT_R8G8B8A8_SRGB,           // kDisplay_Pixel_Format_RGBA8
     VK_FORMAT_B8G8R8A8_SRGB,           // kDisplay_Pixel_Format_BGRA8
     VK_FORMAT_R16G16B16A16_SFLOAT,     // kDisplay_Pixel_Format_RGBA_16F
@@ -33,19 +33,17 @@ static constexpr VkFormat kColorFormatTableVk[] = {
     VK_FORMAT_A2B10G10R10_UNORM_PACK32 // kDisplay_Pixel_Format_ABGR2_10_10_10
 };
 
-static constexpr VkFormat kDepthFormatTableVk[] = {
+static constexpr VkFormat kDepthFormatTableVk[DisplayManager::kDisplay_Depth_Format_Count] = {
     VK_FORMAT_D24_UNORM_S8_UINT,         // kDisplay_Depth_Format_D24S8_Packed
     VK_FORMAT_D16_UNORM,                 // kDisplay_Depth_Format_16U
     VK_FORMAT_UNDEFINED,                 // kDisplay_Depth_Format_16F
     VK_FORMAT_D32_SFLOAT                 // kDisplay_Depth_Format_32F
 };
 
-static constexpr VkFormat kStencilFormatTableVk[] = {
+static constexpr VkFormat kStencilFormatTableVk[DisplayManager::kDisplay_Stencil_Format_Count] = {
     VK_FORMAT_D24_UNORM_S8_UINT,       // kDisplay_Stencil_Format_D24S8_Packed
     VK_FORMAT_S8_UINT                  // kDisplay_Stencil_Format_S8
 };
-
-#define ARRAY_COUNTOF(array) (sizeof(array) / sizeof(array[0]))
 
 bool VulkanAPIUtils::CheckVkResult(const VkResult result, const char *message) {
   if (result != VK_SUCCESS) {
@@ -282,14 +280,14 @@ bool VulkanAPIUtils::GetUsePhysicalDeviceProperties2() {
 }
 
 VkFormat VulkanAPIUtils::GetVkDepthFormat(const DisplayManager::DisplayDepthFormat depth_format) {
-  if (depth_format >= 0 && depth_format < ARRAY_COUNTOF(kDepthFormatTableVk)) {
+  if (depth_format >= 0) {
     return kDepthFormatTableVk[depth_format];
   }
   return VK_FORMAT_UNDEFINED;
 }
 
 VkFormat VulkanAPIUtils::GetVkPixelFormat(const DisplayManager::DisplayPixelFormat pixel_format) {
-  if (pixel_format >= 0 && pixel_format < ARRAY_COUNTOF(kColorFormatTableVk)) {
+  if (pixel_format >= 0) {
     return kColorFormatTableVk[pixel_format];
   }
   return VK_FORMAT_UNDEFINED;
@@ -297,7 +295,7 @@ VkFormat VulkanAPIUtils::GetVkPixelFormat(const DisplayManager::DisplayPixelForm
 
 VkFormat VulkanAPIUtils::GetVkStencilFormat(
     const DisplayManager::DisplayStencilFormat stencil_format) {
-  if (stencil_format >= 0 && stencil_format < ARRAY_COUNTOF(kStencilFormatTableVk)) {
+  if (stencil_format >= 0) {
     return kStencilFormatTableVk[stencil_format];
   }
   return VK_FORMAT_UNDEFINED;

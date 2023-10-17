@@ -90,7 +90,9 @@ void TexQuad::CreateGeom(float umin, float vmin, float umax, float vmax) {
 }
 
 void TexQuad::Render(glm::mat4 *transform) {
-    float aspect = SceneManager::GetInstance()->GetScreenAspect();
+    SceneManager *sceneManager = SceneManager::GetInstance();
+    float aspect = sceneManager->GetScreenAspect();
+    const glm::mat4 &rotateMat = sceneManager->GetRotationMatrix();
     glm::mat4 orthoMat = glm::ortho(0.0f, aspect, 0.0f, 1.0f);
     glm::mat4 modelMat, mat;
 
@@ -101,6 +103,7 @@ void TexQuad::Render(glm::mat4 *transform) {
     } else {
         mat = orthoMat * modelMat;
     }
+    mat = rotateMat * mat;
 
     const float* matrixData = glm::value_ptr(mat);
     simple_renderer::Renderer& renderer = simple_renderer::Renderer::GetInstance();

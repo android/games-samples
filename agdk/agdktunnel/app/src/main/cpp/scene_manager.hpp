@@ -17,6 +17,7 @@
 #ifndef agdktunnel_scene_manager_h
 #define agdktunnel_scene_manager_h
 
+#include "glm/glm.hpp"
 #include "our_key_codes.hpp"
 #include "input_util.hpp"
 
@@ -39,6 +40,7 @@ struct PointerCoords {
 class SceneManager {
 private:
     Scene *mCurScene;
+    glm::mat4 mRotationMatrix;
     int mScreenWidth, mScreenHeight;
     bool mHasGraphics;
     Scene *mSceneToInstall;
@@ -47,6 +49,16 @@ private:
 
 public:
     SceneManager();
+
+    void PrepareShutdown();
+
+    const glm::mat4 &GetRotationMatrix() {
+        return mRotationMatrix;
+    }
+
+    void SetRotationMatrix(const glm::mat4 &matrix) {
+        mRotationMatrix = matrix;
+    }
 
     void SetScreenSize(int width, int height);
 

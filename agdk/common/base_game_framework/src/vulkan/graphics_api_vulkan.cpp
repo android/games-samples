@@ -442,6 +442,12 @@ void GraphicsAPIVulkan::ShutdownGraphicsAPI() {
   }
   PlatformUtilVulkan::DestroySurface(vk_instance_, vk_surface_);
   vk_surface_ = VK_NULL_HANDLE;
+
+  if (debug_messenger_ != VK_NULL_HANDLE) {
+    vkDestroyDebugUtilsMessengerEXT(vk_instance_, debug_messenger_, nullptr);
+    debug_messenger_ = VK_NULL_HANDLE;
+  }
+
   DestroyInstance();
   api_status_ = kGraphicsAPI_AvailabilityReady;
 }
@@ -566,6 +572,7 @@ DisplayManager::InitSwapchainResult GraphicsAPIVulkan::InitSwapchain(
 }
 
 void GraphicsAPIVulkan::ShutdownSwapchain() {
+  vkDeviceWaitIdle(vk_device_);
   PlatformUtilVulkan::DeactivateSwapchain(vk_device_, vk_swapchain_);
   swapchain_info_.swapchain_frame_count_ = 0;
   DestroySwapchain();
@@ -713,8 +720,14 @@ bool GraphicsAPIVulkan::GetSwapchainFrameResourcesVk(
     frame_resources.swapchain_color_format = swapchain_info_.swapchain_color_format_;
     frame_resources.swapchain_depth_stencil_format =
         swapchain_info_.swapchain_depth_stencil_format_;
-    frame_resources.swapchain_extent.width = swapchain_resolution_.display_width;
-    frame_resources.swapchain_extent.height = swapchain_resolution_.display_height;
+    if (pretransform_flags_ & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
+        pretransform_flags_ & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
+      frame_resources.swapchain_extent.width = swapchain_resolution_.display_height;
+      frame_resources.swapchain_extent.height = swapchain_resolution_.display_width;
+    } else {
+      frame_resources.swapchain_extent.width = swapchain_resolution_.display_width;
+      frame_resources.swapchain_extent.height = swapchain_resolution_.display_height;
+    }
     frame_resources.swapchain_frame_index = swapchain_info_.swapchain_current_frame_index_;
     frame_resources.swapchain_image_index = swapchain_info_.swapchain_current_image_index_;
     return true;
@@ -900,8 +913,15 @@ bool GraphicsAPIVulkan::CreateSwapchain(const QueueFamilyIndices &queue_indices)
   swapchain_create_info.imageFormat = swapchain_info_.swapchain_color_format_;
   swapchain_create_info.imageColorSpace =
       VulkanAPIUtils::GetVkColorSpace(swapchain_format_.display_color_space);
-  swapchain_create_info.imageExtent.width = swapchain_resolution_.display_width;
-  swapchain_create_info.imageExtent.height = swapchain_resolution_.display_height;
+  if (pretransform_flags_ & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
+      pretransform_flags_ & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
+    // Use the identity resolution, so swap if we are rotated
+    swapchain_create_info.imageExtent.width = swapchain_resolution_.display_height;
+    swapchain_create_info.imageExtent.height = swapchain_resolution_.display_width;
+  } else {
+    swapchain_create_info.imageExtent.width = swapchain_resolution_.display_width;
+    swapchain_create_info.imageExtent.height = swapchain_resolution_.display_height;
+  }
   swapchain_create_info.imageArrayLayers = 1;
   swapchain_create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
   swapchain_create_info.preTransform = pretransform_flags_;
@@ -1014,8 +1034,15 @@ void GraphicsAPIVulkan::CreateSwapchainImages() {
     for (size_t i = 0; i < swapchain_info_.swapchain_image_count_; ++i) {
       VkImageCreateInfo ds_image_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
       ds_image_info.imageType = VK_IMAGE_TYPE_2D;
-      ds_image_info.extent.width = swapchain_resolution_.display_width;
-      ds_image_info.extent.height = swapchain_resolution_.display_height;
+      if (pretransform_flags_ & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
+          pretransform_flags_ & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
+        // Use the identity resolution, so swap if we are rotated
+        ds_image_info.extent.width = swapchain_resolution_.display_height;
+        ds_image_info.extent.height = swapchain_resolution_.display_width;
+      } else {
+        ds_image_info.extent.width = swapchain_resolution_.display_width;
+        ds_image_info.extent.height = swapchain_resolution_.display_height;
+      }
       ds_image_info.extent.depth = 1;
       ds_image_info.mipLevels = 1;
       ds_image_info.arrayLayers = 1;

@@ -92,7 +92,10 @@ void TextRenderer::MeasureText(const char *str, float fontScale, float *outWidth
 }
 
 void TextRenderer::RenderText(const char *str, float centerX, float centerY) {
-  float aspect = SceneManager::GetInstance()->GetScreenAspect();
+  SceneManager *sceneManager = SceneManager::GetInstance();
+  float aspect = sceneManager->GetScreenAspect();
+  const glm::mat4 &rotateMat = sceneManager->GetRotationMatrix();
+
   glm::mat4 orthoMat = glm::ortho(0.0f, aspect, 0.0f, 1.0f);
   glm::mat4 modelMat, mat, scaleMat;
   int cols, rows;
@@ -125,6 +128,7 @@ void TextRenderer::RenderText(const char *str, float centerX, float centerY) {
       int code = (int) *str;
       if (code >= 0 && code < CHAR_CODES && mCharGeom[code]) {
         mat = orthoMat * modelMat * scaleMat * mMatrix;
+        mat = rotateMat * mat;
         const float* matrixData = glm::value_ptr(mat);
         mUniformBuffer->SetBufferElementData(GfxManager::kBasicUniform_MVP,
                                              matrixData,

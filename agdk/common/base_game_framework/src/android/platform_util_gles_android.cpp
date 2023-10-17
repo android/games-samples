@@ -26,16 +26,6 @@ namespace base_game_framework {
 typedef EGLDisplay (EGLAPIENTRY* PFNGETPLATFORMDISPLAY) (EGLenum platform, void *native_display,
                                                          const EGLAttrib *attrib_list);
 
-static constexpr uint64_t kSwap_interval_constants[] = {
-    DisplayManager::kDisplay_Swap_Interval_165FPS,
-    DisplayManager::kDisplay_Swap_Interval_120FPS,
-    DisplayManager::kDisplay_Swap_Interval_90FPS,
-    DisplayManager::kDisplay_Swap_Interval_60FPS,
-    DisplayManager::kDisplay_Swap_Interval_45FPS,
-    DisplayManager::kDisplay_Swap_Interval_30FPS,
-    0L
-};
-
 static constexpr const char* kEGL_lib_path = "libEGL.so";
 static void* lib_egl = nullptr;
 static PFNGETPLATFORMDISPLAY eglGetPlatformDisplayFunc = nullptr;
@@ -102,7 +92,7 @@ void PlatformUtilGLES::GetRefreshRates(std::vector<DisplayManager::DisplaySwapIn
   // Find the closest match between our internal constants, and what swappy returned
   uint64_t closest_interval = 0;
   uint64_t closest_delta = UINT64_MAX;
-  const uint64_t* current_interval = kSwap_interval_constants;
+  const uint64_t* current_interval = DisplayManager::GetSwapIntervalConstants();
   while (*current_interval > 0) {
     const uint64_t delta = ((*current_interval) > swap_interval) ?
                            ((*current_interval) - swap_interval) :

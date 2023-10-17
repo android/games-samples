@@ -40,9 +40,8 @@ using namespace base_game_framework;
 #define VLOGD
 #endif
 
-// TODO: remove after merging SimpleRender vulkan implementation
-// so we can actually use Vulkan
-static bool s_disable_vulkan = true;
+// Set to true to force GLES always
+static bool s_disable_vulkan = false;
 
 static const char *VIBRATOR_SYSTEM_STRING = "vibrator";
 static const char *VIBRATOR_MANAGER_SYSTEM_STRING = "vibrator_manager";
@@ -198,6 +197,10 @@ NativeEngine *NativeEngine::GetInstance() {
 
 NativeEngine::~NativeEngine() {
     VLOGD("NativeEngine: destructor running");
+    // Make sure any active scene is deleted to release references to its
+    // graphic resources
+    SceneManager::GetInstance()->PrepareShutdown();
+
     if (mTextureManager != NULL) {
         delete mTextureManager;
     }
@@ -234,11 +237,6 @@ static void _handle_cmd_proxy(struct android_app *app, int32_t cmd) {
     NativeEngine *engine = (NativeEngine *) app->userData;
     engine->HandleCommand(cmd);
 }
-
-//static int _handle_input_proxy(struct android_app* app, AInputEvent* event) {
-//    NativeEngine *engine = (NativeEngine*) app->userData;
-//    return engine->HandleInput(event) ? 1 : 0;
-//}
 
 bool NativeEngine::IsAnimating() {
     return mHasFocus && mHasStarted && mHasSwapchain;
@@ -787,6 +785,23 @@ bool NativeEngine::PrepareToRender() {
             return false;
         }
     }
+
+    // Update our display rotation matrix, used for pre-rotation when running under Vulkan
+    // We swap 90/270 rotations because we are flipping Y to pretend Vulkan is
+    // actually GL style Y axis points up instead of down
+    const DisplayManager::SwapchainRotationMode rotation =
+        display_manager.GetSwapchainRotationMode(mSwapchainHandle);
+    glm::mat4 rotationMatrix = glm::mat4(1.0f);
+    glm::vec3 rotationAxis = glm::vec3(0.0f, 0.0f, 1.0f);
+
+    if (rotation == DisplayManager::kSwapchain_Rotation_90) {
+      rotationMatrix = glm::rotate(rotationMatrix, glm::radians(270.0f), rotationAxis);
+    } else if (rotation == DisplayManager::kSwapchain_Rotation_180) {
+        rotationMatrix = glm::rotate(rotationMatrix, glm::radians(180.0f), rotationAxis);
+    } else if (rotation == DisplayManager::kSwapchain_Rotation_270) {
+      rotationMatrix = glm::rotate(rotationMatrix, glm::radians(90.0f), rotationAxis);
+    }
+    SceneManager::GetInstance()->SetRotationMatrix(rotationMatrix);
 
     // ready to render
     return mDisplayInitialized;

@@ -27,14 +27,14 @@ void RendererResources::ProcessDeleteQueue() {
     index_buffer_delete_queue_.pop();
   }
 
-  while (!render_pass_delete_queue_.empty()) {
-    RENDERER_ASSERT(render_pass_delete_queue_.front().use_count() == kExpectedUseCount)
-    render_pass_delete_queue_.pop();
-  }
-
   while (!render_state_delete_queue_.empty()) {
     RENDERER_ASSERT(render_state_delete_queue_.front().use_count() == kExpectedUseCount)
     render_state_delete_queue_.pop();
+  }
+
+  while (!render_pass_delete_queue_.empty()) {
+    RENDERER_ASSERT(render_pass_delete_queue_.front().use_count() == kExpectedUseCount)
+    render_pass_delete_queue_.pop();
   }
 
   while (!shader_program_delete_queue_.empty()) {

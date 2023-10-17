@@ -81,6 +81,9 @@ class RendererGLES : public Renderer {
       const VertexBuffer::VertexBufferCreationParams& params);
   virtual void DestroyVertexBuffer(std::shared_ptr<VertexBuffer> vertex_buffer);
 
+ protected:
+  virtual void PrepareShutdown();
+
  private:
   void EndRenderPass();
 
