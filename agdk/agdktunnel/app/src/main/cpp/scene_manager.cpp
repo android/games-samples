@@ -38,7 +38,7 @@ void SceneManager::RequestNewScene(Scene *newScene) {
 }
 
 void SceneManager::InstallScene(Scene *newScene) {
-    ALOGI("SceneManager: installing scene %p.", newScene);
+    ALOGE("SceneManager: installing scene %p.", newScene);
 
     // kill graphics, if we have them.
     bool hadGraphics = mHasGraphics;

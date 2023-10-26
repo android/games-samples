@@ -19,6 +19,7 @@ import static android.view.inputmethod.EditorInfo.IME_ACTION_NONE;
 import static android.view.inputmethod.EditorInfo.IME_FLAG_NO_FULLSCREEN;
 
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
@@ -77,6 +78,8 @@ public class AGDKTunnelActivity extends GameActivity {
         //     IME_ACTION_NONE, IME_FLAG_NO_FULLSCREEN );
         super.onCreate(savedInstanceState);
 
+        Log.d(TAG, "GameActivity::LifeCycle onCreate");
+
         if (isPlayGamesServicesLinked()) {
             // Initialize Play Games Services
             mPGSManager = new PGSManager(this);
@@ -91,7 +94,14 @@ public class AGDKTunnelActivity extends GameActivity {
     }
 
     @Override
+    protected void onStart() {
+        Log.d(TAG, "GameActivity::LifeCycle onStart");
+        super.onStart();
+    }
+
+    @Override
     protected void onDestroy() {
+        Log.d(TAG, "GameActivity::LifeCycle onDestroy");
         if (isGooglePlayGames()) {
             InputMappingClient inputMappingClient = Input.getInputMappingClient(this);
             inputMappingClient.clearInputMappingProvider();
@@ -103,6 +113,7 @@ public class AGDKTunnelActivity extends GameActivity {
 
     @Override
     protected void onResume() {
+        Log.d(TAG, "GameActivity::LifeCycle onResume");
         super.onResume();
 
         // To learn best practices to handle lifecycle events visit
@@ -110,6 +121,35 @@ public class AGDKTunnelActivity extends GameActivity {
         if (isPlayGamesServicesLinked()) {
             mPGSManager.onResume();
         }
+    }
+
+    @Override
+    protected void onPause() {
+        Log.d(TAG, "GameActivity::LifeCycle onPause");
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        Log.d(TAG, "GameActivity::LifeCycle onStop");
+        super.onStop();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig)
+    {
+        super.onConfigurationChanged(newConfig);
+
+        // forward the orientation
+        boolean bPortrait = newConfig.orientation == Configuration.ORIENTATION_PORTRAIT;
+
+        Log.d(TAG, "GameActivity::ChangeConfig onConfigurationChanged: " + bPortrait + " : " + newConfig.toString());
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean bHasFocus) {
+        Log.d(TAG, "GameActivity::ChangeFocus onWindowFocusChanged: " + bHasFocus);
+        super.onWindowFocusChanged(bHasFocus);
     }
 
     private void hideSystemUI() {

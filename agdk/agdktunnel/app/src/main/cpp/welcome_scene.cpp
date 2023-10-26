@@ -88,7 +88,7 @@ WelcomeScene::~WelcomeScene() {
 }
 
 void WelcomeScene::RenderBackground() {
-    RenderBackgroundAnimation(mShapeRenderer);
+//    RenderBackgroundAnimation(mShapeRenderer);
 }
 
 static std::string sAboutStartText;
@@ -179,6 +179,7 @@ void WelcomeScene::OnTextInput() {
 }
 
 void WelcomeScene::DoFrame() {
+
     // update widget states based on signed-in status
     UpdateWidgetStates();
 

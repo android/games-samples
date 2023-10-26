@@ -31,7 +31,7 @@ android {
     ndkVersion '23.1.7779620'
 
     defaultConfig {
-        applicationId 'com.google.sample.agdktunnel'
+        applicationId 'com.google.sample.agdktunnel.showsysui'
         minSdkVersion 24
         targetSdkVersion 33
         versionCode     1
