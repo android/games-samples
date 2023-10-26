@@ -101,10 +101,17 @@ void SceneManager::StartGraphics() {
             mCurScene->OnStartGraphics();
         }
     }
+
+//    // DEBUG
+//    android_app* pApp = NativeEngine::GetInstance()->GetAndroidApp();
+//    int width = ANativeWindow_getWidth(pApp->window);
+//    int height = ANativeWindow_getHeight(pApp->window);
+//    ALOGI("SceneManager ANativeWindow size %d, %d", width, height);
 }
 
 
 void SceneManager::SetScreenSize(int width, int height) {
+    ALOGI("SceneManager SetScreenSize %d, %d", width, height);
     if (mScreenWidth != width || mScreenHeight != height) {
         mScreenWidth = width;
         mScreenHeight = height;
@@ -123,6 +130,12 @@ void SceneManager::OnPointerDown(int pointerId, const struct PointerCoords *coor
     if (mHasGraphics && mCurScene) {
         mCurScene->OnPointerDown(pointerId, coords);
     }
+
+    // DEBUG
+    android_app* pApp = NativeEngine::GetInstance()->GetAndroidApp();
+    int width = ANativeWindow_getWidth(pApp->window);
+    int height = ANativeWindow_getHeight(pApp->window);
+    ALOGI("SceneManager ANativeWindow size %d, %d", width, height);
 }
 
 void SceneManager::OnPointerUp(int pointerId, const struct PointerCoords *coords) {
