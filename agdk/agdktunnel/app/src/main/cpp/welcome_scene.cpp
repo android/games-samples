@@ -82,6 +82,7 @@ OwnedGameTextInputState &OwnedGameTextInputState::operator=(const GameTextInputS
 }
 
 WelcomeScene::WelcomeScene() : mTextInputState(INITIAL_NAME) {
+    ALOGI("SceneManager: creating WelcomeScene");
 }
 
 WelcomeScene::~WelcomeScene() {

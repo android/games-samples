@@ -32,6 +32,7 @@
 #define TEXT_Y 0.6f
 
 DialogScene::DialogScene() {
+    ALOGI("SceneManager: creating DialogScene");
     mLeftButtonId = mRightButtonId = -1;
     mTextBoxId = -1;
     mLeftButtonAction = mRightButtonAction = ACTION_RETURN;

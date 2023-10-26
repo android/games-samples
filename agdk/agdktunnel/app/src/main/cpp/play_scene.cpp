@@ -60,6 +60,7 @@ static const char *TONE_BONUS[] = {
 };
 
 PlayScene::PlayScene(int savedLevel) : Scene() {
+    ALOGI("SceneManager: creating PlayScene %d", savedLevel);
     mSavedLevel = (savedLevel / LEVELS_PER_CHECKPOINT) * LEVELS_PER_CHECKPOINT;
     ALOGI("Normalized check-point: level %d", mSavedLevel);
     mOurShader = NULL;

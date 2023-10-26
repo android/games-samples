@@ -163,6 +163,7 @@ class LoaderScene::TextureLoader {
 }; // class LoaderScene::TextureLoader
 
 LoaderScene::LoaderScene() : mTextureLoader(new LoaderScene::TextureLoader()) {
+    ALOGI("SceneManager: creating LoaderScene");
     mLoadingText = NULL;
     mLoadingWidget = NULL;
     mTextBoxId = -1;
