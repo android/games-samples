@@ -93,18 +93,24 @@ namespace base_game_framework {
 
 /**
  * @brief Set a filename to log debug messages to.
- * @param A string specifying a file to use to write debug messages
+ * @param path A string specifying a file to use to write debug messages
  * to on the local device. If the file already exists, it will be overwritten, otherwise
  * it will be created. The file will be written in the root of the platform-specific
  * application local storage directory. Path information is not currently supported.
+ * This channel is currently not implemented.
  */
   void SetDebugLogFile(const std::string& path) { log_file_path_ = path; }
 
+/**
+ * @brief Set a filename to log debug messages to.
+ * @param address A string specifying a server address to use to write debug messages
+ * to. This channel is currently not implemented.
+ */
   void SetDebugLogServer(const std::string& address) { log_server_address_ = address; }
 
 /**
  * @brief Set the default log message channels
- * @param A bitmasked value of `DebugLogChannel` values specifying
+ * @param defaultChannels A bitmasked value of `DebugLogChannel` values specifying
  * which channels receive messages when `kLog_Channel_Default` is
  * specified as the `log_channels` parameter of a log message.
  */

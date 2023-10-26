@@ -23,6 +23,14 @@ AGDKTunnel uses the [Library Wrapper](https://developer.android.com/games/develo
 tool to generate interface files to call the Vibrator API in order to provide haptic
 feedback on in-game collisions.
 
+## Prerequisites
+
+1. cd to `agdk/third-party`
+2. git clone https://github.com/zeux/volk.git
+3. git clone https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+
+TODO: Migrate to submodules in later CL
+
 ## Building
 
 Open the `agdktunnel' directory in Android Studio 2021.2 or higher.

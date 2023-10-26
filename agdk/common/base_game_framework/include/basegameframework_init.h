@@ -14,27 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef BASEGAMEFRAMEWORK_PLATFORM_TYPES_ANDROID_H_
-#define BASEGAMEFRAMEWORK_PLATFORM_TYPES_ANDROID_H_
+#ifndef BASEGAMEFRAMEWORK_INIT_H_
+#define BASEGAMEFRAMEWORK_INIT_H_
 
-#include <cstdint>
-
-struct android_app;
+#include "platform_defines.h"
 
 namespace base_game_framework {
 
-// The first two axis, X and Y, are always active by default
-static constexpr uint64_t kDefaultAxisMask = 3;
+/**
+ * @brief Initialize the Base Game Framework
+ * @param init_params A platform-specific structure that provides
+ * the information necessary to initialize the Base Game Framework core managers
+ */
+void BaseGameFramework_Init(const PlatformInitParameters &init_params);
 
-struct PlatformEventLoopData {
-  uint64_t active_axis_ = kDefaultAxisMask;
-  android_app *android_app_ = nullptr;
-};
-
-struct PlatformInitParameters {
-  android_app *app;
-};
+/**
+ * @brief Destroy the Base Game Framework
+ */
+void BaseGameFramework_Destroy();
 
 } // namespace basegameframework
 
-#endif // BASEGAMEFRAMEWORK_PLATFORM_TYPES_ANDROID_H_
+#endif // BASEGAMEFRAMEWORK_INIT_H_

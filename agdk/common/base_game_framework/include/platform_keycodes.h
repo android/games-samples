@@ -14,27 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef BASEGAMEFRAMEWORK_PLATFORM_TYPES_ANDROID_H_
-#define BASEGAMEFRAMEWORK_PLATFORM_TYPES_ANDROID_H_
+#ifndef BASEGAMEFRAMEWORK_PLATFORM_KEYCODES_H_
+#define BASEGAMEFRAMEWORK_PLATFORM_KEYCODES_H_
 
-#include <cstdint>
+#include "platform_defines.h"
 
-struct android_app;
+#if defined BGF_ANDROID
+#include "android/platform_keycodes_android.h"
+#endif
 
-namespace base_game_framework {
-
-// The first two axis, X and Y, are always active by default
-static constexpr uint64_t kDefaultAxisMask = 3;
-
-struct PlatformEventLoopData {
-  uint64_t active_axis_ = kDefaultAxisMask;
-  android_app *android_app_ = nullptr;
-};
-
-struct PlatformInitParameters {
-  android_app *app;
-};
-
-} // namespace basegameframework
-
-#endif // BASEGAMEFRAMEWORK_PLATFORM_TYPES_ANDROID_H_
+#endif // BASEGAMEFRAMEWORK_PLATFORM_KEYCODES_H_

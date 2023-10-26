@@ -79,6 +79,7 @@ else()
     set(PROTOGEN_SRCS "")
 endif()
 
+# TODO: migrate to imported cmake file for commonality with other samples
 set(BGF_SRCS
      ${BGF_SRC_DIR}/debug_manager.cpp
      ${BGF_SRC_DIR}/display_manager.cpp
@@ -93,6 +94,7 @@ set(BGF_SRCS
      ${BGF_SRC_DIR}/vulkan/graphics_api_vulkan_loader.cpp
      ${BGF_SRC_DIR}/vulkan/graphics_api_vulkan_utils.cpp)
 
+# TODO: migrate to imported cmake file for commonality with other samples
 set(SIMPLE_RENDERER_SRCS
      ${SIMPLE_RENDERER_DIR}/renderer_debug_gles.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_debug_vk.cpp
