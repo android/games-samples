@@ -135,7 +135,7 @@ void SceneManager::OnPointerDown(int pointerId, const struct PointerCoords *coor
     android_app* pApp = NativeEngine::GetInstance()->GetAndroidApp();
     int width = ANativeWindow_getWidth(pApp->window);
     int height = ANativeWindow_getHeight(pApp->window);
-    ALOGI("SceneManager ANativeWindow size %d, %d", width, height);
+    ALOGI("DBGSIZE SceneManager ANativeWindow size %d, %d", width, height);
 }
 
 void SceneManager::OnPointerUp(int pointerId, const struct PointerCoords *coords) {

@@ -78,7 +78,7 @@ public class AGDKTunnelActivity extends GameActivity {
         //     IME_ACTION_NONE, IME_FLAG_NO_FULLSCREEN );
         super.onCreate(savedInstanceState);
 
-        Log.d(TAG, "GameActivity::LifeCycle onCreate");
+        Log.d(TAG, "DBGSIZE GameActivity::LifeCycle onCreate");
 
         if (isPlayGamesServicesLinked()) {
             // Initialize Play Games Services
@@ -95,13 +95,13 @@ public class AGDKTunnelActivity extends GameActivity {
 
     @Override
     protected void onStart() {
-        Log.d(TAG, "GameActivity::LifeCycle onStart");
+        Log.d(TAG, "DBGSIZE GameActivity::LifeCycle onStart");
         super.onStart();
     }
 
     @Override
     protected void onDestroy() {
-        Log.d(TAG, "GameActivity::LifeCycle onDestroy");
+        Log.d(TAG, "DBGSIZE GameActivity::LifeCycle onDestroy");
         if (isGooglePlayGames()) {
             InputMappingClient inputMappingClient = Input.getInputMappingClient(this);
             inputMappingClient.clearInputMappingProvider();
@@ -113,7 +113,7 @@ public class AGDKTunnelActivity extends GameActivity {
 
     @Override
     protected void onResume() {
-        Log.d(TAG, "GameActivity::LifeCycle onResume");
+        Log.d(TAG, "DBGSIZE GameActivity::LifeCycle onResume");
         super.onResume();
 
         // To learn best practices to handle lifecycle events visit
@@ -125,13 +125,13 @@ public class AGDKTunnelActivity extends GameActivity {
 
     @Override
     protected void onPause() {
-        Log.d(TAG, "GameActivity::LifeCycle onPause");
+        Log.d(TAG, "DBGSIZE GameActivity::LifeCycle onPause");
         super.onPause();
     }
 
     @Override
     protected void onStop() {
-        Log.d(TAG, "GameActivity::LifeCycle onStop");
+        Log.d(TAG, "DBGSIZE GameActivity::LifeCycle onStop");
         super.onStop();
     }
 
@@ -143,12 +143,12 @@ public class AGDKTunnelActivity extends GameActivity {
         // forward the orientation
         boolean bPortrait = newConfig.orientation == Configuration.ORIENTATION_PORTRAIT;
 
-        Log.d(TAG, "GameActivity::ChangeConfig onConfigurationChanged: " + bPortrait + " : " + newConfig.toString());
+        Log.d(TAG, "DBGSIZE GameActivity::ChangeConfig onConfigurationChanged: " + bPortrait + " : " + newConfig.toString());
     }
 
     @Override
     public void onWindowFocusChanged(boolean bHasFocus) {
-        Log.d(TAG, "GameActivity::ChangeFocus onWindowFocusChanged: " + bHasFocus);
+        Log.d(TAG, "DBGSIZE GameActivity::ChangeFocus onWindowFocusChanged: " + bHasFocus);
 
 //        if ( bHasFocus ) {
 //            hideSystemUI();
