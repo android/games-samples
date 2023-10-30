@@ -149,6 +149,11 @@ public class AGDKTunnelActivity extends GameActivity {
     @Override
     public void onWindowFocusChanged(boolean bHasFocus) {
         Log.d(TAG, "GameActivity::ChangeFocus onWindowFocusChanged: " + bHasFocus);
+
+//        if ( bHasFocus ) {
+//            hideSystemUI();
+//        }
+
         super.onWindowFocusChanged(bHasFocus);
     }
 
@@ -165,7 +170,7 @@ public class AGDKTunnelActivity extends GameActivity {
         WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(getWindow(),
             decorView);
         controller.hide(WindowInsetsCompat.Type.systemBars());
-        controller.hide(WindowInsetsCompat.Type.displayCutout());
+//        controller.hide(WindowInsetsCompat.Type.displayCutout());
         controller.setSystemBarsBehavior(
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
     }
