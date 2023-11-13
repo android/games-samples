@@ -31,9 +31,10 @@ set(CMAKE_SHARED_LINKER_FLAGS
         "${CMAKE_SHARED_LINKER_FLAGS} -u GameActivity_onCreate")
 
 # Set common compiler options
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -Werror=unguarded-availability")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Werror=unguarded-availability")
 add_definitions("-DIMGUI_IMPL_OPENGL_ES2")
+add_definitions("-D__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__")
 
 # build Dear ImGui as a static lib
 set(IMGUI_BASE_DIR "../../../../../third_party/imgui")
@@ -41,7 +42,7 @@ set(IMGUI_BASE_DIR "../../../../../third_party/imgui")
 # build bullet physics as a static lib
 set(BULLET_BASE_DIR "../../../../../third_party/bullet3/src")
 
-# source files common to both the GameActivity and NativeActivity versions
+# source files common to all samples
 set(COMMON_SRC_DIR "../../../../../common")
 
 # common include directory for all samples
@@ -99,23 +100,27 @@ target_compile_options(bullet3
 
 target_compile_definitions(bullet3 PRIVATE BT_THREADSAFE=1)
 
+# Common source files shared with other samples
+set(COMMON_SRCS
+        ${COMMON_SRC_DIR}/ndk_helper/JNIHelper.cpp
+        ${COMMON_SRC_DIR}/ndk_helper/Shader.cpp
+        ${COMMON_SRC_DIR}/ndk_helper/TapCamera.cpp
+        ${COMMON_SRC_DIR}/ndk_helper/VecMath.cpp
+        ${COMMON_SRC_DIR}/src/adpf_manager.cpp
+        ${COMMON_SRC_DIR}/src/box_renderer.cpp
+        ${COMMON_SRC_DIR}/src/imgui_manager.cpp
+        ${COMMON_SRC_DIR}/src/input_util.cpp
+        ${COMMON_SRC_DIR}/src/scene.cpp
+        ${COMMON_SRC_DIR}/src/scene_manager.cpp
+        ${COMMON_SRC_DIR}/src/util.cpp)
+
 # now build app's shared lib
 add_library(game SHARED
-        adpf_manager.cpp
+        ${COMMON_SRCS}
         android_main.cpp
-        box_renderer.cpp
         demo_scene.cpp
         game_mode_manager.cpp
-        imgui_manager.cpp
-        input_util.cpp
         native_engine.cpp
-        ndk_helper/JNIHelper.cpp
-        ndk_helper/Shader.cpp
-        ndk_helper/TapCamera.cpp
-        ndk_helper/VecMath.cpp
-        scene.cpp
-        scene_manager.cpp
-        util.cpp
         welcome_scene.cpp)
 
 target_include_directories(game PRIVATE

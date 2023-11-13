@@ -18,6 +18,7 @@
 #define IMGUI_MANAGER_H_
 
 #include "util.h"
+#include "imgui.h"
 
 /*
  * Manages the status and rendering of the ImGui system

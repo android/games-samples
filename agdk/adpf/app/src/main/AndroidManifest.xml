@@ -17,8 +17,7 @@
 
 <!-- TODO: when building this sample, replace the package name below
      (com.google.example.games) by your own package name -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-      package="com.android.example.games">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
   <application
       android:allowBackup="false"

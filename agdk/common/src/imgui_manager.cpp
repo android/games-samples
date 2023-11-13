@@ -22,10 +22,13 @@ extern "C" {
 #include "backends/imgui_impl_opengl3.h"
 #include "imgui.h"
 #include "imgui_manager.h"
+#if defined SAMPLE_USES_IMPLOT
+#include "implot.h"
+#endif
 
 namespace {
 const float GUI_LOWDPI_FONT_SCALE = 2.0f;
-const float GUI_DEFAULT_FONT_SCALE = 3.0f;
+const float GUI_DEFAULT_FONT_SCALE = 5.0f;
 const float GUI_MINIMUM_FRAME_TIME = (1.0f / 60.0f);
 float currentFontScale = 1.0f;
 bool overrideFontScale = false;
@@ -35,6 +38,9 @@ ImGuiManager::ImGuiManager() : delta_clock_() {
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
+#if defined SAMPLE_USES_IMPLOT
+  ImPlot::CreateContext();
+#endif
 
   // Setup Dear ImGui style
   ImGui::StyleColorsDark();
@@ -45,6 +51,9 @@ ImGuiManager::ImGuiManager() : delta_clock_() {
 
 ImGuiManager::~ImGuiManager() {
   ImGui_ImplOpenGL3_Shutdown();
+#if defined SAMPLE_USES_IMPLOT
+  ImPlot::DestroyContext();
+#endif
   ImGui::DestroyContext();
 }
 

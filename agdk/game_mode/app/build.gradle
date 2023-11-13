@@ -18,14 +18,14 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 33
-    ndkVersion '25.0.8775105'
+    ndkVersion '26.1.10909125'
 
     defaultConfig {
         applicationId 'com.android.example.games.game_mode_sample'
-        minSdkVersion 33
+        minSdkVersion 24
         targetSdkVersion 33
-        versionCode     1
-        versionName    '1.0'
+        versionCode     2
+        versionName    '1.2'
         externalNativeBuild {
             cmake {
                 arguments '-DANDROID_STL=c++_shared'
@@ -47,9 +47,10 @@ android {
     buildFeatures {
         prefab true
     }
-}
-android.lintOptions {
-        abortOnError  = false
+    namespace 'com.android.example.games'
+    lint {
+        abortOnError false
+    }
 }
 
 dependencies {
@@ -59,8 +60,8 @@ dependencies {
     implementation "androidx.core:core:1.5.0"
     implementation "androidx.constraintlayout:constraintlayout:2.0.4"
     implementation 'androidx.fragment:fragment:1.2.5'
-    implementation "androidx.games:games-activity:2.0.0-alpha01"
-    implementation "androidx.games:games-frame-pacing:2.0.0-alpha01"
+    implementation "androidx.games:games-activity:2.0.2"
+    implementation "androidx.games:games-frame-pacing:2.0.0"
 
     // Example of using local .aar files in libs/ directory.
     // Comment out the androidx.games implementation lines if

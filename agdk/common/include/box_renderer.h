@@ -42,7 +42,7 @@
 
 #endif
 
-#include "NDKHelper.h"
+#include "ndk_helper/NDKHelper.h"
 
 // Decls of shader parameters.
 struct BOX_VERTEX {

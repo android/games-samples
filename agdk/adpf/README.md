@@ -28,6 +28,15 @@ performed:
 
 - Minimum API level of 31 (Android S) and a supported device (such as Pixel 6~)
 
+### Older Android versions
+
+This sample is set to a minApi of 24 to demonstrate how to conditionally
+check for NDK API availability using __builtin_available in the C++ code and
+__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__ as a compiler preprocessor define.
+This functionality was added in NDK 26. Running the sample on an earlier
+version of Android will work, but will be missing the thermal and
+performance hint functionality.
+
 ### 3rd party libraries
 
 1. Open a terminal and set the working directory to `agdk/third_party/`

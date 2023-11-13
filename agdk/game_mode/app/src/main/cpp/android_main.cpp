@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "NDKHelper.h"
+#include "ndk_helper/NDKHelper.h"
 #include "adpf_manager.h"
 #include "game_mode_manager.h"
 #include "native_engine.h"

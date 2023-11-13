@@ -32,18 +32,22 @@ void thermal_callback(void *data, AThermalStatus status) {
 void nativeRegisterThermalStatusListener(JNIEnv *env, jclass cls) {
   auto manager = ADPFManager::getInstance().GetThermalManager();
   if (manager != nullptr) {
-    auto ret = AThermal_registerThermalStatusListener(manager, thermal_callback,
-                                                      nullptr);
-    ALOGI("Thermal Status callback registerred to:%d", ret);
+    if (__builtin_available(android 31, *)) {
+      auto ret = AThermal_registerThermalStatusListener(manager, thermal_callback,
+                                                        nullptr);
+      ALOGI("Thermal Status callback registered to:%d", ret);
+    }
   }
 }
 
 void nativeUnregisterThermalStatusListener(JNIEnv *env, jclass cls) {
   auto manager = ADPFManager::getInstance().GetThermalManager();
   if (manager != nullptr) {
-    auto ret = AThermal_unregisterThermalStatusListener(
-        manager, thermal_callback, nullptr);
-    ALOGI("Thermal Status callback unregisterred to:%d", ret);
+    if (__builtin_available(android 31, *)) {
+      auto ret = AThermal_unregisterThermalStatusListener(
+          manager, thermal_callback, nullptr);
+      ALOGI("Thermal Status callback unregisterred to:%d", ret);
+    }
   }
 }
 
@@ -63,63 +67,104 @@ void ADPFManager::SetApplication(android_app *app) {
   app_.reset(app);
 
   // Initialize PowerManager reference.
-  InitializePowerManager();
+  adpf_supported_ = InitializePowerManager();
 
   // Initialize PowerHintManager reference.
   InitializePerformanceHintManager();
+
+  // Initialize BatteryManager reference.
+  InitializeBatteryManager();
 }
 
 // Initialize JNI calls for the powermanager.
 bool ADPFManager::InitializePowerManager() {
   if (android_get_device_api_level() >= 31) {
-    // Initialize the powermanager using NDK API.
-    thermal_manager_ = AThermal_acquireManager();
-    return true;
+    // Initialize the power manager using NDK API.
+    if (__builtin_available(android 31, *)) {
+      thermal_manager_ = AThermal_acquireManager();
+    }
+    if (thermal_manager_ != nullptr) {
+      ALOGI("ADPF NDK API is supported on the device.");
+      return true;
+    }
   }
 
+  // Initialize service using JNI calls.
   JNIEnv *env = NativeEngine::GetInstance()->GetJniEnv();
+  obj_power_service_ = GetService(env, "POWER_SERVICE");
 
-  // Retrieve class information
-  jclass context = env->FindClass("android/content/Context");
-
-  // Get the value of a constant
-  jfieldID fid =
-      env->GetStaticFieldID(context, "POWER_SERVICE", "Ljava/lang/String;");
-  jobject str_svc = env->GetStaticObjectField(context, fid);
-
-  // Get the method 'getSystemService' and call it
-  jmethodID mid_getss = env->GetMethodID(
-      context, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;");
-  jobject obj_power_service = env->CallObjectMethod(
-      app_->activity->javaGameActivity, mid_getss, str_svc);
-
-  // Add global reference to the power service object.
-  obj_power_service_ = env->NewGlobalRef(obj_power_service);
-
+  // Retrive API reference.
   jclass cls_power_service = env->GetObjectClass(obj_power_service_);
   get_thermal_headroom_ =
       env->GetMethodID(cls_power_service, "getThermalHeadroom", "(I)F");
 
   // Free references
   env->DeleteLocalRef(cls_power_service);
-  env->DeleteLocalRef(obj_power_service);
-  env->DeleteLocalRef(str_svc);
-  env->DeleteLocalRef(context);
 
   if (get_thermal_headroom_ == 0) {
     // The API is not supported in the platform version.
+    ALOGE("ADPF API is not supported on the device.");
     return false;
   }
 
+  ALOGI("ADPF Java API is supported on the device.");
   return true;
+}
+
+// Initialize JNI calls for the batteryManager.
+bool ADPFManager::InitializeBatteryManager() {
+  // Initialize service using JNI calls.
+  JNIEnv *env = NativeEngine::GetInstance()->GetJniEnv();
+  obj_battery_service_ = GetService(env, "BATTERY_SERVICE");
+
+  // Retrive API reference.
+  jclass cls_battery_service = env->GetObjectClass(obj_battery_service_);
+  get_long_property_ =
+      env->GetMethodID(cls_battery_service, "getLongProperty", "(I)J");
+  // Get the value of a constant
+  jfieldID fid = env->GetStaticFieldID(cls_battery_service,
+                                       "BATTERY_PROPERTY_CURRENT_NOW", "I");
+  battery_propertyid_ = env->GetStaticIntField(cls_battery_service, fid);
+
+  // Free references
+  env->DeleteLocalRef(cls_battery_service);
+  return true;
+}
+
+jobject ADPFManager::GetService(JNIEnv *env, const char *service_name) {
+  // Retrieve class information
+  jclass context = env->FindClass("android/content/Context");
+
+  // Get the value of a constant
+  jfieldID fid =
+      env->GetStaticFieldID(context, service_name, "Ljava/lang/String;");
+  jobject str_svc = env->GetStaticObjectField(context, fid);
+
+  // Get the method 'getSystemService' and call it
+  jmethodID mid_getss = env->GetMethodID(
+      context, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;");
+  jobject obj_service = env->CallObjectMethod(app_->activity->javaGameActivity,
+                                              mid_getss, str_svc);
+
+  // Add global reference to the power service object.
+  jobject service = env->NewGlobalRef(obj_service);
+
+  // Free references
+  env->DeleteLocalRef(obj_service);
+  env->DeleteLocalRef(str_svc);
+  env->DeleteLocalRef(context);
+
+  return service;
 }
 
 // Retrieve current thermal headroom using JNI call.
 float ADPFManager::UpdateThermalStatusHeadRoom() {
   if (android_get_device_api_level() >= 31) {
     // Use NDK API to retrieve thermal status headroom.
-    thermal_headroom_ = AThermal_getThermalHeadroom(
-        thermal_manager_, kThermalHeadroomUpdateThreshold);
+    if (__builtin_available(android 31, *)) {
+      thermal_headroom_ = AThermal_getThermalHeadroom(thermal_manager_,
+                                                      thremal_headroom_forcast_);
+    }
     return thermal_headroom_;
   }
 
@@ -129,9 +174,8 @@ float ADPFManager::UpdateThermalStatusHeadRoom() {
   JNIEnv *env = NativeEngine::GetInstance()->GetJniEnv();
 
   // Get thermal headroom!
-  thermal_headroom_ =
-      env->CallFloatMethod(obj_power_service_, get_thermal_headroom_,
-                           kThermalHeadroomUpdateThreshold);
+  thermal_headroom_ = env->CallFloatMethod(
+      obj_power_service_, get_thermal_headroom_, thremal_headroom_forcast_);
   ALOGE("Current thermal Headroom %f", thermal_headroom_);
   return thermal_headroom_;
 }
@@ -140,22 +184,8 @@ float ADPFManager::UpdateThermalStatusHeadRoom() {
 bool ADPFManager::InitializePerformanceHintManager() {
   JNIEnv *env = NativeEngine::GetInstance()->GetJniEnv();
 
-  // Retrieve class information
-  jclass context = env->FindClass("android/content/Context");
-
-  // Get the value of a constant
-  jfieldID fid = env->GetStaticFieldID(context, "PERFORMANCE_HINT_SERVICE",
-                                       "Ljava/lang/String;");
-  jobject str_svc = env->GetStaticObjectField(context, fid);
-
-  // Get the method 'getSystemService' and call it
-  jmethodID mid_getss = env->GetMethodID(
-      context, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;");
-  jobject obj_perfhint_service = env->CallObjectMethod(
-      app_->activity->javaGameActivity, mid_getss, str_svc);
-
-  // Add global reference to the power service object.
-  obj_perfhint_service_ = env->NewGlobalRef(obj_perfhint_service);
+  // Retrieve performance hint service.
+  obj_perfhint_service_ = GetService(env, "PERFORMANCE_HINT_SERVICE");
 
   // Retrieve methods IDs for the APIs.
   jclass cls_perfhint_service = env->GetObjectClass(obj_perfhint_service_);
@@ -187,15 +217,13 @@ bool ADPFManager::InitializePerformanceHintManager() {
         cls_perfhint_session, "reportActualWorkDuration", "(J)V");
     update_target_work_duration_ = env->GetMethodID(
         cls_perfhint_session, "updateTargetWorkDuration", "(J)V");
+    close_session_ = env->GetMethodID(cls_perfhint_session, "close", "()V");
   }
 
   // Free local references
   env->DeleteLocalRef(obj_hintsession);
   env->DeleteLocalRef(array);
   env->DeleteLocalRef(cls_perfhint_service);
-  env->DeleteLocalRef(obj_perfhint_service);
-  env->DeleteLocalRef(str_svc);
-  env->DeleteLocalRef(context);
 
   if (report_actual_work_duration_ == 0 || update_target_work_duration_ == 0) {
     // The API is not supported in the platform version.
@@ -220,6 +248,15 @@ void ADPFManager::SetThermalListener(thermalStateChangeListener listener) {
   thermalListener = listener;
 }
 
+// Retrieve current battery usage from BatteryManager.
+long ADPFManager::GetBatteryUsage() {
+  JNIEnv *env = NativeEngine::GetInstance()->GetJniEnv();
+
+  auto battery_usage = env->CallLongMethod(
+      obj_battery_service_, get_long_property_, battery_propertyid_);
+  return battery_usage;
+}
+
 // Indicates the start and end of the performance intensive task.
 // The methods call performance hint API to tell the performance
 // hint to the system.
@@ -236,5 +273,20 @@ void ADPFManager::EndPerfHintSession(jlong target_duration_ns) {
                         duration_ns);
     env->CallVoidMethod(obj_perfhint_session_, update_target_work_duration_,
                         target_duration_ns);
+  }
+}
+
+// Close perfhint session.
+void ADPFManager::ClosePerfHintSession() {
+  if (obj_perfhint_session_) {
+    // Close the session.
+    JNIEnv *env = NativeEngine::GetInstance()->GetJniEnv();
+    env->CallVoidMethod(obj_perfhint_session_, close_session_);
+
+    // Delete references.
+    env->DeleteGlobalRef(obj_perfhint_session_);
+    env->DeleteGlobalRef(obj_perfhint_service_);
+    obj_perfhint_service_ = nullptr;
+    obj_perfhint_session_ = nullptr;
   }
 }

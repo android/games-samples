@@ -17,7 +17,9 @@ Before building in Android Studio, the following prerequisites must be met:
 
 ### Requirements
 
-Minimum API level of 33 (Android 13) and supported devices (such as Pixel 6~) are required for the Game Mode API.
+Minimum API level of 33 (Android 13) and supported devices (such as Pixel 6~) are required for the Game Mode API. This sample is set to a minApi of 24 as it
+demonstrates how to check for availability of the Game Mode API. It will run on earlier versions of Android, but none of the
+game mode functionality will be available.
 
 ### 3rd Party Libraries
 
