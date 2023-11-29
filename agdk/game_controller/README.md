@@ -10,9 +10,6 @@ such as vibration
 * Displays integrated motion sensor data from the device if available
 * Displays hardware keyboard connection status
 
-There are two versions of the sample. One uses NativeActivity, the other
-uses GameActivity.
-
 ## Prerequisites
 
 Before building in Android Studio the following prerequisites must be
@@ -25,8 +22,7 @@ performed:
 
 ## Building
 
-Once the prerequisites are complete, open the `nativeactivity` or
-`gameactivity` directories in Android Studio 2021.2 or higher. You can
+Open the `game_controller` directory in Android Studio 2021.2 or higher. You can
 then build and run the samples from Android Studio.
 
 ## License
