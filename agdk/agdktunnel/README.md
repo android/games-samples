@@ -25,11 +25,9 @@ feedback on in-game collisions.
 
 ## Prerequisites
 
-1. cd to `agdk/third-party`
+1. cd to `agdk/third_party`
 2. git clone https://github.com/zeux/volk.git
 3. git clone https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
-
-TODO: Migrate to submodules in later CL
 
 ## Building
 

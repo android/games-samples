@@ -31,14 +31,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
 add_definitions("-DIMGUI_IMPL_OPENGL_ES2")
 
-# source files common to both the GameActivity and NativeActivity versions
-set(COMMON_SRC_DIR "../../../../../common")
-
 # common include directory for all samples
-set(COMMON_INCLUDE_DIR "../../../../../../common/include")
+set(COMMON_INCLUDE_DIR "../../../../../common/include")
 
 # build Dear ImGui as a static lib
-set(IMGUI_BASE_DIR "../../../../../../third_party/imgui")
+set(IMGUI_BASE_DIR "../../../../../third_party/imgui")
 
 add_library(imgui STATIC
         ${IMGUI_BASE_DIR}/imgui_demo.cpp
@@ -53,22 +50,21 @@ target_include_directories(imgui PRIVATE
 
 # now build app's shared lib
 add_library(game SHARED
-        ${COMMON_SRC_DIR}/android_main.cpp
-        ${COMMON_SRC_DIR}/controllerui_data.cpp
-        ${COMMON_SRC_DIR}/controllerui_util.cpp
-        ${COMMON_SRC_DIR}/demo_scene.cpp
-        ${COMMON_SRC_DIR}/imgui_manager.cpp
-        ${COMMON_SRC_DIR}/input_util.cpp
+        android_main.cpp
+        controllerui_data.cpp
+        controllerui_util.cpp
+        demo_scene.cpp
+        imgui_manager.cpp
+        input_util.cpp
         jni_util.cpp
         native_engine.cpp
-        ${COMMON_SRC_DIR}/scene.cpp
-        ${COMMON_SRC_DIR}/scene_manager.cpp
-        ${COMMON_SRC_DIR}/texture_asset_loader.cpp
-        ${COMMON_SRC_DIR}/util.cpp)
+        scene.cpp
+        scene_manager.cpp
+        texture_asset_loader.cpp
+        util.cpp)
 
 target_include_directories(game PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${COMMON_SRC_DIR}
         ${COMMON_INCLUDE_DIR}
         ${IMGUI_BASE_DIR})
 
