@@ -18,6 +18,7 @@
 #include "dialog_scene.hpp"
 #include "gfx_manager.hpp"
 #include "play_scene.hpp"
+#include "tunnel_engine.hpp"
 #include "welcome_scene.hpp"
 
 #include "blurb.inl"
@@ -89,7 +90,7 @@ WelcomeScene::~WelcomeScene() {
 }
 
 void WelcomeScene::RenderBackground() {
-    GfxManager *gfxManager = NativeEngine::GetInstance()->GetGfxManager();
+    GfxManager *gfxManager = TunnelEngine::GetInstance()->GetGfxManager();
     gfxManager->SetRenderState(GfxManager::kGfxType_BasicTrisNoDepthTest);
     RenderBackgroundAnimation(mShapeRenderer);
 }
@@ -132,7 +133,7 @@ void WelcomeScene::OnButtonClicked(int id) {
 
     if (id == mPlayButtonId) {
         DataLoaderStateMachine *dataStateMachine =
-                NativeEngine::GetInstance()->GetDataStateMachine();
+            TunnelEngine::GetInstance()->GetDataStateMachine();
         mgr->RequestNewScene(new PlayScene(dataStateMachine->getLevelLoaded()));
     } else if (id == mStoryButtonId) {
         mgr->RequestNewScene((new DialogScene())->SetText(BLURB_STORY)->SetSingleButton(S_OK,
@@ -161,7 +162,7 @@ void WelcomeScene::OnButtonClicked(int id) {
         auto activity = NativeEngine::GetInstance()->GetAndroidApp()->activity;
         GameActivity_finish(activity);
     } else if (id == mMemoryButtonId) {
-        NativeEngine::GetInstance()->GetMemoryConsumer()->SetActive(true);
+        TunnelEngine::GetInstance()->GetMemoryConsumer()->SetActive(true);
     }
 }
 

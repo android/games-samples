@@ -15,7 +15,8 @@
  */
 
 
-#include "native_engine.hpp"
+#include "basegameframework_init.h"
+#include "tunnel_engine.hpp"
 
 extern "C" {
     void android_main(struct android_app *app);
@@ -27,7 +28,10 @@ extern "C" {
 */
 
 void android_main(struct android_app *app) {
-    NativeEngine *engine = new NativeEngine(app);
+    PlatformInitParameters init_params{app};
+    BaseGameFramework_Init(init_params);
+    TunnelEngine *engine = new TunnelEngine(app);
     engine->GameLoop();
     delete engine;
+    BaseGameFramework_Destroy();
 }

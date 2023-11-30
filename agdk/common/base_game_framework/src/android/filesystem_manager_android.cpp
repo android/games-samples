@@ -15,6 +15,7 @@
  */
 
 #include "filesystem_manager.h"
+#include "debug_manager.h"
 #include "platform_util_android.h"
 #include <android/asset_manager.h>
 
@@ -59,6 +60,11 @@ FilesystemManager::FilesystemManager() {
     const char *cpath = env->GetStringUTFChars(cpath_jstring, NULL);
     root_path_cache_ = cpath;
     env->DeleteLocalRef(cpath_jstring);
+  } else if (util_object == nullptr) {
+    DebugManager::Log(DebugManager::kLog_Channel_Default,
+                      DebugManager::kLog_Level_Error,
+                      "FilesystemManager",
+                      "No BaseGameFrameworkUtils object, probably missing from Activity!");
   }
 }
 

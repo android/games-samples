@@ -21,6 +21,7 @@
 #include "gfx_manager.hpp"
 #include "play_scene.hpp"
 #include "texture_manager.hpp"
+#include "tunnel_engine.hpp"
 #include "util.hpp"
 #include "welcome_scene.hpp"
 #include "welcome_scene.hpp"
@@ -159,7 +160,7 @@ void PlayScene::OnStartGraphics() {
     // build projection matrix
     UpdateProjectionMatrix();
 
-    GfxManager *gfxManager = NativeEngine::GetInstance()->GetGfxManager();
+    GfxManager *gfxManager = TunnelEngine::GetInstance()->GetGfxManager();
 
     // build tunnel geometry
     IndexBuffer::IndexBufferCreationParams tunnelIndexParams = {
@@ -184,7 +185,7 @@ void PlayScene::OnStartGraphics() {
     mCubeGeom = new SimpleGeom(nullptr, cubeVertexBuffer);
 
     // make the wall texture
-    TextureManager *textureManager = NativeEngine::GetInstance()->GetTextureManager();
+    TextureManager *textureManager = TunnelEngine::GetInstance()->GetTextureManager();
     char textureName[64];
     for (int wallIndex = 0; wallIndex < MAX_WALL_TEXTURES; ++wallIndex) {
 #if defined NO_ASSET_PACKS
@@ -252,7 +253,7 @@ void PlayScene::DoFrame() {
     float deltaT = mFrameClock.ReadDelta();
     float previousY = mPlayerPos.y;
 
-    GfxManager *gfxManager = NativeEngine::GetInstance()->GetGfxManager();
+    GfxManager *gfxManager = TunnelEngine::GetInstance()->GetGfxManager();
     gfxManager->SetMainRenderPass();
     gfxManager->SetRenderState(GfxManager::kGfxType_OurTris);
 
@@ -271,7 +272,7 @@ void PlayScene::DoFrame() {
     if (mMenu) {
         if (mMenu == MENU_LOADING) {
             DataLoaderStateMachine *dataStateMachine =
-                    NativeEngine::GetInstance()->GetDataStateMachine();
+                TunnelEngine::GetInstance()->GetDataStateMachine();
             if (dataStateMachine->isLoadingDataCompleted()) {
                 // resume from saved level
                 HandleMenu(MENUITEM_LOADING);
@@ -653,7 +654,7 @@ void PlayScene::RenderHUD(GfxManager *gfxManager) {
     mTextRenderer->RenderText(score_str, SCORE_POS_X, SCORE_POS_Y);
 
     // Render memory statistics
-    NativeEngine::GetInstance()->GetMemoryConsumer()->RenderMemoryStatistics(
+    TunnelEngine::GetInstance()->GetMemoryConsumer()->RenderMemoryStatistics(
             mTextRenderer);
 
     // render current sign
@@ -733,7 +734,7 @@ void PlayScene::DetectCollisions(float previousY) {
     int row = o->GetRowAt(mPlayerPos.z);
 
     if (o->grid[col][row]) {
-        NativeEngine::GetInstance()->GetVibrationHelper()->DoVibrateEffect();
+        TunnelEngine::GetInstance()->GetVibrationHelper()->DoVibrateEffect();
 #ifndef GOD_MODE
         // crashed against obstacle
         mLives--;
@@ -772,7 +773,7 @@ void PlayScene::DetectCollisions(float previousY) {
             SfxMan::GetInstance()->PlayTone(TONE_LEVEL_UP);
 
             // save progress, if needed
-            if (NativeEngine::GetInstance()->SaveProgress(mDifficulty)) {
+            if (TunnelEngine::GetInstance()->SaveProgress(mDifficulty)) {
                 // Show a "checkpoint saved" sign when possible. We don't show it right away
                 // because will already be showing the "Level N" sign, so we just set this flag
                 // to remind us to show it right after.
@@ -919,7 +920,7 @@ void PlayScene::OnKeyDown(int ourKeyCode) {
 void PlayScene::ShowMenu(int menu) {
     mMenu = menu;
     mMenuSel = 0;
-    NativeEngine *instance = NativeEngine::GetInstance();
+    TunnelEngine *instance = TunnelEngine::GetInstance();
     DataLoaderStateMachine *dataStateMachine = instance->GetDataStateMachine();
     switch (menu) {
         case MENU_PAUSE:
@@ -949,9 +950,9 @@ void PlayScene::ShowMenu(int menu) {
             mFrameClock.Reset();
     }
     if (mMenu) {
-        NativeEngine::GetInstance()->SetInputSdkContext(INPUT_CONTEXT_PAUSE_MENU);
+        instance->SetInputSdkContext(INPUT_CONTEXT_PAUSE_MENU);
     } else {
-        NativeEngine::GetInstance()->SetInputSdkContext(INPUT_CONTEXT_PLAY_SCENE);
+        instance->SetInputSdkContext(INPUT_CONTEXT_PLAY_SCENE);
     }
 }
 
@@ -973,7 +974,7 @@ void PlayScene::HandleMenu(int menuItem) {
             break;
         case MENUITEM_START_OVER:
             // start over from scratch
-            NativeEngine::GetInstance()->SaveProgress(/* level = */ 0, /* forceSave = */ true);
+            TunnelEngine::GetInstance()->SaveProgress(/* level = */ 0, /* forceSave = */ true);
             ShowMenu(MENU_NONE);
             break;
         case MENUITEM_LOADING:
@@ -981,7 +982,7 @@ void PlayScene::HandleMenu(int menuItem) {
             break;
         case MENUITEM_RESUME_CLOUD:
             DataLoaderStateMachine *dataStateMachine =
-                    NativeEngine::GetInstance()->GetDataStateMachine();
+                TunnelEngine::GetInstance()->GetDataStateMachine();
             mSavedLevel = (dataStateMachine->getLevelLoaded() / LEVELS_PER_CHECKPOINT)
                           * LEVELS_PER_CHECKPOINT;
 
@@ -1012,14 +1013,14 @@ void PlayScene::OnPause() {
 }
 
 void PlayScene::OnResume() {
-    if (NativeEngine::GetInstance()->IsCloudSaveEnabled() &&
+    if (TunnelEngine::GetInstance()->IsCloudSaveEnabled() &&
             (mMenu == MENU_NONE || mMenu == MENU_PAUSE)) {
         ShowMenu(MENU_LOADING);
     }
 }
 
 void PlayScene::SetInputSdkContext() {
-    NativeEngine::GetInstance()->SetInputSdkContext(INPUT_CONTEXT_PLAY_SCENE);
+    TunnelEngine::GetInstance()->SetInputSdkContext(INPUT_CONTEXT_PLAY_SCENE);
 }
 
 void PlayScene::OnScreenResized(int /*width*/, int /*height*/) {

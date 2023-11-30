@@ -43,7 +43,7 @@ class GameController {
     /** @brief Bitmask for dpad-down button */
     kButton_Dpad_Down = (1U << 2),
     /** @brief Bitmask for dpad-right button */
-    kButton_DPad_Right = (1U << 3),
+    kButton_Dpad_Right = (1U << 3),
     /** @brief Bitmask for A button */
     kButton_A = (1U << 4),
     /** @brief Bitmask for B button */

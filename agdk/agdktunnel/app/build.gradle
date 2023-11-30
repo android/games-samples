@@ -28,14 +28,14 @@ def playcoreDir = file('libs/play-core-native-sdk')
 
 android {
     compileSdkVersion 33
-    ndkVersion '25.2.9519653'
+    ndkVersion '26.1.10909125'
 
     defaultConfig {
         applicationId 'com.google.sample.agdktunnel'
         minSdkVersion 24
         targetSdkVersion 33
-        versionCode     1
-        versionName    '1.1'
+        versionCode     10
+        versionName    '1.2'
 
         externalNativeBuild {
             cmake {
@@ -92,6 +92,16 @@ android {
             enableSplit true
         }
     }
+    namespace 'com.google.sample.agdktunnel'
+    lint {
+        abortOnError false
+    }
+
+    androidComponents {
+        onVariants(selector().all()) { appVariant ->
+            appVariant.sources.java.addStaticSourceDirectory("../../common/base_game_framework/java")
+        }
+    }
 }
 
 dependencies {
@@ -104,9 +114,9 @@ dependencies {
     implementation 'com.google.oboe:oboe:1.5.0'
     implementation "androidx.games:games-frame-pacing:2.0.0"
     implementation "androidx.games:games-performance-tuner:1.5.0"
-    implementation "androidx.games:games-activity:2.0.0"
+    implementation "androidx.games:games-activity:2.0.2"
     implementation "androidx.games:games-controller:2.0.0"
-    implementation "androidx.games:games-memory-advice:2.0.0-beta03"
+    implementation "androidx.games:games-memory-advice:2.0.0-rc01"
 
     // Dependency for using APIs wrapped using library wrapper
     implementation 'com.google.android.gms:play-services-gni-native-c:1.0.0-beta2'

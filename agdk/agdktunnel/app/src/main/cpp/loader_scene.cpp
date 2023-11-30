@@ -20,6 +20,7 @@
 #include "gfx_manager.hpp"
 #include "loader_scene.hpp"
 #include "tuning_manager.hpp"
+#include "tunnel_engine.hpp"
 #include "welcome_scene.hpp"
 #include "strings.inl"
 
@@ -101,7 +102,7 @@ class LoaderScene::TextureLoader {
 
     void FindTexturesFromAssetPack(const char *assetPackName) {
         ALOGI("TextureLoader: counting assets of pack %s", assetPackName);
-        GameAssetManager *gameAssetManager = NativeEngine::GetInstance()->GetGameAssetManager();
+        GameAssetManager *gameAssetManager = TunnelEngine::GetInstance()->GetGameAssetManager();
         int assetPackFileCount = 0;
         const char **assetPackFiles = gameAssetManager->GetGameAssetPackFileList(assetPackName,
                 &assetPackFileCount);
@@ -115,7 +116,7 @@ class LoaderScene::TextureLoader {
     }
 
     void LoadTexturesFromAssetPack(const char *assetPackName) {
-        GameAssetManager *gameAssetManager = NativeEngine::GetInstance()->GetGameAssetManager();
+        GameAssetManager *gameAssetManager = TunnelEngine::GetInstance()->GetGameAssetManager();
         int assetPackFileCount = 0;
         const char **assetPackFiles = gameAssetManager->GetGameAssetPackFileList(assetPackName,
                 &assetPackFileCount);
@@ -149,12 +150,12 @@ class LoaderScene::TextureLoader {
     }
 
     void InstallTexturesFromAssetPack(const char *assetPackName) {
-        GameAssetManager *gameAssetManager = NativeEngine::GetInstance()->GetGameAssetManager();
+        GameAssetManager *gameAssetManager = TunnelEngine::GetInstance()->GetGameAssetManager();
         gameAssetManager->RequestDownload(assetPackName);
     }
 
     void CreateTextures() {
-        TextureManager *textureManager = NativeEngine::GetInstance()->GetTextureManager();
+        TextureManager *textureManager = TunnelEngine::GetInstance()->GetTextureManager();
         for (int i = 0; i < _currentLoadIndex; ++i) {
             textureManager->CreateTexture(_loadedTextures[i].textureName,
                 _loadedTextures[i].textureSize,
@@ -168,14 +169,14 @@ LoaderScene::LoaderScene() : mTextureLoader(new LoaderScene::TextureLoader()) {
     mLoadingWidget = NULL;
     mTextBoxId = -1;
     mStartTime = 0;
-    mDataStateMachine = NativeEngine::GetInstance()->BeginSavedGameLoad();
+    mDataStateMachine = TunnelEngine::GetInstance()->BeginSavedGameLoad();
 }
 
 LoaderScene::~LoaderScene() {
 }
 
 void LoaderScene::DoFrame() {
-    GameAssetManager *gameAssetManager = NativeEngine::GetInstance()->GetGameAssetManager();
+    GameAssetManager *gameAssetManager = TunnelEngine::GetInstance()->GetGameAssetManager();
     if (!mTextureLoader->IsAssetPackInstalled(GameAssetManifest::MAIN_ASSETPACK_NAME) &&
             gameAssetManager->GetGameAssetPackStatus(GameAssetManifest::MAIN_ASSETPACK_NAME) ==
             GameAssetManager::GAMEASSET_READY) {
@@ -202,7 +203,7 @@ void LoaderScene::DoFrame() {
         mTextureLoader->CreateTextures();
 
         // Inform performance tuner we are done loading
-        TuningManager *tuningManager = NativeEngine::GetInstance()->GetTuningManager();
+        TuningManager *tuningManager = TunnelEngine::GetInstance()->GetTuningManager();
         tuningManager->FinishLoading();
 
         timespec currentTimeSpec;
@@ -246,7 +247,7 @@ void LoaderScene::OnCreateWidgets() {
 }
 
 void LoaderScene::RenderBackground() {
-    GfxManager *gfxManager = NativeEngine::GetInstance()->GetGfxManager();
+    GfxManager *gfxManager = TunnelEngine::GetInstance()->GetGfxManager();
     gfxManager->SetRenderState(GfxManager::kGfxType_BasicTrisNoDepthTest);
     RenderBackgroundAnimation(mShapeRenderer);
 }

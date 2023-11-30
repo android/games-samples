@@ -17,7 +17,7 @@
 #include "texture_manager.hpp"
 #include "common.hpp"
 #include "game_asset_manager.hpp"
-#include "native_engine.hpp"
+#include "tunnel_engine.hpp"
 #include "simple_renderer/renderer_interface.h"
 
 using namespace simple_renderer;
@@ -265,7 +265,7 @@ bool TextureManager::IsTextureLoaded(const char *textureName) {
 bool TextureManager::LoadTexture(const char *textureName) {
     bool success = false;
     if (!IsTextureLoaded(textureName)) {
-        GameAssetManager *gameAssetManager = NativeEngine::GetInstance()->GetGameAssetManager();
+        GameAssetManager *gameAssetManager = TunnelEngine::GetInstance()->GetGameAssetManager();
         uint64_t fileSize = gameAssetManager->GetGameAssetSize(textureName);
         if (fileSize > 0) {
             uint8_t *fileBuffer = static_cast<uint8_t *>(malloc(fileSize));

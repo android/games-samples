@@ -16,7 +16,7 @@
 
 #include "gfx_manager.hpp"
 #include "common.hpp"
-#include "native_engine.hpp"
+#include "tunnel_engine.hpp"
 #include "data/our_shader.inl"
 
 #define ARRAY_COUNTOF(array) (sizeof(array) / sizeof(array[0]))
@@ -64,7 +64,7 @@ static const char *GetTrivialFragShaderSourceGLES() {
 }
 
 static void LoadSPIRVAsset(const char* asset_filename, void** asset_ptr, size_t* asset_size) {
-  GameAssetManager* asset_manager = NativeEngine::GetInstance()->GetGameAssetManager();
+  GameAssetManager* asset_manager = TunnelEngine::GetInstance()->GetGameAssetManager();
   *asset_size = asset_manager->GetGameAssetSize(asset_filename);
   if (*asset_size > 0) {
     *asset_ptr = malloc(*asset_size);
@@ -331,10 +331,6 @@ void GfxManager::RenderSimpleGeom(const GfxType gfxType, const float *mvpMat, Si
   } else {
     renderer.Draw(sg->vertex_buffer_->GetBufferElementCount(), 0);
   }
-}
-
-void GfxManager::SwapchainRecreated() {
-  simple_renderer::Renderer::GetInstance().SwapchainRecreated();
 }
 
 void GfxManager::UpdateDisplaySize(const int32_t width, const int32_t height) {

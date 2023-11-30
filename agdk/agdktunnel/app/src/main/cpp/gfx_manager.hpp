@@ -48,8 +48,6 @@ class GfxManager {
   GfxManager(bool useVulkan, const int32_t width, const int32_t height);
   ~GfxManager();
 
-  void SwapchainRecreated();
-
   void SetMainRenderPass();
 
   void SetRenderState(GfxType gfxType);

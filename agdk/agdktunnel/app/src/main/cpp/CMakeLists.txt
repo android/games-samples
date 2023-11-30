@@ -57,7 +57,7 @@ set(CMAKE_SHARED_LINKER_FLAGS
 
 # Set common compiler options
 set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-nullability-completeness -Wno-thread-safety-analysis -Wno-unused-variable" )
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -Werror -Wno-nullability-completeness -Wno-thread-safety-analysis -Wno-unused-variable" )
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -Werror -Wno-nullability-completeness -Wno-thread-safety-analysis -Wno-unused-variable -Werror=unguarded-availability" )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D _LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS -O0 -fPIC" )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti" )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGOOGLE_PROTOBUF_NO_RTTI -DHAVE_PTHREAD")
@@ -83,16 +83,27 @@ endif()
 set(BGF_SRCS
      ${BGF_SRC_DIR}/debug_manager.cpp
      ${BGF_SRC_DIR}/display_manager.cpp
+     ${BGF_SRC_DIR}/system_event_manager.cpp
+     ${BGF_SRC_DIR}/user_input_manager.cpp
      ${BGF_SRC_DIR}/graphics_api_features.cpp
+     ${BGF_SRC_DIR}/android/basegameframework_init_android.cpp
      ${BGF_SRC_DIR}/android/display_manager_android.cpp
+     ${BGF_SRC_DIR}/android/filesystem_manager_android.cpp
+     ${BGF_SRC_DIR}/android/game_controller_android.cpp
+     ${BGF_SRC_DIR}/android/game_controller_manager_android.cpp
+     ${BGF_SRC_DIR}/android/platform_event_loop_android.cpp
+     ${BGF_SRC_DIR}/android/platform_events_android.cpp
      ${BGF_SRC_DIR}/android/platform_util_gles_android.cpp
      ${BGF_SRC_DIR}/android/platform_util_log_android.cpp
      ${BGF_SRC_DIR}/android/platform_util_vulkan_android.cpp
      ${BGF_SRC_DIR}/android/platform_util_android.cpp
+     ${BGF_SRC_DIR}/android/system_event_manager_android.cpp
+     ${BGF_SRC_DIR}/android/system_info_utils_android.cpp
      ${BGF_SRC_DIR}/gles/graphics_api_gles.cpp
      ${BGF_SRC_DIR}/vulkan/graphics_api_vulkan.cpp
      ${BGF_SRC_DIR}/vulkan/graphics_api_vulkan_loader.cpp
      ${BGF_SRC_DIR}/vulkan/graphics_api_vulkan_utils.cpp)
+
 
 # TODO: migrate to imported cmake file for commonality with other samples
 set(SIMPLE_RENDERER_SRCS
@@ -150,6 +161,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
      text_renderer.cpp
      texture_manager.cpp
      tuning_manager.cpp
+     tunnel_engine.cpp
      ui_scene.cpp
      util.cpp
      vibration_helper.cpp
@@ -181,7 +193,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
      games-performance-tuner::tuningfork_static
      games-memory-advice::memory_advice_static
      GLESv3
-     vulkan
      glm
      log)
 

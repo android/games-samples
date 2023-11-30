@@ -67,7 +67,7 @@ void PlatformUtilAndroid::InitMethods(JNIEnv* env) {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_google_android_basegameframework_BaseGameFrameworkUtils_registerUtilObject(
+Java_com_google_android_games_basegameframework_BaseGameFrameworkUtils_registerUtilObject(
     JNIEnv* env, jobject thiz) {
   jclass activity_class = env->GetObjectClass(thiz);
   if (activity_class != nullptr) {

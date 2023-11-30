@@ -33,6 +33,7 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
+import com.google.android.games.basegameframework.BaseGameFrameworkUtils;
 import com.google.androidgamesdk.GameActivity;
 import com.google.android.libraries.play.games.inputmapping.InputMappingClient;
 import com.google.android.libraries.play.games.inputmapping.InputMappingProvider;
@@ -67,6 +68,9 @@ public class AGDKTunnelActivity extends GameActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        baseGameFrameworkUtils = new BaseGameFrameworkUtils(this);
+        baseGameFrameworkUtils.Initialize();
+
         // When true, the app will fit inside any system UI windows.
         // When false, we render behind any system UI windows.
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
@@ -185,4 +189,6 @@ public class AGDKTunnelActivity extends GameActivity {
         PackageManager pm = getPackageManager();
         return pm.hasSystemFeature(mPlayGamesPCSystemFeature);
     }
+
+    private BaseGameFrameworkUtils baseGameFrameworkUtils;
 }

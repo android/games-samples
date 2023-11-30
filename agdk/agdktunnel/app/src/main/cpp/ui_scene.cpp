@@ -65,7 +65,7 @@ UiWidget *UiScene::NewWidget() {
 }
 
 void UiScene::OnStartGraphics() {
-    GfxManager *gfxManager = NativeEngine::GetInstance()->GetGfxManager();
+    GfxManager *gfxManager = TunnelEngine::GetInstance()->GetGfxManager();
     mTextRenderer = new TextRenderer(gfxManager->GetUniformBuffer(
         GfxManager::kGfxType_BasicThickLinesNoDepthTest));
     mShapeRenderer = new ShapeRenderer(gfxManager->GetUniformBuffer(
@@ -111,7 +111,7 @@ UiWidget *UiScene::GetWidgetById(int id) {
 void UiScene::DoFrame() {
     SceneManager *mgr = SceneManager::GetInstance();
 
-    GfxManager *gfxManager = NativeEngine::GetInstance()->GetGfxManager();
+    GfxManager *gfxManager = TunnelEngine::GetInstance()->GetGfxManager();
     gfxManager->SetMainRenderPass();
 
     // render background
@@ -145,7 +145,7 @@ void UiScene::DoFrame() {
 
     // Render memory statistics
     gfxManager->SetRenderState(GfxManager::kGfxType_BasicThickLinesNoDepthTest);
-    NativeEngine::GetInstance()->GetMemoryConsumer()->RenderMemoryStatistics(
+    TunnelEngine::GetInstance()->GetMemoryConsumer()->RenderMemoryStatistics(
         mTextRenderer);
 }
 
@@ -308,7 +308,7 @@ void UiWidget::Render(TextRenderer *textRenderer,
         // that was easy.
         return;
     }
-    GfxManager *gfxManager = NativeEngine::GetInstance()->GetGfxManager();
+    GfxManager *gfxManager = TunnelEngine::GetInstance()->GetGfxManager();
 
     bool pulse = IsClickableButton() && (focus != FOCUS_NO);
     float factor = pulse ? SineWave(1.0f - PULSE_AMOUNT, 1.0f + PULSE_AMOUNT,

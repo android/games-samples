@@ -24,6 +24,8 @@ import android.os.Environment;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 import android.util.Log;
+import android.view.Display;
+import android.view.Surface;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -53,6 +55,8 @@ public class BaseGameFrameworkUtils {
     private static final int kOrientationPortrait = 1;
 
     public static final int FREE_SPACE_MIN_API = Build.VERSION_CODES.O;
+
+    public static final int CONTEXT_GET_DISPLAY_MIN_API = Build.VERSION_CODES.R;
 
     private Activity mGameActivity;
     private FreeSpace mFreeSpace;
@@ -166,10 +170,19 @@ public class BaseGameFrameworkUtils {
         }
     }
 
+    @SuppressWarnings("deprecation")
     public int getDeviceRotation()
     {
-        int rotation = mGameActivity.getWindowManager().getDefaultDisplay().getRotation();
-        return rotation; // NCT_FIX
+        int rotation = Surface.ROTATION_0;
+        if (Build.VERSION.SDK_INT >= CONTEXT_GET_DISPLAY_MIN_API) {
+            Display display = mGameActivity.getDisplay();
+            if (display != null) {
+                rotation = display.getRotation();
+            }
+        } else {
+            rotation = mGameActivity.getWindowManager().getDefaultDisplay().getRotation();
+        }
+        return rotation;
     }
     public native void registerUtilObject();
 }

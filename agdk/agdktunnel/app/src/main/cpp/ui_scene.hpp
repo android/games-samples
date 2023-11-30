@@ -21,6 +21,7 @@
 #include "engine.hpp"
 #include "shape_renderer.hpp"
 #include "text_renderer.hpp"
+#include "tunnel_engine.hpp"
 #include "util.hpp"
 
 #define UI_DIR_UP 0
@@ -115,7 +116,7 @@ public:
     UiWidget *GetWidgetById(int id);
 
     void SetInputSdkContext() {
-        NativeEngine::GetInstance()->SetInputSdkContext(INPUT_CONTEXT_UI_SCENE);
+        TunnelEngine::GetInstance()->SetInputSdkContext(INPUT_CONTEXT_UI_SCENE);
     }
 
 private:

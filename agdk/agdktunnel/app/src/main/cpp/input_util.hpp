@@ -66,15 +66,6 @@ struct CookedEvent {
     bool textInputState;
 };
 
-typedef bool (*CookedEventCallback)(struct CookedEvent *event);
-
-bool CookGameActivityKeyEvent(GameActivityKeyEvent *keyEvent, CookedEventCallback callback);
-
-bool
-CookGameActivityMotionEvent(GameActivityMotionEvent *motionEvent, CookedEventCallback callback);
-
-bool CookGameControllerEvent(const int32_t gameControllerIndex, CookedEventCallback callback);
-
 bool isDirectionalKey(const int32_t keyCode);
 
 int32_t getOurKeyFromAndroidKey(const int32_t androidKeyCode);
