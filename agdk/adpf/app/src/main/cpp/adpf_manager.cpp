@@ -189,7 +189,7 @@ bool ADPFManager::InitializePerformanceHintManager() {
 
   // Create int array which contain current tid.
   jintArray array = env->NewIntArray(1);
-  int32_t tid = getpid();
+  int32_t tid = gettid();
   env->SetIntArrayRegion(array, 0, 1, &tid);
   const jlong DEFAULT_TARGET_NS = 16666666;
 
