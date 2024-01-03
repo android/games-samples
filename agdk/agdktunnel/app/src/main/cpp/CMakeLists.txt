@@ -22,7 +22,6 @@ find_package(oboe REQUIRED CONFIG)
 find_package(game-activity REQUIRED CONFIG)
 find_package(games-controller REQUIRED CONFIG)
 find_package(games-frame-pacing REQUIRED CONFIG)
-find_package(games-memory-advice REQUIRED CONFIG)
 find_package(games-performance-tuner REQUIRED CONFIG)
 find_package(com.google.android.gms.gni.c REQUIRED CONFIG)
 
@@ -147,7 +146,6 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
      jni_util.cpp
      loader_scene.cpp
      loading_thread.cpp
-     memory_consumer.cpp
      data_loader_machine.cpp
      native_engine.cpp
      obstacle.cpp
@@ -191,7 +189,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
      games-controller::paddleboat_static
      games-frame-pacing::swappy_static
      games-performance-tuner::tuningfork_static
-     games-memory-advice::memory_advice_static
      GLESv3
      glm
      log)

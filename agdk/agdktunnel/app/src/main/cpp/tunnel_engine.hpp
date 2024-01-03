@@ -21,7 +21,6 @@
 
 #include "gfx_manager.hpp"
 #include "game_asset_manager.hpp"
-#include "memory_consumer.hpp"
 #include "tuning_manager.hpp"
 #include "vibration_helper.hpp"
 #include "data_loader_machine.hpp"
@@ -58,9 +57,6 @@ class TunnelEngine : public NativeEngine {
 
   // returns the tuning manager instance
   TuningManager *GetTuningManager() { return mTuningManager; }
-
-  // returns the memory consumer instance
-  MemoryConsumer *GetMemoryConsumer() { return mMemoryConsumer; }
 
   // returns the vibration helper instance
   VibrationHelper *GetVibrationHelper() { return mVibrationHelper; }
@@ -101,9 +97,6 @@ class TunnelEngine : public NativeEngine {
 
   // Tuning manager instance
   TuningManager *mTuningManager;
-
-  // Memory consumer instance
-  MemoryConsumer *mMemoryConsumer;
 
   // Gfx resource manager instance
   GfxManager *mGfxManager;
