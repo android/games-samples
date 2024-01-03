@@ -12,7 +12,7 @@ such as vibration
 
 ## Prerequisites
 
-Before building in Android Studio the following prerequisites must be
+Before building in Android Studio (2022.3 or higher) the following prerequisites must be
 performed:
 
 ### ImGui

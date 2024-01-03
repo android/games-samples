@@ -31,7 +31,7 @@ feedback on in-game collisions.
 
 ## Building
 
-Open the `agdktunnel' directory in Android Studio 2021.2 or higher.
+Open the `agdktunnel' directory in Android Studio 2022.3 or higher.
 
 ## Memory Advice
 

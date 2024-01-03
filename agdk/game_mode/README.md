@@ -13,7 +13,7 @@ Note that this sample is just demonstrating the easiest and most distinguishable
 
 ## Prerequisites
 
-Before building in Android Studio, the following prerequisites must be met:
+Before building in Android Studio (2022.3 or higher), the following prerequisites must be met:
 
 ### Requirements
 
@@ -25,7 +25,7 @@ game mode functionality will be available.
 
 This sample utilizes 3rd party libraries such as Dear Imgui and Bullet physics. Follow these steps to setup the required libraries:
 
-1. Open a terminal and set the working directory to `agdk/thirdparty/`
+1. Open a terminal and set the working directory to `agdk/third_party/`
 2. Run: `git clone https://github.com/ocornut/imgui`
 3. Run: `git clone https://github.com/bulletphysics/bullet3`
 
