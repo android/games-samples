@@ -142,11 +142,6 @@ void UiScene::DoFrame() {
                             (mFocusWidget < 0) ? UiWidget::FOCUS_NOT_APPLICABLE :
                             (mFocusWidget == i) ? UiWidget::FOCUS_YES : UiWidget::FOCUS_NO, tf);
     }
-
-    // Render memory statistics
-    gfxManager->SetRenderState(GfxManager::kGfxType_BasicThickLinesNoDepthTest);
-    TunnelEngine::GetInstance()->GetMemoryConsumer()->RenderMemoryStatistics(
-        mTextRenderer);
 }
 
 void UiScene::RenderBackground() {

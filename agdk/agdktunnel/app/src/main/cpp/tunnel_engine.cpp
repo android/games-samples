@@ -24,7 +24,6 @@
 #include "simple_renderer/renderer_interface.h"
 
 #include "game-activity/GameActivity.h"
-#include "memory_advice/memory_advice.h"
 #include "gni/gni.h"
 
 static TunnelEngine *_singleton = NULL;
@@ -53,10 +52,6 @@ TunnelEngine::TunnelEngine(struct android_app *app) : NativeEngine(app) {
                                            app->activity->javaGameActivity);
   mTextureManager = NULL;
   mGfxManager = NULL;
-
-  // Initialize the memory consumer, used to exercise the
-  // Memory Advice library. Off by default.
-  mMemoryConsumer = new MemoryConsumer(false);
 
   // Initialize the GNI runtime. This function needs to be called before any
   // call to the wrapper code (the VibrationHelper depends on this).
@@ -143,7 +138,6 @@ void TunnelEngine::GameLoop() {
     } else {
       PlatformEventLoop::GetInstance().PollEvents();
       PollGameController();
-      mMemoryConsumer->Update();
       mGameAssetManager->UpdateGameAssetManager();
       if (mApp->textInputState) {
         struct CookedEvent ev;
