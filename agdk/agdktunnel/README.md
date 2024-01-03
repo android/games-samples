@@ -10,7 +10,6 @@ AGDKTunnel uses the following AGDK libraries:
 * GameActivity
 * GameController
 * GameTextInput
-* Memory Advice
 * Oboe
 
 AGDKTunnel can optionally use the following Play libraries:
@@ -32,26 +31,6 @@ feedback on in-game collisions.
 ## Building
 
 Open the `agdktunnel' directory in Android Studio 2022.3 or higher.
-
-## Memory Advice
-
-AGDKTunnel integrates the Memory Advice library to receive hints when memory usage is becoming
-critical and risks being terminated by the OS due to low available memory.
-
-Memory consumption is artificially inflated using the MemoryConsumer class, which also displays
-status information onscreen. This is off by default. The **Consume Memory** button in the title
-screen can be used to enable memory consumption.
-
-When active, the Memory Consumer allocates at random intervals blocks of variable sizes and
-places them into two memory pools, dubbed 'General' and 'Cache'. If the Memory Advice library
-signals a critical memory situation, the Memory Consumer frees all allocations from the Cache
-pool. After the first critical memory warning, the Memory Consumer ceases to allocate into the
-General pool and only allocates into the Cache pool.
-
-When active, the Memory Consumer displays statistics on screen in the UI and Play scenes. The
-information is formatted as follows:
-
-`(status) (crit warning count) (percent available) (General pool size) (Cache pool size)`
 
 **(status)**
 `OK|WARN|CRIT`

@@ -116,7 +116,6 @@ dependencies {
     implementation "androidx.games:games-performance-tuner:1.5.0"
     implementation "androidx.games:games-activity:2.0.2"
     implementation "androidx.games:games-controller:2.0.0"
-    implementation "androidx.games:games-memory-advice:2.0.0-rc01"
 
     // Dependency for using APIs wrapped using library wrapper
     implementation 'com.google.android.gms:play-services-gni-native-c:1.0.0-beta2'

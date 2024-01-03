@@ -43,7 +43,6 @@ protected:
     UiWidget *mNameEdit;
     int mTestButtonId;
     int mQuitButtonId;
-    int mMemoryButtonId;
 
     OwnedGameTextInputState mTextInputState;
 
