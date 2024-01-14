@@ -23,7 +23,7 @@ void nativeThermalStatusChanged(JNIEnv *env, jclass cls, jint thermalState) {
   ADPFManager::getInstance().SetThermalStatus(thermalState);
 }
 
-// Native API to register/unregiser thethermal status change listener.
+// Native API to register/unregister the thermal status change listener.
 // The function is called from Activity implementation in Java.
 void thermal_callback(void *data, AThermalStatus status) {
   ADPFManager::getInstance().SetThermalStatus(status);
@@ -46,7 +46,7 @@ void nativeUnregisterThermalStatusListener(JNIEnv *env, jclass cls) {
     if (__builtin_available(android 31, *)) {
       auto ret = AThermal_unregisterThermalStatusListener(
           manager, thermal_callback, nullptr);
-      ALOGI("Thermal Status callback unregisterred to:%d", ret);
+      ALOGI("Thermal Status callback unregistered to:%d", ret);
     }
   }
 }
@@ -93,7 +93,7 @@ bool ADPFManager::InitializePowerManager() {
   JNIEnv *env = NativeEngine::GetInstance()->GetJniEnv();
   obj_power_service_ = GetService(env, "POWER_SERVICE");
 
-  // Retrive API reference.
+  // Retrieve API reference.
   jclass cls_power_service = env->GetObjectClass(obj_power_service_);
   get_thermal_headroom_ =
       env->GetMethodID(cls_power_service, "getThermalHeadroom", "(I)F");
@@ -117,7 +117,7 @@ bool ADPFManager::InitializeBatteryManager() {
   JNIEnv *env = NativeEngine::GetInstance()->GetJniEnv();
   obj_battery_service_ = GetService(env, "BATTERY_SERVICE");
 
-  // Retrive API reference.
+  // Retrieve API reference.
   jclass cls_battery_service = env->GetObjectClass(obj_battery_service_);
   get_long_property_ =
       env->GetMethodID(cls_battery_service, "getLongProperty", "(I)J");
@@ -163,7 +163,7 @@ float ADPFManager::UpdateThermalStatusHeadRoom() {
     // Use NDK API to retrieve thermal status headroom.
     if (__builtin_available(android 31, *)) {
       thermal_headroom_ = AThermal_getThermalHeadroom(thermal_manager_,
-                                                      thremal_headroom_forcast_);
+                                                      thremal_headroom_forecast_);
     }
     return thermal_headroom_;
   }
@@ -175,7 +175,7 @@ float ADPFManager::UpdateThermalStatusHeadRoom() {
 
   // Get thermal headroom!
   thermal_headroom_ = env->CallFloatMethod(
-      obj_power_service_, get_thermal_headroom_, thremal_headroom_forcast_);
+      obj_power_service_, get_thermal_headroom_, thermal_headroom_forecast_);
   ALOGE("Current thermal Headroom %f", thermal_headroom_);
   return thermal_headroom_;
 }
@@ -192,7 +192,7 @@ bool ADPFManager::InitializePerformanceHintManager() {
   jmethodID mid_createhintsession =
       env->GetMethodID(cls_perfhint_service, "createHintSession",
                        "([IJ)Landroid/os/PerformanceHintManager$Session;");
-  jmethodID mid_preferedupdaterate = env->GetMethodID(
+  jmethodID mid_preferredupdaterate = env->GetMethodID(
       cls_perfhint_service, "getPreferredUpdateRateNanos", "()J");
 
   // Create int array which contain current tid.
@@ -209,7 +209,7 @@ bool ADPFManager::InitializePerformanceHintManager() {
   } else {
     obj_perfhint_session_ = env->NewGlobalRef(obj_hintsession);
     preferred_update_rate_ =
-        env->CallLongMethod(obj_perfhint_service_, mid_preferedupdaterate);
+        env->CallLongMethod(obj_perfhint_service_, mid_preferredupdaterate);
 
     // Retrieve mid of Session APIs.
     jclass cls_perfhint_session = env->GetObjectClass(obj_perfhint_session_);

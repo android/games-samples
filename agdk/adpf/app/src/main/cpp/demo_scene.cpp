@@ -70,7 +70,7 @@ void DemoScene::OnScreenResized(int width, int height) {}
 //--------------------------------------------------------------------------------
 // Process each frame's status updates.
 // - Initiate the OpenGL rendering.
-// - Monitor the device's thermal staus using ADPF API.
+// - Monitor the device's thermal status using ADPF API.
 // - Update physics using BulletPhysics.
 // - Render cubes.
 // - Render UI using ImGUI (Show device's thermal status).
@@ -440,7 +440,7 @@ void DemoScene::InitializePhysics() {
 }
 
 //--------------------------------------------------------------------------------
-// Update phycis world and render boxes.
+// Update physics world and render boxes.
 //--------------------------------------------------------------------------------
 void DemoScene::UpdatePhysics() {
   // In the sample, it's looping physics update here.

@@ -51,7 +51,7 @@
    // Requests may receive an error response if this is missing or wrong.
    optional string api_key = 4;
 
-   // Name of the fidelitiy_parameters.bin file in assets/tuningfork
+   // Name of the fidelity_parameters.bin file in assets/tuningfork
    //  used if no download was ever successful.
    optional string default_fidelity_parameters_filename = 5;
 
