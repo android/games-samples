@@ -55,8 +55,8 @@ set(CMAKE_SHARED_LINKER_FLAGS
     "${CMAKE_SHARED_LINKER_FLAGS} -u GameActivity_onCreate")
 
 # Set common compiler options
-set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-nullability-completeness -Wno-thread-safety-analysis -Wno-unused-variable" )
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -Werror -Wno-nullability-completeness -Wno-thread-safety-analysis -Wno-unused-variable -Werror=unguarded-availability" )
+set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-nullability-completeness -Wno-thread-safety-analysis -Wno-unused-function -Wno-unused-variable" )
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -Werror -Wno-nullability-completeness -Wno-thread-safety-analysis -Wno-unused-function -Wno-unused-variable -Werror=unguarded-availability" )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D _LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS -O0 -fPIC" )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti" )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGOOGLE_PROTOBUF_NO_RTTI -DHAVE_PTHREAD")
