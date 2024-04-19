@@ -266,6 +266,11 @@ void GraphicsAPIVulkan::QueryDeviceCapabilities(VkPhysicalDevice physical_device
   const uint32_t api_version = PlatformUtilVulkan::GetVulkanApiVersion();
   DetermineAPILevel(api_version, device_properties.properties.apiVersion);
 
+  // Determine if the device has ETC2 texture support
+  if (device_features.features.textureCompressionETC2) {
+      feature_flags_ |= DisplayManager::kVulkan_ETC2_Support;
+  }
+
   DetermineNumericSupport(device_features.features.shaderInt16,
                           shader_float_16_int_8_features, device_16_bit_storage_features);
   // TODO: Android Baseline Profile detection

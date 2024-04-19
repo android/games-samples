@@ -116,13 +116,15 @@ bool NativeEngine::AttemptDisplayInitialization() {
     }
 
     DisplayManager::GraphicsAPI graphics_api = DisplayManager::kGraphicsAPI_Vulkan;
-    uint32_t requested_features = DisplayManager::kVulkan_1_1_Support;
+    uint32_t requested_features = DisplayManager::kVulkan_1_1_Support |
+        DisplayManager::kVulkan_ETC2_Support;
     mIsVulkan = true;
 
     if (vk_api_flags == DisplayManager::kGraphics_API_Unsupported ||
-        ((vk_api_flags & DisplayManager::kVulkan_1_1_Support) == 0) || s_disable_vulkan) {
+        ((vk_api_flags & DisplayManager::kVulkan_1_1_Support) == 0) ||
+        ((vk_api_flags & DisplayManager::kVulkan_ETC2_Support) == 0) || s_disable_vulkan) {
         // Fall back to GLES 3 if Vulkan isn't supported, or isn't at
-        // least a Vulkan 1.1+ device
+        // least a Vulkan 1.1+ device that supports ETC2
         graphics_api = DisplayManager::kGraphicsAPI_GLES;
         requested_features = DisplayManager::kGLES_3_0_Support;
         mIsVulkan = false;
