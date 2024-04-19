@@ -115,7 +115,9 @@ class DisplayManager {
     /** @brief Bit flag if device meets Android Baseline Profile for Vulkan 2021 TODO: */
     kVulkan_Android_Baseline_Profile_2021 = (1U << 16),
     /** @brief Bit flag if device meets Android Baseline Profile for Vulkan 2022 TODO: */
-    kVulkan_Android_Baseline_Profile_2022 = (1U << 17)
+    kVulkan_Android_Baseline_Profile_2022 = (1U << 17),
+    /** @brief Require Vulkan device to include hardware support for ETC2 textures */
+    kVulkan_ETC2_Support = (1U << 18)
   };
 
   /** @brief Enum of result values from ::InitGraphicsAPI */
