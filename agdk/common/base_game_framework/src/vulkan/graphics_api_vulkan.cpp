@@ -18,6 +18,7 @@
 #include "debug_manager.h"
 #include "graphics_api_vulkan_utils.h"
 #include "platform_util_vulkan.h"
+#include <vector>
 
 namespace base_game_framework {
 
@@ -765,9 +766,10 @@ bool GraphicsAPIVulkan::CreateDevice(bool is_preflight_check,
   graphics_queue_index_ = queue_indices.graphics_family.value();
   present_queue_index_ = queue_indices.present_family.value();
   // Need a graphics and present queue
-  VkDeviceQueueCreateInfo queue_create_infos[2];
+  std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
   const float queue_priority = 1.0f;
 
+  queue_create_infos.emplace_back();
   queue_create_infos[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   queue_create_infos[0].pNext = nullptr;
   queue_create_infos[0].flags = 0;
@@ -775,12 +777,16 @@ bool GraphicsAPIVulkan::CreateDevice(bool is_preflight_check,
   queue_create_infos[0].queueCount = 1;
   queue_create_infos[0].pQueuePriorities = &queue_priority;
 
-  queue_create_infos[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-  queue_create_infos[1].pNext = nullptr;
-  queue_create_infos[1].flags = 0;
-  queue_create_infos[1].queueFamilyIndex = queue_indices.present_family.value();
-  queue_create_infos[1].queueCount = 1;
-  queue_create_infos[1].pQueuePriorities = &queue_priority;
+  if (graphics_queue_index_ != present_queue_index_) {
+    queue_create_infos.emplace_back();
+    queue_create_infos[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queue_create_infos[1].pNext = nullptr;
+    queue_create_infos[1].flags = 0;
+    queue_create_infos[1].queueFamilyIndex =
+        queue_indices.present_family.value();
+    queue_create_infos[1].queueCount = 1;
+    queue_create_infos[1].pQueuePriorities = &queue_priority;
+  }
 
   VkPhysicalDeviceFeatures device_features{};
   if (api_features_.HasGraphicsFeature(GraphicsAPIFeatures::kGraphicsFeature_I16_Math)) {
@@ -795,8 +801,9 @@ bool GraphicsAPIVulkan::CreateDevice(bool is_preflight_check,
 
   VkDeviceCreateInfo device_create_info{};
   device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-  device_create_info.queueCreateInfoCount = 2;
-  device_create_info.pQueueCreateInfos = queue_create_infos;
+  device_create_info.queueCreateInfoCount =
+      static_cast<uint32_t>(queue_create_infos.size());
+  device_create_info.pQueueCreateInfos = queue_create_infos.data();
   device_create_info.pEnabledFeatures = &device_features;
   device_create_info.enabledExtensionCount =
       static_cast<uint32_t>(required_device_extensions.size());
