@@ -19,6 +19,7 @@
 #include "input_util.hpp"
 #include "scene_manager.hpp"
 #include "native_engine.hpp"
+#include "remap_test.hpp"
 
 #include "controllerui_data.h"
 
@@ -80,9 +81,9 @@ NativeEngine::NativeEngine(struct android_app *app) {
 
     Paddleboat_init(GetJniEnv(), app->activity->javaGameActivity); //clazz);
 
-    VLOGD("NativeEngine: querying API level.");
-    ALOGI("NativeEngine: API version %d.", mApiVersion);
-    ALOGI("NativeEngine: Density %d", mScreenDensity);
+    // Comment out to run controller remap patch test
+    ControllerRemapTest remapTest(GetJniEnv());
+    remapTest.DoRemapTest();
 }
 
 NativeEngine *NativeEngine::GetInstance() {

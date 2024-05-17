@@ -58,6 +58,7 @@ add_library(game SHARED
         input_util.cpp
         jni_util.cpp
         native_engine.cpp
+        remap_test.cpp
         scene.cpp
         scene_manager.cpp
         texture_asset_loader.cpp
