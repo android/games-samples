@@ -67,12 +67,12 @@
 #define PLAYER_MAX_Z TUNNEL_HALF_H - 1.0f
 #define PLAYER_MIN_Z -(PLAYER_MAX_Z)
 
-// touch control sensivity (ship displacement caused by dragging the screen by a length
+// touch control sensitivity (ship displacement caused by dragging the screen by a length
 // equivalent to its height).
-#define TOUCH_CONTROL_SENSIVITY (TUNNEL_HALF_W * 5)
+#define TOUCH_CONTROL_SENSITIVITY (TUNNEL_HALF_W * 5)
 
-// joystick control sensivity (maximum velocity attained per axis)
-#define JOYSTICK_CONTROL_SENSIVITY 20.0f
+// joystick control sensitivity (maximum velocity attained per axis)
+#define JOYSTICK_CONTROL_SENSITIVITY 20.0f
 
 // how many points equal a raise in difficulty level?
 #define SCORE_PER_LEVEL 500
@@ -131,7 +131,7 @@
 // the speed after colliding with an obstacle
 #define PLAYER_SPEED_AFTER_COLLISION -20.0f
 
-// how far beind the obstacle the player is placed upon collision
+// how far behind the obstacle the player is placed upon collision
 #define PLAYER_RECEDE_AFTER_COLLISION 2.0f
 
 // how long the heart meter blinks for when you've just lost a life
