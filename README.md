@@ -48,6 +48,11 @@ samples and tools specific to Google Play Games for PC.
 Example tooling to help automate configuring a Unity engine project to target
 Google Play Games for PC.
 
+## Unity engine samples
+
+The **[unity/](unity)** directory contains samples demonstrating best practices
+when targeting Android with the Unity engine.
+
 ## Codelabs
 
 The **[codelabs/](codelabs)** directory contains two codelabs on learning how
