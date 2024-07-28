@@ -12,7 +12,7 @@ This will help you to diagnose your ANRs, on Unity versions 2022 and less. From 
 already integrated into Unity.
 
 ## Step 1: Run the sample
-Open the project in the [unity-anr-plugin](unity-anr-plugin) folder in your Unity Editor, inspect the code and run the project.
+Open the project in the [unity-anr-project](unity-anr-project) folder in your Unity Editor, inspect the code and run the project.
 
 
 # License
