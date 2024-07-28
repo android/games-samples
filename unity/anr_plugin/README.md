@@ -14,6 +14,8 @@ already integrated into Unity.
 ## Step 1: Run the sample
 Open the project in the [unity-anr-project](unity-anr-project) folder in your Unity Editor, inspect the code and run the project.
 
+## Step 2: (Optional) Build the plugin in Android Studio
+Open the project in the [unity-anr-plugin](unity-anr-plugin) in your Android Studio.
 
 # License
 **unity_anr** is distributed under the terms of the Apache License (Version 2.0). See the
