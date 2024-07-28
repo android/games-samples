@@ -12,7 +12,7 @@ This will help you to diagnose your ANRs, on Unity versions 2022 and less. From 
 functionality is already integrated into Unity.
 
 # How to use
-1. **Build** the project in Android Studio Hedgehog (as the toolchain might not work with the newer
+1. **Build** the project in Android Studio Hedgehog (as the toolchain might not work with newer
     Android Studio versions)
 
 2. **Grab** the `UnityANR-Plugin.aar` file (compiled plugin) from the `Plugin/build/outputs/aar/` folder
