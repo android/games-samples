@@ -13,8 +13,7 @@ functionality is already integrated into Unity.
 
 # How to use
 1. **Build** the project in Android Studio Hedgehog (as the toolchain might not work with the newer
-    Android Studio versions) by
-    openning the project folders in Android Studio and hitting "Make Project"
+    Android Studio versions)
 
 2. **Grab** the `UnityANR-Plugin.aar` file (compiled plugin) from the `Plugin/build/outputs/aar/` folder
 
