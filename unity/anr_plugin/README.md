@@ -18,5 +18,5 @@ Open the project in the [unity-anr-project](unity-anr-project) folder in your Un
 Open the project in the [unity-anr-plugin](unity-anr-plugin) folder in your Android Studio.
 
 # License
-**unity_anr** is distributed under the terms of the Apache License (Version 2.0). See the
+**anr_plugin** is distributed under the terms of the Apache License (Version 2.0). See the
 [license](LICENSE.txt) for more information.
