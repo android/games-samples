@@ -29,10 +29,9 @@ public static class GameModeUtil
  	{
   		int gameMode = GameModeUnsupported;
   		AndroidJNI.AttachCurrentThread();
- 
-  		var buildClass = AndroidJNI.FindClass("android.os.Build$VERSION");
-  		var sdkFieldID = AndroidJNI.GetStaticFieldID(buildClass, "SDK_INT", "I");
-  		var sdkLevel = AndroidJNI.GetStaticIntField(buildClass, sdkFieldID);
+
+	    using var version = new AndroidJavaClass("android.os.Build$VERSION");
+	    var sdkLevel = version.GetStatic<int>("SDK_INT");	    
   		if (sdkLevel < MinimumGameModeApiLevel) return gameMode;
 
   		using var unityPlayerClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
