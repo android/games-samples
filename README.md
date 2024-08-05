@@ -53,6 +53,11 @@ Google Play Games for PC.
 The **[unity/](unity)** directory contains samples demonstrating best practices
 when targeting Android with the Unity engine.
 
+* **[unity/power_efficiency_demo](unity/power_efficiency_demo)**
+
+Sample project implementing best practices for power efficiency on Android
+when using the Unity engine for game development.
+
 ## Codelabs
 
 The **[codelabs/](codelabs)** directory contains two codelabs on learning how
