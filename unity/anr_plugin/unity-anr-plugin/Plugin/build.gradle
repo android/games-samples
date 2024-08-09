@@ -52,7 +52,7 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
 }
 
-task buildAndDeploy() {
+tasks.register('buildAndDeploy') {
     dependsOn ':Plugin:assembleDebug', ':Plugin:renameAAR'
     finalizedBy(':Plugin:copyAARDebug')
 }
