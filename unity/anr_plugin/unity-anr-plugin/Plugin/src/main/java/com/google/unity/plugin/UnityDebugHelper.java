@@ -132,7 +132,7 @@ public class UnityDebugHelper {
     public void forceANR() {
         ActivityManager am = (ActivityManager) _context.getSystemService(Context.ACTIVITY_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            am.appNotResponding("Forced ANR");
+            am.appNotResponding("Forced ANR for debugging purposes");
         }
     }
 }
