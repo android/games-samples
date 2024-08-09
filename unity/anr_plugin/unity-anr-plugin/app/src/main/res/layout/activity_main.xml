@@ -35,9 +35,9 @@
         android:id="@+id/toastButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Show Toast"
+        android:onClick="forceANR"
+        android:text="Force ANR"
         tools:layout_editor_absoluteX="155dp"
-        tools:layout_editor_absoluteY="429dp"
-        android:onClick="showToast"/>
+        tools:layout_editor_absoluteY="429dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

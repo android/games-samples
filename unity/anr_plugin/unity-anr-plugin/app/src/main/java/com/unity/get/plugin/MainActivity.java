@@ -21,17 +21,10 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.util.Log;
 import android.view.View;
 
-import com.google.unity.plugin.FileHandler;
 import com.google.unity.plugin.Memory;
 import com.google.unity.plugin.UnityDebugHelper;
-import com.unity.get.plugin.R;
-
-import java.io.File;
-import java.util.Objects;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -44,16 +37,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-       /* Log.d(UnityDebugHelper.Tag, this.getExternalCacheDir().toString());
-        Log.d(UnityDebugHelper.Tag, this.getExternalFilesDir("").toString());
-        Log.d(UnityDebugHelper.Tag, this.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).toString());
-        Log.d(UnityDebugHelper.Tag, this.getFilesDir().toString());*/
-
-        /*
         plugin = new UnityDebugHelper();
+        plugin.enableLogging(true);
         plugin.init(this, null);
-        plugin.checkForExitInfo();*/
-//        memory = new Memory(this, false);
+        plugin.checkForExitInfo();
+
+        memory = new Memory(this, false);
+
 //
 //        addOnTrimMemoryListener(memory.consumer);
 //
@@ -68,12 +58,11 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void showToast(View view) {
-        //ToastHelper.showToast(this, "Testing a Toast");
-        //plugin.threadSleep();
+    public void forceANR(View view) {
+        memory.getMemoryInfo(true);
         ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            am.appNotResponding("Forced ANR");
+            //am.appNotResponding("Forced ANR");
         }
     }
 }
