@@ -74,7 +74,7 @@ namespace ndk_helper {
         Vec2 vec_last_input_;
         Vec3 vec_offset_last_;
         Vec3 vec_offset_delta_;
-        float momemtum_steps_;
+        float momentum_steps_;
 
         Vec2 vec_flip_;
         float flip_z_;

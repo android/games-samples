@@ -22,7 +22,7 @@
 
 class GameAssetManager;
 
-/* Basic scene implentation for our demo UI display */
+/* Basic scene implementation for our demo UI display */
 class DemoScene : public Scene {
 protected:
     // is a touch pointer (a.k.a. finger) down at the moment?
