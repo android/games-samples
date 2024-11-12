@@ -94,12 +94,12 @@ public class UnityDebugHelper {
         return platformChecker.isPlayGamesPC();
     }
 
-    public void threadSleep() {
-        Util.threadSleep();
+    public void threadSleep(float milliseconds) {
+        Util.threadSleep(milliseconds);
     }
 
-    public void threadSleepMain() {
-        Util.threadSleepMain(_context);
+    public void threadSleepMain(float milliseconds) {
+        Util.threadSleepMain(_context, milliseconds);
     }
 
     public void threadOverheadMain() {

@@ -31,17 +31,18 @@ import java.util.concurrent.TimeUnit;
 
 public class Util {
 
-    public static final int DefaultWaitTime = 15500;
     public static final String unityMethod = "OnProcessingCompleted";
 
-    public static void threadSleep() {
+    public static void threadSleep(float milliseconds) {
         long time = System.nanoTime();
-        Log.d(UnityDebugHelper.Tag, "Forcing Thread Sleep. Running Thread: " + Thread.currentThread().getName());
+        if (UnityDebugHelper.logEnabled)
+            Log.d(UnityDebugHelper.Tag, "Forcing Thread Sleep. Running Thread: " + Thread.currentThread().getName());
         try {
-            Thread.sleep(DefaultWaitTime);
+            Thread.sleep((long) milliseconds);
             time = logTime(time, "threadSleep");
         } catch (InterruptedException e) {
-            Log.e(UnityDebugHelper.Tag, "My custom ANR. Exception: ", e);
+            if (UnityDebugHelper.logEnabled)
+                Log.e(UnityDebugHelper.Tag, "My custom ANR. Exception: ", e);
         }
 
         UnityPlayer.UnitySendMessage(UnityDebugHelper.UnityGameObject, unityMethod,
@@ -49,13 +50,14 @@ public class Util {
 
     }
 
-    public static void threadSleepMain(Context context) {
+    public static void threadSleepMain(Context context, float milliseconds) {
 
         context.getMainExecutor().execute(() -> {
             long time = System.nanoTime();
-            Log.d(UnityDebugHelper.Tag, "Forcing Thread Sleep. Running Thread: " + Thread.currentThread().getName());
+            if (UnityDebugHelper.logEnabled)
+                Log.d(UnityDebugHelper.Tag, "Forcing Thread Sleep. Running Thread: " + Thread.currentThread().getName());
             try {
-                Thread.sleep(DefaultWaitTime);
+                Thread.sleep((long) milliseconds);
                 time = logTime(time, "threadSleepMain");
                 UnityPlayer.UnitySendMessage(UnityDebugHelper.UnityGameObject, unityMethod, String.format(Locale.ENGLISH, "%dms", time));
             } catch (InterruptedException e) {
@@ -68,7 +70,8 @@ public class Util {
 
         context.getMainExecutor().execute(() -> {
             long time = System.nanoTime();
-            Log.d(UnityDebugHelper.Tag, "Forcing Thread Sleep. Running Thread: " + Thread.currentThread().getName());
+            if (UnityDebugHelper.logEnabled)
+                Log.d(UnityDebugHelper.Tag, "Forcing Thread Sleep. Running Thread: " + Thread.currentThread().getName());
 
             int a = 1;
             int b = 2;
