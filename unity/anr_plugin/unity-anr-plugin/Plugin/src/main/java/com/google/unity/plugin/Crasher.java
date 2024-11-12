@@ -37,7 +37,8 @@ public class Crasher {
             });
         }
         else{
-            Log.w(UnityDebugHelper.Tag, "Requires Android Version 9 Pie");
+            if (UnityDebugHelper.logEnabled)
+                Log.w(UnityDebugHelper.Tag, "Requires Android Version 9 Pie");
         }
     }
 }

@@ -51,7 +51,8 @@ public class StrictModeHandler {
             StrictMode.setThreadPolicy(oldPolicy);
             StrictMode.setVmPolicy(oldVmPolicy);
         } else {
-            Log.d(UnityDebugHelper.Tag, "Strict Mode was not enabled by the Plugin");
+            if (UnityDebugHelper.logEnabled)
+                Log.d(UnityDebugHelper.Tag, "Strict Mode was not enabled by the Plugin");
         }
     }
 }
