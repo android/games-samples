@@ -28,21 +28,22 @@ namespace com.google.unity.anr
 
         public static event EventHandler<TrimMemoryData> OnLowMemoryReceived;
 
-        public static void ProcessCompleted(object sender, string time)
+        internal static void ProcessCompleted(object sender, string time)
         {
             OnOperationCompleted?.Invoke(sender, time);
         }
 
-        public static void ApplicationExitInfoFetched(object sender, AppExitInfoData[] appExitInfo)
+        internal static void ApplicationExitInfoFetched(object sender, AppExitInfoData[] appExitInfo)
         {
             OnApplicationExitInfoFetched?.Invoke(sender, appExitInfo);
         }
 
-        public static void MemoryInfoUpdated(object sender, MemoryData data)
+        internal static void MemoryInfoUpdated(object sender, MemoryData data)
         {
             OnMemoryStatsUpdated?.Invoke(sender, data);
         }
-        public static void LowMemoryReceived(object sender, TrimMemoryData trimMemoryData)
+
+        internal static void LowMemoryReceived(object sender, TrimMemoryData trimMemoryData)
         {
             OnLowMemoryReceived?.Invoke(sender, trimMemoryData);
         }
