@@ -37,9 +37,9 @@ namespace com.google.unity.anr
             IsInitialized = true;
         }
 
-        public static void ForceThreadSleep(bool isUnityThread)
+        public static void ForceThreadSleep(bool isUnityThread, float milliseconds)
         {
-            MainJavaObject.Call(isUnityThread ? "threadSleep" : "threadSleepMain");
+            MainJavaObject.Call(isUnityThread ? "threadSleep" : "threadSleepMain", milliseconds);
         }
 
         public static void ForceCrash()
@@ -52,7 +52,7 @@ namespace com.google.unity.anr
             MainJavaObject.Call("forceNativeCrash");
         }
 
-        public static void ForceANR()
+        public static void ForceApplicationNotResponding()
         {
             MainJavaObject.Call("forceANR");
         }
@@ -62,9 +62,9 @@ namespace com.google.unity.anr
             MainJavaObject.Call("checkForExitInfo");
         }
 
-        public static void GetMemoryInfo()
+        public static void GetMemoryInfo(bool forced)
         {
-            MainJavaObject.Call("getMemoryInfo", false);
+            MainJavaObject.Call("getMemoryInfo", forced);
         }
 
         public static void StartMemoryStats(int memoryStatsInterval)
@@ -105,51 +105,90 @@ namespace com.google.unity.anr
             _androidUnityObj.Call("Sleep", 4000);
         }
 #else
+        /// <summary>
+        /// Initializes the Plugin with the GameObject name that will receive the messages from the Java
+        /// </summary>
+        /// <param name="name"></param>
         public static void InitPlugin(string name)
         {
         }
 
-        public static void ForceThreadSleep(bool isUnityThread)
+        /// <summary>
+        /// Forces the MainThread or the Unity Thread to sleep
+        /// </summary>
+        /// <param name="isUnityThread">Block the Unity Thread</param>
+        /// <param name="milliseconds">Sleep duration</param>
+        public static void ForceThreadSleep(bool isUnityThread, float milliseconds)
         {
         }
 
+        /// <summary>
+        /// Force a crash in the Java code
+        /// </summary>
         public static void ForceCrash()
         {
         }
 
+        /// <summary>
+        /// Force a crash in the Java code on the MainThread
+        /// </summary>
         public static void ForceNativeCrash()
         {
         }
 
-        public static void ForceANR()
+        /// <summary>
+        /// Calls the ActivityManager.appNotResponding(REASON)
+        /// </summary>
+        public static void ForceApplicationNotResponding()
         {
         }
 
+        /// <summary>
+        /// Starts the processing for fetching ApplicationExitInfo
+        /// </summary>
         public static void CheckAppExitInfo()
         {
         }
 
-        public static void GetMemoryInfo()
+        /// <summary>
+        /// Retrieve latest MemoryInfo from the Plugin
+        /// </summary>
+        public static void GetMemoryInfo(bool forced)
         {
         }
 
+        /// <summary>
+        /// Retrieve WebView apk verison
+        /// </summary>
+        /// <returns></returns>
         public static String GetWebViewInfo()
         {
             return "0";
         }
 
+        /// <summary>
+        /// Start the process of checking memory on an interval
+        /// </summary>
+        /// <param name="memoryStatsInterval"></param>
         public static void StartMemoryStats(int memoryStatsInterval)
         {
         }
 
+        /// <summary>
+        /// Calls the StrictMode.setThreadPolicy
+        /// </summary>
         public static void EnableStrictMode()
         {
         }
 
+        /// <summary>
+        /// Disable all StrictMode.setThreadPolicy
+        /// </summary>
         public static void DisableStrictMode()
         {
         }
 
+        
         public static void EnableLogging(bool enable)
         {
 
