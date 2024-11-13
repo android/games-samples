@@ -27,7 +27,7 @@ namespace com.google.unity.anr
         [SerializeField] private bool shouldSetThreadName;
         [SerializeField] private bool logEnabled;
 
-        public const string UnityGameThread = "UnityGame";
+        [SerializeField] private string unityThreadName;
         private CancellationTokenSource _tokenSource;
         private Task _memoryTask;
 
@@ -37,7 +37,7 @@ namespace com.google.unity.anr
             DontDestroyOnLoad(gameObject);
             if (shouldSetThreadName && string.IsNullOrEmpty(Thread.CurrentThread.Name))
             {
-                Thread.CurrentThread.Name = UnityGameThread;
+                Thread.CurrentThread.Name = unityThreadName.Trim();
             }
 
             PluginBinder.InitPlugin(gameObject.name);
@@ -65,7 +65,7 @@ namespace com.google.unity.anr
             while (!_tokenSource.IsCancellationRequested)
             {
                 Logger.Log("GetLastMemoryInfo");
-                PluginBinder.GetMemoryInfo();
+                PluginBinder.GetMemoryInfo(false);
 
                 Logger.Log("Wait to GetLastMemoryInfo");
                 await Task.Delay(memoryStatsInterval * 1000, _tokenSource.Token);
@@ -131,7 +131,7 @@ namespace com.google.unity.anr
         public void OnProcessingCompleted(string totalTime)
         {
             Logger.Log($"OnProcessingCompleted: {totalTime}");
-            PluginEvents.ProcessCompleted(this, totalTime);
+            PluginEvents.ThreadSleepCompleted(this, totalTime);
         }
 
         #endregion
