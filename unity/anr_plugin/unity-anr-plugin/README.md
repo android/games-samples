@@ -8,7 +8,7 @@ The Unity ANR Plugin provides the access to the following APIs from Android SDK:
        and prevent ANRs/deadlocks caused by I/O operations on the Main Thread
 3. Polling the memory stats for Unity 2021 and older
 
-This will help you to diagnose your ANRs, on Unity versions 2022 and less. From Unity 2023, this
+This will help you to diagnose your ANRs, on Unity versions 2022 and older. From Unity 2023, this
 functionality is already integrated into Unity.
 
 # How to use

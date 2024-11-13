@@ -66,14 +66,16 @@ public class AppExitInfoHandler {
     public void checkForExitInfo() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             if (_sendUnityMsg) {
-                Log.w(UnityDebugHelper.Tag, "Unable to check - Android 11 required");
+                if (UnityDebugHelper.logEnabled)
+                    Log.w(UnityDebugHelper.Tag, "Unable to check - Android 11 required");
                 sendUnityEvent("OnAppExitInfoChecked", "");
             }
             return;
         }
 
         if (_thread != null && _thread.isAlive()) {
-            Log.w(UnityDebugHelper.Tag, "Processing AppExitInfo is already in progress");
+            if (UnityDebugHelper.logEnabled)
+                Log.w(UnityDebugHelper.Tag, "Processing AppExitInfo is already in progress");
             return;
         }
 

@@ -20,29 +20,42 @@ namespace com.google.unity.anr
 {
     public abstract class PluginEvents
     {
+        /// <summary>
+        /// For debugging purposes this event is fired when a Thread.Sleep is completed in the Java's MainThread
+        /// </summary>
         public static event EventHandler<string> OnOperationCompleted;
 
+        /// <summary>
+        /// Once the plugin fetches all ApplicationExitInfo data this event is fired 
+        /// </summary>
         public static event EventHandler<AppExitInfoData[]> OnApplicationExitInfoFetched;
 
+        /// <summary>
+        /// Once the plugin sends memory stats this event will be fired
+        /// </summary>
         public static event EventHandler<MemoryData> OnMemoryStatsUpdated;
 
+        /// <summary>
+        /// Whenever the application is running low on memory
+        /// </summary>
         public static event EventHandler<TrimMemoryData> OnLowMemoryReceived;
 
-        public static void ProcessCompleted(object sender, string time)
+        internal static void ThreadSleepCompleted(object sender, string time)
         {
             OnOperationCompleted?.Invoke(sender, time);
         }
 
-        public static void ApplicationExitInfoFetched(object sender, AppExitInfoData[] appExitInfo)
+        internal static void ApplicationExitInfoFetched(object sender, AppExitInfoData[] appExitInfo)
         {
             OnApplicationExitInfoFetched?.Invoke(sender, appExitInfo);
         }
 
-        public static void MemoryInfoUpdated(object sender, MemoryData data)
+        internal static void MemoryInfoUpdated(object sender, MemoryData data)
         {
             OnMemoryStatsUpdated?.Invoke(sender, data);
         }
-        public static void LowMemoryReceived(object sender, TrimMemoryData trimMemoryData)
+
+        internal static void LowMemoryReceived(object sender, TrimMemoryData trimMemoryData)
         {
             OnLowMemoryReceived?.Invoke(sender, trimMemoryData);
         }

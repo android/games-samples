@@ -48,11 +48,11 @@ dependencies {
 
     implementation project(path: ':UnityActivity')
     compileOnly files('libs/classes.jar')
-    implementation 'androidx.webkit:webkit:1.7.0'
-    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.webkit:webkit:1.12.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
 }
 
-task buildAndDeploy() {
+tasks.register('buildAndDeploy') {
     dependsOn ':Plugin:assembleDebug', ':Plugin:renameAAR'
     finalizedBy(':Plugin:copyAARDebug')
 }

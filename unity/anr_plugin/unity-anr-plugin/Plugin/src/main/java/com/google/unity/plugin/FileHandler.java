@@ -29,7 +29,8 @@ import java.nio.file.Files;
 public class FileHandler {
     public static boolean copyStreamToFile(InputStream is, File outFile) throws IOException {
         if (is == null || outFile == null) {
-            Log.e(UnityDebugHelper.Tag, "Failed to write file");
+            if (UnityDebugHelper.logEnabled)
+                Log.e(UnityDebugHelper.Tag, "Failed to write file");
             return false;
         }
 

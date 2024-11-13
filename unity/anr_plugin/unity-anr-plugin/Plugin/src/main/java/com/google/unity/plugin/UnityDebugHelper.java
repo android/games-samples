@@ -94,12 +94,12 @@ public class UnityDebugHelper {
         return platformChecker.isPlayGamesPC();
     }
 
-    public void threadSleep() {
-        Util.threadSleep();
+    public void threadSleep(float milliseconds) {
+        Util.threadSleep(milliseconds);
     }
 
-    public void threadSleepMain() {
-        Util.threadSleepMain(_context);
+    public void threadSleepMain(float milliseconds) {
+        Util.threadSleepMain(_context, milliseconds);
     }
 
     public void threadOverheadMain() {
@@ -132,7 +132,7 @@ public class UnityDebugHelper {
     public void forceANR() {
         ActivityManager am = (ActivityManager) _context.getSystemService(Context.ACTIVITY_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            am.appNotResponding("Forced ANR");
+            am.appNotResponding("Forced ANR for debugging purposes");
         }
     }
 }

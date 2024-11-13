@@ -25,7 +25,8 @@ public class UnityActivity extends UnityPlayerActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.e(UnityDebugHelper.Tag, "USING CUSTOM ACTIVITY");
+        if (UnityDebugHelper.logEnabled)
+            Log.e(UnityDebugHelper.Tag, "USING CUSTOM ACTIVITY");
     }
 
     @Override

@@ -44,7 +44,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7dd61ac01d604afe96efa41519dc541, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  memoryStatsInterval: 20
+  memoryStatsInterval: 10
   enableStrictMode: 0
-  shouldSetThreadName: 1
+  shouldSetThreadName: 0
   logEnabled: 1
+  unityThreadName: MyGame
