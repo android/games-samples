@@ -1,0 +1,17 @@
+{
+  "name": "com.google.unity.anr",
+  "displayName": "Unity ANR",
+  "version": "1.0.0",
+  "unity": "2022.3",
+  "description": "Java plugin to access Android OS API functions:\n• ApplicationExitInfo - Describes the information of an application process's death\n• Strict Mode - helps you find accidental I/O operations on the main thread\n• Memory - It also provides a method to retrieve Memory Stats in a specified interval.\n• Enhanced Memory Warnings - The plugin provides the Memory Warning Level triggered by the Android OS. So your code can act accordingly.\n\n\nClick the 'View documentation' link above for more information.",
+  "keywords": [
+    "Tool",
+    "Debug",
+    "Android",
+    "Profiling"
+  ],
+  "dependencies": {
+  },
+  "relatedPackages": {
+  }
+}
