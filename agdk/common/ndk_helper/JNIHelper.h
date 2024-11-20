@@ -137,9 +137,9 @@ namespace ndk_helper {
       static JNIHelper* GetInstance();
 
       /*
-       * Read a file from a strorage.
+       * Read a file from a storage.
        * First, the method tries to read the file from an external storage.
-       * If it fails to read, it falls back to use assset manager and try to read
+       * If it fails to read, it falls back to use asset manager and try to read
        * the file from APK asset.
        *
        * arguments:
@@ -168,7 +168,7 @@ namespace ndk_helper {
       /*
        * Retrieve external file directory through JNI call
        *
-       * return: std::string containing external file diretory
+       * return: std::string containing external file directory
        */
       std::string GetExternalFilesDir();
 

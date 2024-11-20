@@ -338,7 +338,7 @@ extern "C" void Java_com_google_sample_agdktunnel_PGSManager_savedStateSnapshotN
 }
 
 extern "C" void Java_com_google_sample_agdktunnel_PGSManager_savedStateCloudDataFound(
-    JNIEnv */*env*/, jobject /*pgsManagerl*/) {
+    JNIEnv */*env*/, jobject /*pgsManager*/) {
   TunnelEngine *instance = TunnelEngine::GetInstance();
   instance->GetDataStateMachine()->savedStateCloudDataFound();
 }
