@@ -54,9 +54,11 @@ The **[unity/](unity)** directory contains samples demonstrating best practices
 when targeting Android with the Unity engine.
 
 * **[unity/power_efficiency_demo](unity/power_efficiency_demo)**
-
 Sample project implementing best practices for power efficiency on Android
 when using the Unity engine for game development.
+
+* **[unity/anr_plugin](unity/anr_plugin)**
+ Unity plugin helping you diagnose your game ANRs, on Unity versions 2022 and older.
 
 ## Codelabs
 
