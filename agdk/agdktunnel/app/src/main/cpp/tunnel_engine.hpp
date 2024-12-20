@@ -21,7 +21,6 @@
 
 #include "gfx_manager.hpp"
 #include "game_asset_manager.hpp"
-#include "tuning_manager.hpp"
 #include "vibration_helper.hpp"
 #include "data_loader_machine.hpp"
 #include "java/lang/string.h"
@@ -54,9 +53,6 @@ class TunnelEngine : public NativeEngine {
 
   // returns the texture manager instance
   TextureManager *GetTextureManager() { return mTextureManager; }
-
-  // returns the tuning manager instance
-  TuningManager *GetTuningManager() { return mTuningManager; }
 
   // returns the vibration helper instance
   VibrationHelper *GetVibrationHelper() { return mVibrationHelper; }
@@ -94,9 +90,6 @@ class TunnelEngine : public NativeEngine {
 
   // Texture manager instance
   TextureManager *mTextureManager;
-
-  // Tuning manager instance
-  TuningManager *mTuningManager;
 
   // Gfx resource manager instance
   GfxManager *mGfxManager;

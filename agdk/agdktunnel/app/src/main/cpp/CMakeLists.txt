@@ -22,23 +22,10 @@ find_package(oboe REQUIRED CONFIG)
 find_package(game-activity REQUIRED CONFIG)
 find_package(games-controller REQUIRED CONFIG)
 find_package(games-frame-pacing REQUIRED CONFIG)
-find_package(games-performance-tuner REQUIRED CONFIG)
 find_package(com.google.android.gms.gni.c REQUIRED CONFIG)
 
 # Set the base dir
 set(GAMESDK_BASE_DIR "../../../../..")
-
-set(PROTOBUF_NANO_SRC_DIR "${GAMESDK_BASE_DIR}/third_party/nanopb-c")
-# Include the protobuf utility file from the Android Game SDK
-include("${GAMESDK_BASE_DIR}/util/protobuf/protobuf.cmake")
-# Directory of nano protobuf library source files
-include_directories(${PROTOBUF_NANO_SRC_DIR})
-if("${USE_APT}" STREQUAL "true")
-    # generate runtime files using protoc
-    protobuf_generate_nano_c( ${CMAKE_CURRENT_SOURCE_DIR}/../proto ../proto/dev_tuningfork.proto)
-    protobuf_generate_nano_c( ${CMAKE_CURRENT_SOURCE_DIR}/../proto ../proto/tuningfork.proto)
-    include_directories(${PROTO_GENS_DIR})
-endif()
 
 # common include directory for all samples
 set(COMMON_BASE_DIR "../../../../../common")
@@ -55,28 +42,16 @@ set(CMAKE_SHARED_LINKER_FLAGS
     "${CMAKE_SHARED_LINKER_FLAGS} -u GameActivity_onCreate")
 
 # Set common compiler options
-set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-nullability-completeness -Wno-thread-safety-analysis -Wno-unused-function -Wno-unused-variable" )
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -Werror -Wno-nullability-completeness -Wno-thread-safety-analysis -Wno-unused-function -Wno-unused-variable -Werror=unguarded-availability" )
+set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-unused-private-field -Wno-nullability-completeness -Wno-thread-safety-analysis -Wno-unused-function -Wno-unused-variable" )
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -Werror -Wno-unused-private-field -Wno-nullability-completeness -Wno-thread-safety-analysis -Wno-unused-function -Wno-unused-variable -Werror=unguarded-availability" )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D _LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS -O0 -fPIC" )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti" )
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGOOGLE_PROTOBUF_NO_RTTI -DHAVE_PTHREAD")
 add_definitions("-DGLM_FORCE_SIZE_T_LENGTH -DGLM_FORCE_RADIANS")
 
-if("${USE_APT}" STREQUAL "true")
-    add_definitions("-DUSE_APT")
-endif()
-
 set(THIRD_PARTY_DIR ../../../../../third_party)
 # Import the CMakeLists.txt for the glm library
 add_subdirectory(${THIRD_PARTY_DIR}/glm ${CMAKE_CURRENT_BINARY_DIR}/glm)
-
-if("${USE_APT}" STREQUAL "true")
-    set(PROTOGEN_SRCS
-        ${PROTO_GENS_DIR}/nano/dev_tuningfork.pb.c
-        ${PROTO_GENS_DIR}/nano/tuningfork.pb.c)
-else()
-    set(PROTOGEN_SRCS "")
-endif()
 
 # TODO: migrate to imported cmake file for commonality with other samples
 set(BGF_SRCS
@@ -130,8 +105,6 @@ set(SIMPLE_RENDERER_SRCS
 
 # now build app's shared lib
 add_library(${CMAKE_PROJECT_NAME} SHARED
-     ${PROTOBUF_NANO_SRCS}
-     ${PROTOGEN_SRCS}
      ${BGF_SRCS}
      ${SIMPLE_RENDERER_SRCS}
      ${native_wrappers}
@@ -158,7 +131,6 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
      tex_quad.cpp
      text_renderer.cpp
      texture_manager.cpp
-     tuning_manager.cpp
      tunnel_engine.cpp
      ui_scene.cpp
      util.cpp
@@ -183,12 +155,12 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
      PUBLIC com.google.android.gms.gni.c::gni_shared
      android
      atomic
+     c++
      EGL
      game-activity::game-activity_static
      oboe::oboe
      games-controller::paddleboat_static
      games-frame-pacing::swappy_static
-     games-performance-tuner::tuningfork_static
      GLESv3
      glm
      log)

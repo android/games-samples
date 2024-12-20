@@ -5,7 +5,6 @@ AGDKTunnel is derived from the NDK sample Endless Tunnel.
 
 AGDKTunnel uses the following AGDK libraries:
 
-* Android Performance Tuner
 * Frame Pacing
 * GameActivity
 * GameController
@@ -30,79 +29,7 @@ feedback on in-game collisions.
 
 ## Building
 
-Open the `agdktunnel' directory in Android Studio 2022.3 or higher.
-
-## Android Performance Tuner (APT)
-
-Android Performance Tuner is disabled by default. To enable it, perform the following steps:
-
-1. Ensure APT build prerequisites are met
-2. Add an APT API key
-3. Enable the APT option in gradle.properties
-
-These steps are described in more detail in the following subsections.
-
-### APT Prerequisites
-
-#### Installing the protobuf compiler
-
-APT needs to run the `protoc` compiler to compile the protobuf files. You have
-two options for installing `protoc`:
-
-1. Follow the instructions in `third_party/protobuf-3.0.0/src/README.md` to compile
-your own protoc.
-2. Download precompiled binaries from [the protobuf releases page](https://github.com/protocolbuffers/protobuf/releases/tag/v3.0.0).
-
-The build scripts expect the following layout in the `third_party/protobuf-3.0.0/install` directory:
-
-```
-
-./linux-x86/bin:
-protoc
-
-./linux-x86/lib:
-(shared libraries)
-
-./mac/bin:
-protoc
-
-./mac/.libs:
-(shared libraries)
-
-./win/bin:
-protoc.exe
-
-```
-
-You can ignore subdirectories for OSes you aren't using.
-
-##### Note for macOS developers
-
-Precompiled versions of the `protoc` compiler arenot codesigned or notarized.
-You may need to allow execution of the relevant
-files using the **System Preferences -> Security & Privacy** control panel, adjust your
-Gatekeeper settings or compile your own protoc.
-
-#### Python
-
-Python is expected to be available in your `PATH`. The `protobuf` package is
-expected to have been installed via `pip`. In some cases, Android Studio may be using an internal
-install of Python rather than a system install. If this is the case, you may need to run
-`pip install protobuf` from the Terminal tab in Android Studio.
-
-#### APT API Key
-
-The APT functionality requires a valid API key to operate. This is not
-necessary to run the sample. For information on how to configure an API key
-for APT, see the **Get an API key for the Android Performance Tuner**
-section of the Codelab [Integrating Android Performance Tuner into your native Android game](https://developer.android.com/codelabs/android-performance-tuner-native#1).
-
-#### Enable the APT option
-
-To enable building the runtime APT assets and use the library at runtime, edit the
-`gradle.properties` file and change: `APTEnabled=false` to `APTEnabled=true`. When switching
-configurations, it is recommended to sync the gradle file, and run
-**Build -> Refresh Linked C++ Projects** and **Build -> Clean Project** before rebuilding.
+Open the `agdktunnel' directory in Android Studio 2024.2.1 Patch 2 or higher.
 
 ## Library Wrapper notes
 
@@ -177,5 +104,7 @@ For more information see the codelab: [Using Play Asset Delivery in native games
 
 ## Version history
 
+1.2.1 - Updated to current AGDK/NDK/AGP versions, deprecated Android Performance Tuner integration
+1.2.0 - Major refactor to add basegameframework support, Vulkan/GLES simplerenderer, updating AGDK versions
 1.0.4 - Merged Play integrations from AOSP. Play Asset Delivery,
         Input SDK, PGS sign in.
