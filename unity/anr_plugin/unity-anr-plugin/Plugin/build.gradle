@@ -83,7 +83,7 @@ tasks.register('copyAARDebug') {
 
         copy {
             from outputPath
-            into "PATH TO EXPORTED BUILD\\unityLibrary\\libs"
+            into "..\\..\\unity-anr-project\\runtime\\Plugins\\Android\\"
         }
     }
 
