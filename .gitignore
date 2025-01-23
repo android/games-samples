@@ -34,3 +34,9 @@ proguard-project.txt
 # Android Studio/IDEA
 *.iml
 .idea
+unity/power_efficiency_demo/Library
+unity/power_efficiency_demo/Logs
+unity/power_efficiency_demo/Temp
+unity/power_efficiency_demo/UserSettings
+unity/power_efficiency_demo/*.csproj
+unity/power_efficiency_demo/*.sln
