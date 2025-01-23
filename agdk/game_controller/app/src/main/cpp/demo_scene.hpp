@@ -23,7 +23,7 @@
 
 class GameAssetManager;
 
-/* Basic scene implentation for our demo UI display */
+/* Basic scene implementation for our demo UI display */
 class DemoScene : public Scene {
 private:
     // We want to register a touch down as the equivalent of

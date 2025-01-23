@@ -65,7 +65,7 @@ namespace ndk_helper {
             it++;
         }
 
-        LOGI("Patched Shdader:\n%s", str.c_str());
+        LOGI("Patched Shader:\n%s", str.c_str());
 
         std::vector <uint8_t> v(str.begin(), str.end());
         str.clear();

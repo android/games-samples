@@ -79,7 +79,7 @@ SfxMan::SfxMan() {
 
     // realize the output mix
     result = (*outputMixObject)->Realize(outputMixObject, SL_BOOLEAN_FALSE);
-    if (_checkError(result, "realizin goutput mix")) return;
+    if (_checkError(result, "realizing goutput mix")) return;
 
     // get the environmental reverb interface
     // this could fail if the environmental reverb effect is not available,

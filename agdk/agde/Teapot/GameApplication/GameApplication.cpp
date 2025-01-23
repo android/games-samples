@@ -571,7 +571,7 @@ int main(int argc, char **argv) {
     } else {
         // Otherwise, choose the first device.
         if (!InitializeWithFirstDevice(argv[0])) {
-            // Well that didn't work. Try default init afterall.
+            // Well that didn't work. Try default init after all.
             glutInit(&argc, argv);
         }
     }

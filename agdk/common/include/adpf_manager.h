@@ -37,7 +37,7 @@ void nativeUnregisterThermalStatusListener(JNIEnv* env, jclass cls);
 typedef void (*thermalStateChangeListener)(int32_t, int32_t);
 
 /*
- * ADPFManager class anages the ADPF APIs.
+ * ADPFManager class manages the ADPF APIs.
  */
 class ADPFManager {
  public:
@@ -95,13 +95,13 @@ class ADPFManager {
   float GetThermalHeadroom() { return thermal_headroom_; }
 
   // Set and get thermal headroom forecast period.
-  int32_t GetThermalHeadroomForecast() { return thremal_headroom_forcast_; }
+  int32_t GetThermalHeadroomForecast() { return thermal_headroom_forecast_; }
   void SetThermalHeadroomForecast(int32_t forecast) {
     if (forecast < kThermalHeadroomForecastMin ||
         forecast > kThermalHeadroomForecastMax) {
       return;
     }
-    thremal_headroom_forcast_ = forecast;
+    thermal_headroom_forecast_ = forecast;
     UpdateThermalStatusHeadRoom();
   }
 
@@ -153,7 +153,7 @@ class ADPFManager {
         update_target_work_duration_(0),
         close_session_(0),
         preferred_update_rate_(0),
-        thremal_headroom_forcast_(kThermalHeadroomForecastDefault) {
+        thermal_headroom_forecast_(kThermalHeadroomForecastDefault) {
     last_clock_ = Clock();
     perfhintsession_start_ = 0;
   }
@@ -188,8 +188,8 @@ class ADPFManager {
 
   float perfhintsession_start_;
 
-  // Theamal headroom forecast duration.
-  int32_t thremal_headroom_forcast_;
+  // Thermal headroom forecast duration.
+  int32_t thermal_headroom_forecast_;
 };
 
 #endif  // ADPF_MANAGER_H_

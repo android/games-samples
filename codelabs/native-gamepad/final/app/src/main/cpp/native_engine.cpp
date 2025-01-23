@@ -355,7 +355,7 @@ bool NativeEngine::InitContext() {
         return false;
     }
 
-    LOGD("NativeEngine: successfull initialized context.");
+    LOGD("NativeEngine: successful initialized context.");
 
     return true;
 }

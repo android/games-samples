@@ -27,7 +27,7 @@
 
 
 // This data comes from a binary resource linked to the library.
-// It conatins Java classes compressed into DEX format for dynamic loading.
+// It contains Java classes compressed into DEX format for dynamic loading.
 extern const char _binary_classes_dex_start;
 extern const char _binary_classes_dex_end;
 

@@ -214,7 +214,7 @@ namespace ndk_helper {
         return EGL_SUCCESS;
       }
 
-      int32_t original_widhth = screen_width_;
+      int32_t original_width = screen_width_;
       int32_t original_height = screen_height_;
 
       // Create surface
@@ -223,7 +223,7 @@ namespace ndk_helper {
       eglQuerySurface(display_, surface_, EGL_WIDTH, &screen_width_);
       eglQuerySurface(display_, surface_, EGL_HEIGHT, &screen_height_);
 
-      if (screen_width_ != original_widhth || screen_height_ != original_height) {
+      if (screen_width_ != original_width || screen_height_ != original_height) {
         // Screen resized
         LOGI("Screen resized");
       }
