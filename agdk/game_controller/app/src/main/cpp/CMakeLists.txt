@@ -82,6 +82,7 @@ target_compile_options(game
 # add lib dependencies
 target_link_libraries(game
         android
+        c++
         imgui
         game-activity::game-activity_static
         games-controller::paddleboat_static

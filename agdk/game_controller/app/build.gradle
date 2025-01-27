@@ -17,15 +17,15 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 33
-    ndkVersion '26.1.10909125'
+    compileSdkVersion 35
+    ndkVersion '27.2.12479018'
 
     defaultConfig {
         applicationId 'com.google.android.games.paddleboat.gamecontrollersample'
         minSdkVersion 24
-        targetSdkVersion 33
-        versionCode     3
-        versionName    '1.1.1'
+        targetSdkVersion 35
+        versionCode     4
+        versionName    '1.1.2'
         externalNativeBuild {
             cmake {
                 arguments '-DANDROID_STL=c++_shared'
@@ -47,9 +47,10 @@ android {
     buildFeatures {
         prefab true
     }
-}
-android.lintOptions {
-        abortOnError  = false
+    namespace 'com.google.android.games.paddleboat.gamecontrollersample'
+    lint {
+        abortOnError false
+    }
 }
 
 dependencies {
@@ -59,8 +60,8 @@ dependencies {
     implementation "androidx.core:core:1.5.0"
     implementation "androidx.constraintlayout:constraintlayout:2.0.4"
     implementation 'androidx.fragment:fragment:1.2.5'
-    implementation "androidx.games:games-activity:2.0.2"
-    implementation "androidx.games:games-controller:2.0.1"
+    implementation "androidx.games:games-activity:3.0.5"
+    implementation "androidx.games:games-controller:2.0.2"
     implementation "com.android.ndk.thirdparty:libpng:1.6.37-alpha-1"
 
     // Example of using local .aar files in libs/ directory.

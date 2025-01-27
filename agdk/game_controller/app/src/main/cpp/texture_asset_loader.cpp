@@ -178,7 +178,7 @@ TextureAssetLoader::loadTextureAsset(const char *filename, uint32_t *textureWidt
     return loadTextureAsset_LIBPNG(filename, textureWidth, textureHeight);
 }
 
-void TextureAssetLoader::unloadTextureAsset(const uint64_t textureReference) {
+void TextureAssetLoader::unloadTextureAsset(const TextureAssetHandle textureReference) {
     if (textureReference != INVALID_TEXTURE) {
         GLuint textureID = static_cast<GLuint>(textureReference);
         glDeleteTextures(1, &textureID);
