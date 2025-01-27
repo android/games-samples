@@ -144,6 +144,7 @@ target_compile_options(game
 target_link_libraries(game
         android
         bullet3
+        c++
         imgui
         game-activity::game-activity_static
         games-frame-pacing::swappy_static
