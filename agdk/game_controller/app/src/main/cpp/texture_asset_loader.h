@@ -19,7 +19,7 @@
 
 struct AAssetManager;
 
-typedef uint64_t TextureAssetHandle;
+typedef unsigned long long TextureAssetHandle;
 
 class TextureAssetLoader {
 public:
@@ -30,5 +30,5 @@ public:
     static TextureAssetHandle
     loadTextureAsset(const char *filename, uint32_t *textureWidth, uint32_t *textureHeight);
 
-    static void unloadTextureAsset(const uint64_t textureReference);
+    static void unloadTextureAsset(const TextureAssetHandle textureReference);
 };

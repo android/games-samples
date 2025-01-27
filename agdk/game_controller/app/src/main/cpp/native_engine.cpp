@@ -204,7 +204,7 @@ void NativeEngine::GameLoop() {
         struct android_poll_source *source;
 
         // If not animating, block until we get an event; if animating, don't block.
-        while ((ALooper_pollAll(IsAnimating() ? 0 : -1, NULL, &events, (void **) &source)) >= 0) {
+        while ((ALooper_pollOnce(IsAnimating() ? 0 : -1, NULL, &events, (void **) &source)) >= 0) {
 
             // process event
             if (source != NULL) {

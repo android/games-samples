@@ -90,7 +90,7 @@ void PlatformEventLoop::PollEvents() {
     game_controller_manager.Update();
   }
 
-  while ((ALooper_pollAll(0, nullptr, &events, (void **) &source)) >= 0) {
+  while ((ALooper_pollOnce(0, nullptr, &events, (void **) &source)) >= 0) {
     if (source != nullptr) {
       source->process(platform_data_->android_app_, source);
     }

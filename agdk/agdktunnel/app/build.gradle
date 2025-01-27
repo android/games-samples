@@ -18,8 +18,7 @@ import org.gradle.internal.os.OperatingSystem;
 
 apply plugin: 'com.android.application'
 
-// See README for details on enabling APT and PAD
-def useApt = APTEnabled
+// See README for details on enabling PAD
 def usePad = PADEnabled
 
 // Define a path to the extracted Play Core SDK files.
@@ -27,13 +26,13 @@ def usePad = PADEnabled
 def playcoreDir = file('libs/play-core-native-sdk')
 
 android {
-    compileSdkVersion 33
-    ndkVersion '26.1.10909125'
+    compileSdkVersion 35
+    ndkVersion '27.2.12479018'
 
     defaultConfig {
         applicationId 'com.google.sample.agdktunnel'
         minSdkVersion 24
-        targetSdkVersion 33
+        targetSdkVersion 35
         versionCode     10
         versionName    '1.2'
 
@@ -58,8 +57,7 @@ android {
             externalNativeBuild {
                 cmake {
                     arguments "-DANDROID_STL=c++_shared",
-                              "-DUSE_ASSET_PACKS=$usePad",
-                              "-DUSE_APT=$useApt"
+                              "-DUSE_ASSET_PACKS=$usePad"
                 }
             }
         }
@@ -70,8 +68,7 @@ android {
                         'proguard-rules.pro'
                 cmake {
                     arguments "-DANDROID_STL=c++_shared",
-                              "-DUSE_ASSET_PACKS=$usePad",
-                              "-DUSE_APT=$useApt"
+                              "-DUSE_ASSET_PACKS=$usePad"
                 }
             }
             multiDexEnabled true
@@ -84,6 +81,7 @@ android {
     }
     buildFeatures {
         prefab true
+        shaders true
     }
     assetPacks = [":install_time_assets", ":on_demand_assets"]
     // Enable the splitting of your asset packs per textures
@@ -112,10 +110,9 @@ dependencies {
     implementation "androidx.constraintlayout:constraintlayout:2.0.4"
     implementation 'androidx.fragment:fragment:1.2.5'
     implementation 'com.google.oboe:oboe:1.5.0'
-    implementation "androidx.games:games-frame-pacing:2.0.0"
-    implementation "androidx.games:games-performance-tuner:1.5.0"
-    implementation "androidx.games:games-activity:2.0.2"
-    implementation "androidx.games:games-controller:2.0.0"
+    implementation "androidx.games:games-frame-pacing:2.1.2"
+    implementation "androidx.games:games-activity:3.0.5"
+    implementation "androidx.games:games-controller:2.0.2"
 
     // Dependency for using APIs wrapped using library wrapper
     implementation 'com.google.android.gms:play-services-gni-native-c:1.0.0-beta2'
@@ -138,38 +135,6 @@ dependencies {
     //                                               'games-performance-tuner-1.5.0.aar'])
 }
 
-android.lintOptions {
-        abortOnError  = false
-}
-
-// Android Performance Tuner validation setup and protoc compile tasks
-task createJar(type: GradleBuild) {
-    buildFile = GameSDKPath + '/util/tuningfork/tools/validation/build.gradle'
-    tasks = ['createJar']
-}
-
-def getProtocPath() {
-    String platformName
-    if (OperatingSystem.current().isLinux()) platformName = "linux-x86/bin/protoc"
-    if (OperatingSystem.current().isMacOsX()) platformName = "mac/bin/protoc"
-    if (OperatingSystem.current().isWindows()) platformName = "win/bin/protoc"
-    return GameSDKPath + "/third_party/protobuf-3.0.0/install/"  + platformName
-}
-
-task buildTuningForkBinFiles(type: Exec) {
-    dependsOn createJar
-    commandLine "java",
-            "-jar",
-            GameSDKPath + "/util/tuningfork/tools/validation/build/libs/TuningforkApkValidationTool.jar",
-            "--tuningforkPath",
-            "src/main/assets/tuningfork",
-            "--protoCompiler",
-            getProtocPath()
-}
-
-if (APTEnabled.toBoolean()) {
-    tasks.preBuild.dependsOn("buildTuningForkBinFiles")
-}
 
 task copyTexturesToAssets(type: Copy) {
     def assetsDir = new File(projectDir, 'src/main/assets/no_asset_packs_textures')

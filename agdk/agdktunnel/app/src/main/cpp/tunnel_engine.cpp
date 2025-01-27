@@ -66,8 +66,6 @@ TunnelEngine::TunnelEngine(struct android_app *app) : NativeEngine(app) {
   String_destroy(vibratorString);
   String_destroy(vibrationManagerString);
 
-  mTuningManager = new TuningManager(GetJniEnv(), app->activity->javaGameActivity, app->config);
-
   // Set fields retrieved through JNI
   // Find the Java class
   jclass activityClass = GetJniEnv()->GetObjectClass(mApp->activity->javaGameActivity);
@@ -82,12 +80,7 @@ TunnelEngine::TunnelEngine(struct android_app *app) : NativeEngine(app) {
   FilesystemManager::kRootPathInternalStorage).c_str();
   mDataStateMachine = new DataLoaderStateMachine(mCloudSaveEnabled, internalStorage);
 
-  // Flags to control how the IME behaves.
-  constexpr int InputType_dot_TYPE_CLASS_TEXT = 1;
-  constexpr int IME_ACTION_NONE = 1;
-  constexpr int IME_FLAG_NO_FULLSCREEN = 33554432;
-
-  GameActivity_setImeEditorInfo(app->activity, InputType_dot_TYPE_CLASS_TEXT,
+  GameActivity_setImeEditorInfo(app->activity, TYPE_CLASS_TEXT,
                                 IME_ACTION_NONE, IME_FLAG_NO_FULLSCREEN);
 
   WelcomeScene::InitAboutText(GetJniEnv(), app->activity->javaGameActivity);
@@ -112,9 +105,6 @@ TunnelEngine::~TunnelEngine() {
   }
   if (mVibrationHelper != NULL) {
     delete mVibrationHelper;
-  }
-  if (mTuningManager != NULL) {
-    delete mTuningManager;
   }
   if (mGameAssetManager != NULL) {
     delete mGameAssetManager;

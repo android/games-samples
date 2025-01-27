@@ -19,7 +19,6 @@
 #include "game_asset_manifest.hpp"
 #include "gfx_manager.hpp"
 #include "loader_scene.hpp"
-#include "tuning_manager.hpp"
 #include "tunnel_engine.hpp"
 #include "welcome_scene.hpp"
 #include "strings.inl"
@@ -201,10 +200,6 @@ void LoaderScene::DoFrame() {
     if (mTextureLoader->NumberRemainingToLoad() == 0 &&
             mDataStateMachine->isLoadingDataCompleted()) {
         mTextureLoader->CreateTextures();
-
-        // Inform performance tuner we are done loading
-        TuningManager *tuningManager = TunnelEngine::GetInstance()->GetTuningManager();
-        tuningManager->FinishLoading();
 
         timespec currentTimeSpec;
         clock_gettime(CLOCK_MONOTONIC, &currentTimeSpec);
