@@ -29,6 +29,5 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "ANR-Plugin"
-include ':app'
 include ':Plugin'
 include ':UnityActivity'
