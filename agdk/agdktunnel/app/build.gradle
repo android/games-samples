@@ -26,21 +26,22 @@ def usePad = PADEnabled
 def playcoreDir = file('libs/play-core-native-sdk')
 
 android {
-    compileSdkVersion 35
+    compileSdkVersion 36
     ndkVersion '27.2.12479018'
 
     defaultConfig {
         applicationId 'com.google.sample.agdktunnel'
         minSdkVersion 24
-        targetSdkVersion 35
-        versionCode     10
-        versionName    '1.2'
+        targetSdkVersion 36
+        versionCode     124
+        versionName    '1.2.4'
 
         externalNativeBuild {
             cmake {
                 // Define the PLAYCORE_LOCATION directive.
-                arguments "-DANDROID_STL=c++_static",
-                        "-DPLAYCORE_LOCATION=$playcoreDir"
+                arguments "-DANDROID_STL=c++_shared",
+                        "-DPLAYCORE_LOCATION=$playcoreDir",
+                        "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
             }
         }
         ndk {
@@ -57,7 +58,8 @@ android {
             externalNativeBuild {
                 cmake {
                     arguments "-DANDROID_STL=c++_shared",
-                              "-DUSE_ASSET_PACKS=$usePad"
+                              "-DUSE_ASSET_PACKS=$usePad",
+                              "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
                 }
             }
         }
@@ -68,7 +70,8 @@ android {
                         'proguard-rules.pro'
                 cmake {
                     arguments "-DANDROID_STL=c++_shared",
-                              "-DUSE_ASSET_PACKS=$usePad"
+                              "-DUSE_ASSET_PACKS=$usePad",
+                              "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
                 }
             }
             multiDexEnabled true
