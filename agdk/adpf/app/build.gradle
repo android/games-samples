@@ -17,18 +17,19 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 35
+    compileSdkVersion 36
     ndkVersion '27.2.12479018'
 
     defaultConfig {
         applicationId 'com.android.example.games.adpf'
         minSdkVersion 24
-        targetSdkVersion 35
-        versionCode     4
-        versionName    '1.2.1'
+        targetSdkVersion 36
+        versionCode     5
+        versionName    '1.2.2'
         externalNativeBuild {
             cmake {
-                arguments '-DANDROID_STL=c++_shared'
+                arguments '-DANDROID_STL=c++_shared',
+                          '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
             }
         }
     }
