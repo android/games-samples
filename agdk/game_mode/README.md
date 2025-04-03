@@ -13,7 +13,7 @@ Note that this sample is just demonstrating the easiest and most distinguishable
 
 ## Prerequisites
 
-Before building in Android Studio (2022.3 or higher), the following prerequisites must be met:
+Before building in Android Studio 2024.3.1 Patch 1 (Meerkat) or higher, the following prerequisites must be met:
 
 ### Requirements
 
