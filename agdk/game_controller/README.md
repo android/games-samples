@@ -12,8 +12,8 @@ such as vibration
 
 ## Prerequisites
 
-Before building in Android Studio (2022.3 or higher) the following prerequisites must be
-performed:
+Before building in Android Studio 2024.3.1 Patch 1 (Meerkat) or higher the following prerequisites
+must be performed:
 
 ### ImGui
 
