@@ -5,11 +5,11 @@ AGDKTunnel is derived from the NDK sample Endless Tunnel.
 
 AGDKTunnel uses the following AGDK libraries:
 
-* Frame Pacing
-* GameActivity
-* GameController
-* GameTextInput
-* Oboe
+* Frame Pacing 120 
+* GameActivity 120
+* GameController 120
+* GameTextInput 120
+* Oboe 120
 
 AGDKTunnel can optionally use the following Play libraries:
 
