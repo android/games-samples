@@ -110,6 +110,7 @@ void PlatformUtilVulkan::GetRefreshRates(VkPhysicalDevice physical_device,
                                          uint32_t queue_family_index,
                                          std::vector<DisplayManager::DisplaySwapInterval> &
                                          swap_intervals) {
+  swap_intervals.clear();
   SwappyVk_setQueueFamilyIndex(device, queue, queue_family_index);
 
   uint64_t refresh_duration = 0;
@@ -228,6 +229,7 @@ std::vector<const char *> PlatformUtilVulkan::GetRequiredInstanceExtensions(
   instance_extensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
   if (enable_validation_layers) {
     instance_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    instance_extensions.push_back(VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME);
   }
   // Request the physical device properties 2 extension on 1.0, is core from
   // 1.1+
@@ -240,6 +242,7 @@ std::vector<const char *> PlatformUtilVulkan::GetRequiredInstanceExtensions(
 
 void PlatformUtilVulkan::GetScreenResolutions(const VkSurfaceCapabilitiesKHR &capabilities,
                                               std::vector<DisplayManager::DisplayResolution> &display_resolutions) {
+  display_resolutions.clear();
   const bool rotated = (capabilities.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
       capabilities.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR);
   const int32_t display_width = capabilities.currentExtent.width;
