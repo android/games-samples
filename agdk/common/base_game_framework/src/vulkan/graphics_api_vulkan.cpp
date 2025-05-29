@@ -133,11 +133,6 @@ void GraphicsAPIVulkan::QueryCapabilities() {
       if (vk_surface_ != VK_NULL_HANDLE) {
         vk_physical_device_ = GetPhysicalDevice();
         if (vk_physical_device_ != VK_NULL_HANDLE) {
-          QuerySurfaceCapabilities();
-          QueryDeviceCapabilities(vk_physical_device_);
-          VulkanAPIUtils::GetDisplayFormats(vk_physical_device_, vk_surface_, display_formats_);
-          PlatformUtilVulkan::GetScreenResolutions(surface_capabilities_, display_resolutions_);
-
           QueueFamilyIndices queue_indices = VulkanAPIUtils::FindQueueFamilies(
               vk_physical_device_, vk_surface_);
           if (CreateDevice(true, queue_indices)) {
@@ -607,7 +602,7 @@ DisplayManager::SwapchainFrameHandle GraphicsAPIVulkan::GetCurrentSwapchainFrame
 DisplayManager::SwapchainFrameHandle GraphicsAPIVulkan::PresentCurrentSwapchainFrame() {
   if (swapchain_acquired_current_frame_image_) {
     VkSemaphore wait_semaphores[] =
-        {frame_render_completion_semaphore_[swapchain_info_.swapchain_current_frame_index_]};
+        {frame_render_completion_semaphore_[swapchain_info_.swapchain_current_image_index_]};
 
     VkPresentInfoKHR present_info{};
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -649,9 +644,6 @@ DisplayManager::SwapchainFrameHandle GraphicsAPIVulkan::PresentCurrentSwapchainF
     swapchain_info_.swapchain_current_frame_index_ =
         (swapchain_info_.swapchain_current_frame_index_ + 1) %
             swapchain_info_.swapchain_frame_count_;
-    swapchain_info_.swapchain_current_depth_stencil_frame_index_ =
-        (swapchain_info_.swapchain_current_depth_stencil_frame_index_ + 1) %
-            swapchain_info_.swapchain_image_count_;
   } else {
     DebugManager::Log(DebugManager::kLog_Channel_Default,
                       DebugManager::kLog_Level_Error,
@@ -705,6 +697,9 @@ bool GraphicsAPIVulkan::GetSwapchainFrameResourcesVk(
                           "vkAcquireNextImageKHR failed: %d", result);
         return false;
       }
+      // TODO: this could just be the number of in-flight frames, but since they
+      // are now transient they shouldn't have memoery overhead (at least on mobile)
+      swapchain_info_.swapchain_current_depth_stencil_frame_index_ = swapchain_info_.swapchain_current_image_index_;
       swapchain_acquired_current_frame_image_ = true;
 
       vkResetFences(vk_device_, 1,
@@ -716,7 +711,7 @@ bool GraphicsAPIVulkan::GetSwapchainFrameResourcesVk(
     frame_resources.image_available =
         swapchain_image_semaphore_[swapchain_info_.swapchain_current_frame_index_];
     frame_resources.render_complete =
-        frame_render_completion_semaphore_[swapchain_info_.swapchain_current_frame_index_];
+        frame_render_completion_semaphore_[swapchain_info_.swapchain_current_image_index_];
     frame_resources.swapchain_color_image_view =
         swapchain_info_.swapchain_image_views_[swapchain_info_.swapchain_current_image_index_];
     frame_resources.swapchain_depth_stencil_image_view =
@@ -839,6 +834,13 @@ bool GraphicsAPIVulkan::CreateDevice(bool is_preflight_check,
     vkCreateDebugUtilsMessengerEXT(vk_instance_, &messenger_create_info, nullptr,
                                    &debug_messenger_);
   }
+
+  if (vk_device_ != VK_NULL_HANDLE) {
+    QuerySurfaceCapabilities();
+    QueryDeviceCapabilities(vk_physical_device_);
+    VulkanAPIUtils::GetDisplayFormats(vk_physical_device_, vk_surface_, display_formats_);
+    PlatformUtilVulkan::GetScreenResolutions(surface_capabilities_, display_resolutions_);
+  }
   return (vk_device_ != VK_NULL_HANDLE);
 }
 
@@ -885,6 +887,16 @@ void GraphicsAPIVulkan::CreateInstance(bool is_preflight_check) {
     PlatformUtilVulkan::InitMessengerCreateInfo(messenger_create_info);
     messenger_create_info.pfnUserCallback = messengerCallback;
     create_info.pNext = &messenger_create_info;
+    VkValidationFeaturesEXT features = {};
+    VkValidationFeatureEnableEXT enables[] = {
+// Best practices is a little spammy from Swappy at the moment
+//        VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT,
+        VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT
+    };
+    features.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+    features.enabledValidationFeatureCount = sizeof(enables) / sizeof(enables[0]);
+    features.pEnabledValidationFeatures = enables;
+    messenger_create_info.pNext = &features;
   } else {
     create_info.enabledLayerCount = 0;
     create_info.ppEnabledLayerNames = nullptr;
@@ -1061,13 +1073,16 @@ void GraphicsAPIVulkan::CreateSwapchainImages() {
       ds_image_info.format = swapchain_info_.swapchain_depth_stencil_format_;
       ds_image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
       ds_image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-      ds_image_info.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+      ds_image_info.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+          VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
       ds_image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
       ds_image_info.samples = VK_SAMPLE_COUNT_1_BIT;
       ds_image_info.flags = 0;
 
       VmaAllocationCreateInfo ds_image_alloc_create_info = {};
-      ds_image_alloc_create_info.usage = VMA_MEMORY_USAGE_AUTO;
+      // Depth-stencil images paired with a swapchain will be don't care for store
+      // so they can be lazily allocated
+      ds_image_alloc_create_info.usage = VMA_MEMORY_USAGE_GPU_LAZILY_ALLOCATED;
 
       VulkanAPIUtils::CheckVkResult(
           vmaCreateImage(allocator_, &ds_image_info,
@@ -1122,8 +1137,8 @@ void GraphicsAPIVulkan::DestroySwapchainImages() {
 void GraphicsAPIVulkan::CreateSynchronizationObjects() {
   const size_t in_flight_frame_count = DisplayManager::GetInstance().GetDisplayBufferMode();
   in_flight_frame_fence_.resize(in_flight_frame_count);
-  frame_render_completion_semaphore_.resize(in_flight_frame_count);
   swapchain_image_semaphore_.resize(in_flight_frame_count);
+  frame_render_completion_semaphore_.resize(swapchain_info_.swapchain_image_count_);
 
   VkSemaphoreCreateInfo semaphore_info{};
   semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -1132,11 +1147,13 @@ void GraphicsAPIVulkan::CreateSynchronizationObjects() {
   fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
   fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-  for (size_t i = 0; i < in_flight_frame_count; ++i) {
+  for (size_t i = 0; i < swapchain_info_.swapchain_image_count_; ++i) {
     VulkanAPIUtils::CheckVkResult(vkCreateSemaphore(vk_device_, &semaphore_info, nullptr,
                                                     &frame_render_completion_semaphore_[i]),
                                   "vkCreateSemaphore");
+  }
 
+  for (size_t i = 0; i < in_flight_frame_count; ++i) {
     VulkanAPIUtils::CheckVkResult(vkCreateSemaphore(vk_device_, &semaphore_info, nullptr,
                                                     &swapchain_image_semaphore_[i]),
                                   "vkCreateSemaphore");
@@ -1148,8 +1165,10 @@ void GraphicsAPIVulkan::CreateSynchronizationObjects() {
 }
 
 void GraphicsAPIVulkan::DestroySynchronizationObjects() {
-  for (size_t i = 0; i < in_flight_frame_fence_.size(); ++i) {
+  for (size_t i = 0; i < frame_render_completion_semaphore_.size(); ++i) {
     vkDestroySemaphore(vk_device_, frame_render_completion_semaphore_[i], nullptr);
+  }
+  for (size_t i = 0; i < in_flight_frame_fence_.size(); ++i) {
     vkDestroySemaphore(vk_device_, swapchain_image_semaphore_[i], nullptr);
     vkDestroyFence(vk_device_, in_flight_frame_fence_[i], nullptr);
   }

@@ -162,6 +162,7 @@ void VulkanAPIUtils::GetDepthStencilFormats(VkPhysicalDevice physical_device,
 
 void VulkanAPIUtils::GetDisplayFormats(VkPhysicalDevice physical_device, VkSurfaceKHR surface,
                                        std::vector<DisplayManager::DisplayFormat> &display_formats) {
+  display_formats.clear();
   std::vector<DisplayManager::DisplayFormat> depth_stencil_formats;
   VulkanAPIUtils::GetDepthStencilFormats(physical_device, depth_stencil_formats);
 
