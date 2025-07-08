@@ -278,7 +278,7 @@ void DemoScene::SetupUIWindow() {
     ImGuiIO &io = ImGui::GetIO();
     const float windowStartY = NativeEngine::GetInstance()->GetSystemBarOffset();
     ImVec2 windowPosition(0.0f, windowStartY);
-    ImVec2 minWindowSize(io.DisplaySize.x * 0.95f, io.DisplaySize.y);
+    ImVec2 minWindowSize(io.DisplaySize.x, io.DisplaySize.y);
     ImVec2 maxWindowSize = io.DisplaySize;
     ImGui::SetNextWindowPos(windowPosition);
     ImGui::SetNextWindowSizeConstraints(minWindowSize, maxWindowSize, NULL, NULL);
