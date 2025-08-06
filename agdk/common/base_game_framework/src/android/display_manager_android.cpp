@@ -32,6 +32,9 @@ void DisplayManager::HandlePlatformDisplayChange(const DisplayChangeMessage& cha
       // new window and a new surface
       if (active_api_ == kGraphicsAPI_GLES && api_->GetAPIStatus() == kGraphicsAPI_Active) {
         api_gles_->RestoreSurfaceGLES();
+        api_->SwapchainChanged(kSwapchain_Gained_Window);
+      } else if (active_api_ == kGraphicsAPI_Vulkan && api_->GetAPIStatus() == kGraphicsAPI_Active) {
+        api_->SwapchainChanged(kSwapchain_Gained_Window);
       }
     }
   }
