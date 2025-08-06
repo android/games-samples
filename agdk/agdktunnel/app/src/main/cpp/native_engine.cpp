@@ -410,7 +410,6 @@ void NativeEngine::LifecycleEvent(const SystemEventManager::LifecycleEvent lifec
             SceneManager::GetInstance()->OnPause();
         break;
         case SystemEventManager::kLifecycleStop:
-            mHasStarted = false;
         break;
         case SystemEventManager::kLifecycleQuit:
             mQuitting = true;

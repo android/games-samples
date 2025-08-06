@@ -442,7 +442,14 @@ void GraphicsAPIGLES::LostSurfaceGLES() {
 void GraphicsAPIGLES::RestoreSurfaceGLES() {
   egl_surface_ = InitializeEGLSurface(swapchain_format_);
   if (egl_surface_ != nullptr) {
-    PlatformUtilGLES::RestoreSurface();
+    if (eglMakeCurrent(egl_display_, egl_surface_, egl_surface_, egl_context_) == EGL_TRUE) {
+      PlatformUtilGLES::RestoreSurface();
+    } else {
+      DebugManager::Log(DebugManager::kLog_Channel_Default,
+                        DebugManager::kLog_Level_Error,
+                        BGM_CLASS_TAG,
+                        "RestoreSurfaceGLES failed to set current with new EGLSurface");
+    }
   } else {
     DebugManager::Log(DebugManager::kLog_Channel_Default,
                       DebugManager::kLog_Level_Error,

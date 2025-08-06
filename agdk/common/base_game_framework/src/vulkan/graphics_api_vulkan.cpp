@@ -757,6 +757,15 @@ bool GraphicsAPIVulkan::SetSwapchainChangedCallback(
 }
 
 void GraphicsAPIVulkan::SwapchainChanged(const DisplayManager::SwapchainChangeMessage message) {
+  if (message == DisplayManager::kSwapchain_Lost_Window && vk_surface_ != VK_NULL_HANDLE) {
+    PlatformUtilVulkan::DestroySurface(vk_instance_, vk_surface_);
+    vk_surface_ = VK_NULL_HANDLE;
+  } else if (message == DisplayManager::kSwapchain_Gained_Window && vk_swapchain_ != VK_NULL_HANDLE) {
+    if (vk_surface_ == VK_NULL_HANDLE) {
+      vk_surface_ = PlatformUtilVulkan::CreateSurface(vk_instance_);
+    }
+    RecreateSwapchain();
+  }
   if (swapchain_changed_callback_ != nullptr) {
     swapchain_changed_callback_(message, swapchain_changed_user_data_);
   }
