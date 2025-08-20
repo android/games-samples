@@ -72,6 +72,7 @@ public class PurchaseController : MonoBehaviour
     }
 }
 #else
+using Unity.Android.Gradle.Manifest;
 using UnityEngine.Purchasing;
 using UnityEngine.Purchasing.Security;
 
@@ -80,9 +81,9 @@ using UnityEngine.Purchasing.Security;
 /// It uses Unity IAP and the Google Play Billing Library plugin
 /// to do purchasing, order verification, and order restore.
 /// </summary>
-public class PurchaseController : MonoBehaviour, IStoreListener
+public class PurchaseController : MonoBehaviour
 {
-    private static IStoreController _storeController; // The Unity Purchasing system.
+    private static StoreController _storeController; // The Unity Purchasing system.
     private static IExtensionProvider _storeExtensionProvider; // The store-specific Purchasing subsystems.
     private static IGooglePlayStoreExtensions _playStoreExtensions;
     private static GameManager _gameManager;
@@ -91,22 +92,17 @@ public class PurchaseController : MonoBehaviour, IStoreListener
     private static bool IsInitialized()
     {
         // Only say we are initialized if both the Purchasing references are set.
-        return _storeController != null && _storeExtensionProvider != null;
+        return _storeController != null;
     }
 
     private void Start()
     {
         _gameManager = FindObjectOfType<GameManager>();
         _uiPriceChangeController = FindObjectOfType<UIPriceChangeController>();
-        // Check if Unity IAP isn't initialized yet
-        if (_storeController == null)
-        {
-            // Initialize the IAP system
-            InitializePurchasing();
-        }
+        InitializePurchasing();
     }
 
-    private void InitializePurchasing()
+    private async void InitializePurchasing()
     {
         // If we have already connected to Purchasing ...
         if (IsInitialized())
@@ -124,31 +120,62 @@ public class PurchaseController : MonoBehaviour, IStoreListener
             {
                 ProcessDeferredPurchase(product.definition.id);
             });
+        
+        _storeController = UnityIAPServices.StoreController();
+        _storeController.OnPurchasePending += OnPurchasePending;
 
-        // Add consumable products (coins) associated with their product types to sell / restore by way of its identifier,
-        // associating the general identifier with its store-specific identifiers.
+        await _storeController.Connect();
+        
+        // Purchasing has succeeded initializing. Collect our Purchasing references.
+        Debug.Log("PurchaseController: OnInitialized success");
+
+        // Retrieve the current item prices from the store
+        UpdateItemPrices();
+
+        //Moved to OnPurchasesFetched
+        CheckSubscriptionsAvailabilityBasedOnReceipt(_storeController);
+        
+        _storeController.OnProductsFetched += OnProductsFetched;
+        _storeController.OnPurchasesFetched += OnPurchasesFetched;
+        
+        _storeController.OnStoreDisconnected += OnStoreConnectionFailed;
+        _storeController.OnProductsFetchFailed += OnProductsFetchFailed;
+        _storeController.OnPurchasesFetchFailed += OnPurchasesFetchFailed;
+
+        var catalog = new CatalogProvider();
         foreach (var coin in CoinList.List)
         {
-            builder.AddProduct(coin.ProductId, ProductType.Consumable);
+            catalog.AddProduct(coin.ProductId, ProductType.Consumable);
         }
-
-        // Continue adding the non-consumable products (car) with their product types.
+        
         foreach (var car in CarList.List.Where(car => car.IsRealMoneyPurchase && car.Price > 0))
         {
-            builder.AddProduct(car.ProductId, ProductType.NonConsumable);
+            catalog.AddProduct(car.ProductId, ProductType.NonConsumable);
         }
-
-        // Adding subscription products with their product types.
+        
         foreach (var subscription in SubscriptionList.List.Where(subscription =>
-            subscription.Type != SubscriptionType.NoSubscription))
+                     subscription.Type != SubscriptionType.NoSubscription))
         {
-            builder.AddProduct(subscription.ProductId, ProductType.Subscription);
+            catalog.AddProduct(subscription.ProductId, ProductType.Subscription);
         }
+        
+        _storeController.FetchProducts(catalog.GetProducts());
+    }
 
-        // Launch Unity IAP initialization, which is asynchronous, passing our class instance and the
-        // configuration builder. Results are processed by OnInitialized or OnInitializeFailed.
-        Debug.Log("PurchaseController: Calling UnityPurchasing.Initialize");
-        UnityPurchasing.Initialize(this, builder);
+    private void OnPurchasesFetched(Orders obj)
+    {
+        
+    }
+
+    private void OnProductsFetched(List<Product> obj)
+    {
+        _storeController.FetchPurchases();
+    }
+
+    private void OnPurchasePending(PendingOrder obj)
+    {
+        
+        
     }
 
     public static void BuyProductId(string productId)
@@ -158,7 +185,7 @@ public class PurchaseController : MonoBehaviour, IStoreListener
         {
             // ... look up the Product reference with the general product identifier and the Purchasing
             // system's products collection.
-            var product = _storeController.products.WithID(productId);
+            var product = _storeController.GetProductById(productId);
 
             // If the look up found a product for this device's store and that product is ready to be sold ...
             if (product != null && product.availableToPurchase)
@@ -169,7 +196,7 @@ public class PurchaseController : MonoBehaviour, IStoreListener
                 Debug.Log(string.Format("PurchaseController: Purchasing product asynchronously: '{0}'", product.definition.id));
                 // ... buy the product. Expect a response either through ProcessPurchase or OnPurchaseFailed
                 // asynchronously.
-                _storeController.InitiatePurchase(product);
+                _storeController.PurchaseProduct(product);
             }
             // Otherwise ...
             else
@@ -204,25 +231,20 @@ public class PurchaseController : MonoBehaviour, IStoreListener
             _playStoreExtensions.UpgradeDowngradeSubscription(oldSubscription.ProductId, newSubscription.ProductId);
         }
     }
-
-    public void OnInitialized(IStoreController controller, IExtensionProvider extensions)
+    
+    void OnStoreConnectionFailed(StoreConnectionFailureDescription failureDescription)
     {
-        // Purchasing has succeeded initializing. Collect our Purchasing references.
-        Debug.Log("PurchaseController: OnInitialized success");
+        Debug.Log("Store Connection Failed: " + failureDescription.message);
+    }
 
-        // Overall Purchasing system, configured with products for this application.
-        _storeController = controller;
-        // Store specific subsystem, for accessing device-specific store features.
-        _storeExtensionProvider = extensions;
+    void OnProductsFetchFailed(ProductFetchFailed failureDescription)
+    {
+        Debug.Log("Product Fetch Failed: " + failureDescription.FailureReason);
+    }
 
-        // Retrieve the current item prices from the store
-        UpdateItemPrices();
-
-        // Set play store extensions.
-        _playStoreExtensions =
-            _storeExtensionProvider.GetExtension<IGooglePlayStoreExtensions>();
-
-        CheckSubscriptionsAvailabilityBasedOnReceipt(controller);
+    void OnPurchasesFetchFailed(PurchasesFetchFailureDescription failureDescription)
+    {
+        Debug.Log("Purchases Fetch Failed: " + failureDescription.message);
     }
 
     public void OnInitializeFailed(InitializationFailureReason error)
@@ -238,7 +260,7 @@ public class PurchaseController : MonoBehaviour, IStoreListener
         // This is a very basic loop through all the items, updating the
         // default price information with the current localized price
         // supplied by the store.
-        foreach (var product in _storeController.products.all)
+        foreach (var product in _storeController.GetProducts())
         {
             float currentPrice = Convert.ToSingle(product.metadata.localizedPrice);
             string productId = product.definition.storeSpecificId;
@@ -288,10 +310,13 @@ public class PurchaseController : MonoBehaviour, IStoreListener
         }
     }
 
-    private static void CheckSubscriptionsAvailabilityBasedOnReceipt(IStoreController controller)
+    private static void CheckSubscriptionsAvailabilityBasedOnReceipt(StoreController controller)
     {
-        var silverSubscriptionProduct = controller.products.WithID(SubscriptionList.SilverSubscription.ProductId);
-        var goldenSubscriptionProduct = controller.products.WithID(SubscriptionList.GoldenSubscription.ProductId);
+        var silverSubscriptionProduct = controller.GetProductById(SubscriptionList.SilverSubscription.ProductId);
+        var goldenSubscriptionProduct = controller.GetProductById(SubscriptionList.GoldenSubscription.ProductId);
+        
+        
+        
         if (!(silverSubscriptionProduct.hasReceipt && ClientSideReceiptValidation(silverSubscriptionProduct.receipt)) &&
             !(goldenSubscriptionProduct.hasReceipt && ClientSideReceiptValidation(goldenSubscriptionProduct.receipt)))
         {
@@ -356,16 +381,6 @@ public class PurchaseController : MonoBehaviour, IStoreListener
 #endif
     }
 
-    public static void ConfirmPendingPurchase(Product product, bool purchaseVerifiedSuccess)
-    {
-        if (purchaseVerifiedSuccess)
-        {
-            GameDataController.UnlockInGameContent(product.definition.id);
-        }
-
-        _storeController.ConfirmPendingPurchase(product);
-    }
-
     private static bool ClientSideReceiptValidation(string unityIapReceipt)
     {
         bool validPurchase = true;
@@ -373,7 +388,7 @@ public class PurchaseController : MonoBehaviour, IStoreListener
         // Prepare the validator with the secrets we prepared in the Editor
         // obfuscation window.
         var validator = new CrossPlatformValidator(GooglePlayTangle.Data(),
-            AppleTangle.Data(), Application.identifier);
+            GooglePlayTangle.Data(), UnityEngine.Application.identifier);
 
         try
         {
@@ -459,21 +474,20 @@ public class PurchaseController : MonoBehaviour, IStoreListener
     // Restore purchase when the user login to a new device.
     public static void RestorePurchase()
     {
-        _playStoreExtensions.RestoreTransactions(
-            delegate(bool restoreSuccess)
+        _storeController.RestoreTransactions((restoreSuccess, transactionId) =>
+        {
+            var garageController = FindObjectOfType<GarageController>();
+            if (restoreSuccess)
             {
-                var garageController = FindObjectOfType<GarageController>();
-                if (restoreSuccess)
-                {
-                    Debug.Log("PurchaseController: Successfully restored purchase!");
-                    garageController.OnRestorePurchaseSuccess();
-                }
-                else
-                {
-                    Debug.Log("PurchaseController: Failed to restore purchase");
-                    garageController.OnRestorePurchaseFail();
-                }
-            });
+                Debug.Log("PurchaseController: Successfully restored purchase!");
+                garageController.OnRestorePurchaseSuccess();
+            }
+            else
+            {
+                Debug.Log("PurchaseController: Failed to restore purchase");
+                garageController.OnRestorePurchaseFail();
+            }
+        });
     }
 }
 #endif // !NO_IAP

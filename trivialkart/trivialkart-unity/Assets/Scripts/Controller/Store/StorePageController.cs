@@ -21,7 +21,7 @@ using UnityEngine.UI;
 /// It switches pages and tabs when different tabs are clicked;
 /// It updates the coin text indicator in the store pages;
 /// </summary>
-public class StoreController : MonoBehaviour
+public class StorePageController : MonoBehaviour
 {
     public GameObject tab;
     public GameObject gasPage;

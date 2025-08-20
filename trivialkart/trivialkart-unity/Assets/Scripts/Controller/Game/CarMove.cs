@@ -61,7 +61,7 @@ public class CarMove : MonoBehaviour
 
     private void FixedUpdate()
     {
-        float newDistance = _rigidbody2D.velocity.x * Time.deltaTime;
+        float newDistance = _rigidbody2D.linearVelocity.x * Time.deltaTime;
         newDistance += GameDataController.GetGameData().distanceTraveled;
         GameDataController.GetGameData().distanceTraveled = newDistance;
 #if PLAY_GAMES_SERVICES
@@ -155,7 +155,7 @@ public class CarMove : MonoBehaviour
     // Moves the car at a velocity given by the number of clicks
     private void ProcessClickAction(int clicks)
     {
-        if (_rigidbody2D.velocity.magnitude < NoVelocity &&
+        if (_rigidbody2D.linearVelocity.magnitude < NoVelocity &&
                 _gas.HasGas() && _gameManger.IsInPlayCanvas())
         {
             switch (clicks)
