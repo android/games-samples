@@ -8,5 +8,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/TrivialKartScene.unity
     guid: a9607010a1e6245f595ea6dfa2e0e535
-  m_configObjects: {}
+  m_configObjects:
+    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: c44a0d3d8804e4fd887590aa86260552, type: 3}
   m_UseUCBPForAssetBundles: 0

@@ -14,6 +14,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 /// <summary>
@@ -23,6 +24,7 @@ using UnityEngine.UI;
 /// </summary>
 public class StorePageController : MonoBehaviour
 {
+    public InputActionAsset inputActionAsset;
     public GameObject tab;
     public GameObject gasPage;
     public GameObject coinPage;
@@ -35,6 +37,8 @@ public class StorePageController : MonoBehaviour
     private int _currentTabIndex;
     private GameObject[] _tabs;
     private List<GameObject> _storePages;
+    
+    private InputAction _switchTabAction;
 
     private void Awake()
     {
@@ -52,7 +56,7 @@ public class StorePageController : MonoBehaviour
     private void Update()
     {
         // Use tab key to switch between store pages
-        if (Input.GetKeyUp(KeyCode.Tab))
+        if (_switchTabAction.WasPressedThisFrame())
         {
             OnSwitchPageTabClicked((_currentTabIndex + 1) % _storePages.Count);
         }
