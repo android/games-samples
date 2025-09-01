@@ -26047,7 +26047,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55bbdf7c4c981411198c43cec9c91234, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputActionAsset: {fileID: 0}
+  inputActionAsset: {fileID: -944628639613478452, guid: c44a0d3d8804e4fd887590aa86260552, type: 3}
   tab: {fileID: 907958059}
   gasPage: {fileID: 140605185}
   coinPage: {fileID: 934722221}

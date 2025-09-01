@@ -51,6 +51,9 @@ public class StorePageController : MonoBehaviour
         {
             _tabs[tabIndex] = tab.transform.GetChild(tabIndex).gameObject;
         }
+        
+        _switchTabAction = inputActionAsset.FindAction("SwitchTabs");
+        _switchTabAction.Enable();
     }
 
     private void Update()
