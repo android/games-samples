@@ -14,9 +14,9 @@ and Play license status
 
 ## Pre-requisites
 
-* Unity 2020 LTS or higher with Android build support (Play plugins are
+* Unity 6.0 LTS or higher with Android build support (Play plugins are
 compatible with earlier versions of Unity, but the TrivialKart project is
-built using 2020 LTS)
+built using Unity 6.0 LTS)
 
 ### Pre-requsities for enabling Google Play features
 
@@ -56,15 +56,15 @@ available if the subscription is active.
 1. Go to the
 [Google Play Developer Console](https://play.google.com/apps/publish)
 and create a new application.
-2. Select the `Monetization setup` page for your new application.
+2. Navigate to `Monetise with Play -> Monetisation Setup`
 Copy the Base64-encoded public key text in the `Licensing` area. You will need
 to use this key when configuring Unity IAP.
 
 ### Updating the package name in Unity
 
-1. In Unity, if you haven't already, select `File -> Build Settings...`
+1. In Unity, if you haven't already, select `File -> Build Profiles...`
 from the Unity menu bar and switch the platform to `Android`.
-2. From the `Build Settings` window, select the `Player Settings...` button.
+2. From the `Build Profiles` window, select the `Player Settings...` button.
 3. In the `Player Settings` window, expand the `Other Settings` section and
 enter the application package identifer you specified in the Play Console in
 the `Package Name` field.
@@ -72,9 +72,9 @@ the `Package Name` field.
 ### Enabling Unity IAP
 
 Follow the instructions at
-[Setting up Unity IAP](https://docs.unity3d.com/2020.3/Documentation/Manual/UnityIAPSettingUp.html)
+[Setting up Unity IAP](https://docs.unity.com/ugs/en-us/manual/iap/manual/get-started)
 
-This sample was tested using version 4.1.2 of the Unity In App Purchasing
+This sample was tested using version 5.0 of the Unity In App Purchasing
 package installed through the Package Manager. We recommend this as a minimum
 version for this sample. Use of earlier versions, or the older version of
 Unity IAP available on the Unity Asset Store is not supported.
@@ -106,7 +106,7 @@ the `Scripting Define Symbols`. If checked `USE_IAP` is defined in the
 1. In the Unity `Build Settings` window, make sure the
 `TrivialKart/Scenes/playScene` is added to the list of `Scenes In Build`.
 2. Configure the project for signing by creating a new key store at
-`File > Build Settings > Player Settings > Publishing Settings`. Additional
+`File > Build Profiles > Player Settings > Publishing Settings`. Additional
 instructions on configurating signing are available.
 [on the Unity site](https://answers.unity.com/questions/326812/signing-android-application.html).
 3. Build an App Bundle.
@@ -186,15 +186,14 @@ Make sure to publish your achievements and leaderboard after creation.
 
 ### Setup the Unity plugin
 
-1. Download version 11.0 or later of the Play Games Services for Unity plugin
-from its [GitHub releases page](https://github.com/playgameservices/play-games-plugin-for-unity/releases).
-2. Extract the `.zip` file.
+1. Download version 2.1.0 or later of the Play Games Services for Unity plugin
+from its [GitHub Repo](https://github.com/playgameservices/play-games-plugin-for-unity/tree/master/current-build).
 3. Install the `.unitypackage` file located in the `current-build` directory of
-the extracted archive using `Assets > Import Package > Custom Package`.
+the repo using `Assets > Import Package > Custom Package`.
 
 ### Generate Google Play Games constants
 
-1. From the Play Console entry for your app, select `Play Games Services -> Setup and management -> Achievements`.
+1. From the Play Console entry for your app, select `Grow Users -> Play Games Services -> Setup and management -> Configuration`.
 2. Find the **Get resources** button and click it.
 3. Copy the text from the `Android (XML)` tab.
 4. From the Unity menu bar, select `Window -> Google Play Games -> Setup -> Android Setup...`.
@@ -323,12 +322,16 @@ To fix it, delete the directives under `Edit > Project Settings > Player > Other
 
 ## Further reading
 
-* [Unity IAP](https://docs.unity3d.com/Manual/UnityIAP.html)
+* [Play Games for Unity](https://developer.android.com/games/pgs/unity/unity-start)
+* [Unity IAP](https://docs.unity.com/ugs/en-us/manual/iap/manual/get-started)
 
 ## CHANGELOG
 
+2025-09-20: 1.1.1 - Upgraded to Unity 6.0 LTS and PGS v2.
+
 2022-04-01: 1.1.0 - Added Play Games Services, Play Integrity and Google
 Play Games for PC features.
+
 2022-01-27: 1.0.0 - Initial release.
 
 ## Graphical asset credits and license

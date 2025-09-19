@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "com.unity.ide.rider": "3.0.36",
     "com.unity.inputsystem": "1.14.2",
     "com.unity.multiplayer.center": "1.0.0",
     "com.unity.purchasing": "5.0.1",
