@@ -435,7 +435,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 72185284ab4ac455a88bc2ac80259b34, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputActionAsset: {fileID: 0}
+  inputActionAsset: {fileID: -944628639613478452, guid: c44a0d3d8804e4fd887590aa86260552, type: 3}
   tab: {fileID: 228858407}
   signinPage: {fileID: 2136726070}
   achievementPage: {fileID: 41016427}
