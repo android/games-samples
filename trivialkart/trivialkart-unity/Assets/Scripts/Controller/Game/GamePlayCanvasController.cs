@@ -28,8 +28,6 @@ public class GamePlayCanvasController : MonoBehaviour
     // Start is called before the first frame update
     private void Start()
     {
-        SetBackgroundBasedOnGameData();
-        SetCoinsBasedOnGameData();
         _canvasHasStarted = true;
         RefreshPage();
     }
@@ -48,13 +46,8 @@ public class GamePlayCanvasController : MonoBehaviour
         SetCoinsBasedOnGameData();
     }
 
-    private static void SetBackgroundBasedOnGameData()
-    {
-        GameDataController.GetGameData().SetBackgroundBasedOnGameData();
-    }
-
     private void SetCoinsBasedOnGameData()
     {
-        coinsCount.text = GameDataController.GetGameData().coinsOwned.ToString();
+        coinsCount.text = PlayerPrefs.GetInt("coinsOwned", 0).ToString("00");
     }
 }

@@ -16,11 +16,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-#if PLAY_GAMES_SERVICES
-using GooglePlayGames;
-using GooglePlayGames.BasicApi;
-using UnityEngine.SocialPlatforms;
-#endif
+
+// using GooglePlayGames;
+// using GooglePlayGames.BasicApi;
+// using UnityEngine.SocialPlatforms;
 
 public class PGSAchievementManager : MonoBehaviour
 {
@@ -51,48 +50,44 @@ public class PGSAchievementManager : MonoBehaviour
 
     void Awake()
     {
-#if PLAY_GAMES_SERVICES
-        _achievementInfo = new AchievementInfo[]
-            {
-                new AchievementInfo(GPGSIds.achievement_tk_achievement_drive),
-                new AchievementInfo(GPGSIds.achievement_tk_achievement_truck)
-            };
-#endif            
+        // _achievementInfo = new AchievementInfo[]
+        //     {
+        //         new AchievementInfo(GPGSIds.achievement_tk_achievement_drive),
+        //         new AchievementInfo(GPGSIds.achievement_tk_achievement_truck)
+        //     };
     }
 
     // Loads the achievements from Play Games Services, and updates
     // internal description and unlock status using the achievement data.
     public void LoadAchievements()
     {
-#if PLAY_GAMES_SERVICES
-        PlayGamesPlatform.Instance.LoadAchievements((achievements) =>
-        {
-            foreach (var achievement in achievements)
-            {
-                foreach (var achievementInfo in _achievementInfo)
-                {
-                    if (achievement.id.Equals(achievementInfo.achievementId))
-                    {
-                        achievementInfo.achievementUnlocked = achievement.completed;
-                    }
-                }
-            }
-        });
+        // PlayGamesPlatform.Instance.LoadAchievements((achievements) =>
+        // {
+        //     foreach (var achievement in achievements)
+        //     {
+        //         foreach (var achievementInfo in _achievementInfo)
+        //         {
+        //             if (achievement.id.Equals(achievementInfo.achievementId))
+        //             {
+        //                 achievementInfo.achievementUnlocked = achievement.completed;
+        //             }
+        //         }
+        //     }
+        // });
 
-        PlayGamesPlatform.Instance.LoadAchievementDescriptions(achievementDescriptions =>
-        {
-            foreach (var description in achievementDescriptions)
-            {
-                foreach (var achievementInfo in _achievementInfo)
-                {
-                    if (description.id.Equals(achievementInfo.achievementId))
-                    {
-                        achievementInfo.achievementName = description.unachievedDescription;
-                    }
-                }
-            }
-        });
-#endif
+        // PlayGamesPlatform.Instance.LoadAchievementDescriptions(achievementDescriptions =>
+        // {
+        //     foreach (var description in achievementDescriptions)
+        //     {
+        //         foreach (var achievementInfo in _achievementInfo)
+        //         {
+        //             if (description.id.Equals(achievementInfo.achievementId))
+        //             {
+        //                 achievementInfo.achievementName = description.unachievedDescription;
+        //             }
+        //         }
+        //     }
+        // });
     }
 
     public bool GetAchievementUnlocked(TrivialKartAchievements achievementId)
@@ -102,24 +97,23 @@ public class PGSAchievementManager : MonoBehaviour
 
     public string GetAchievementName(TrivialKartAchievements achievementId)
     {
-        return _achievementInfo[(int) achievementId].achievementName;
+        return _achievementInfo[(int)achievementId].achievementName;
     }
 
     public void UnlockAchievement(TrivialKartAchievements achievementId)
     {
-#if PLAY_GAMES_SERVICES
-        Social.ReportProgress(_achievementInfo[(int) achievementId].achievementId,
-            100.0f, (bool success) => {
+        Social.ReportProgress(_achievementInfo[(int)achievementId].achievementId,
+            100.0f, (bool success) =>
+            {
                 if (success)
                 {
-                    _achievementInfo[(int) achievementId].achievementUnlocked = true;
+                    _achievementInfo[(int)achievementId].achievementUnlocked = true;
                 }
                 else
                 {
                     Debug.Log("Unlock achievement failed for " +
-                              _achievementInfo[(int) achievementId].achievementId);
+                              _achievementInfo[(int)achievementId].achievementId);
                 }
             });
-#endif
     }
 }

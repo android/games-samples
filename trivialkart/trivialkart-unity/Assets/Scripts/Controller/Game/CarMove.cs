@@ -27,12 +27,12 @@ public class CarMove : MonoBehaviour
     public InputActionAsset inputActionAsset;
     public GameObject odometerLabel;
     public GameObject tapToDriveText;
-    public CarName carName;
+    // public CarName carName;
 
     private Rigidbody2D _rigidbody2D;
     private GameManager _gameManger;
     private PGSController _pgsController;
-    private CarList.Car _carObj;
+    // private CarList.Car _carObj;
     private Gas _gas;
     private Text _odometerText;
     private const float NoVelocity = 0.01f;
@@ -63,7 +63,7 @@ public class CarMove : MonoBehaviour
         _gameManger = FindObjectOfType<GameManager>();
         _pgsController = FindObjectOfType<PGSController>();
         // Get the carObj corresponding to the car game object the script attached to.
-        _carObj = CarList.GetCarByName(carName);
+        // _carObj = CarList.GetCarByName(carName);
         _rigidbody2D = GetComponent<Rigidbody2D>();
         _gas = transform.parent.gameObject.GetComponent<Gas>();
         _odometerText = odometerLabel.GetComponent<Text>();
@@ -85,20 +85,19 @@ public class CarMove : MonoBehaviour
         
         _boostAction = inputActionAsset.FindAction("Boost");
         _boostAction.Enable();
+        
+        PlayerPrefs.SetFloat("dist", 0f);
     }
 
     private void FixedUpdate()
     {
         float newDistance = _rigidbody2D.linearVelocity.x * Time.deltaTime;
-        newDistance += GameDataController.GetGameData().distanceTraveled;
-        GameDataController.GetGameData().distanceTraveled = newDistance;
-#if PLAY_GAMES_SERVICES
+        newDistance += PlayerPrefs.GetFloat("dist", 0f);
+        PlayerPrefs.SetFloat("dist", newDistance);
         CheckDistanceAchievement(newDistance);
-#endif
         _odometerText.text = newDistance.ToString("N1", CultureInfo.CurrentCulture);
     }
-
-#if PLAY_GAMES_SERVICES
+    
     private void CheckDistanceAchievement(float newDistance)
     {
         if (_pgsController.CurrentSignInStatus == PGSController.PgsSigninStatus.PgsSigninLoggedIn)
@@ -113,7 +112,6 @@ public class CarMove : MonoBehaviour
             }
         }
     }
-#endif
 
     private void Update()
     {
@@ -121,18 +119,10 @@ public class CarMove : MonoBehaviour
         // Checks to see if we are due to update the distance traveled leaderboard
         _pgsController.UpdateLeaderboard();
 #endif
-        // Use keys to control menu/gameplay
-        if (_garageAction.WasPressedThisFrame())
-        {
-            _gameManger.OnEnterGaragePageButtonClicked();
-        }
+        
         if (_pgsAction.WasPressedThisFrame())
         {
             _gameManger.OnEnterPGSPageButtonClicked();
-        }
-        if (_storeAction.WasPressedThisFrame())
-        {
-            _gameManger.OnEnterStoreButtonClicked();
         }
         if (_playPageAction.WasPressedThisFrame())
         {
@@ -180,12 +170,12 @@ public class CarMove : MonoBehaviour
     private void Drive()
     {
         tapToDriveText.SetActive(false);
-        _rigidbody2D.AddForce(new Vector2(_carObj.Speed, 0));
+        // _rigidbody2D.AddForce(new Vector2(_carObj.Speed, 0));
     }
 
     private void Turbo()
     {
         tapToDriveText.SetActive(false);
-        _rigidbody2D.AddForce(new Vector2(_carObj.Speed * TurboVelocity, 0));
+        // _rigidbody2D.AddForce(new Vector2(_carObj.Speed * TurboVelocity, 0));
     }
 }

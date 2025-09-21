@@ -38,7 +38,6 @@ public class PlayerController : MonoBehaviour
     
     private void Start()
     {
-        UpdateCarInUse();
         InitValues();
     }
 
@@ -70,20 +69,6 @@ public class PlayerController : MonoBehaviour
         _gas = GetComponent<Gas>();
         _carStartPos = _carInUseGameObj.transform.position;
         _camOffset = cam.transform.position - _carStartPos;
-    }
-    
-    // Update the active car for the play mode when player switches the car.
-    public void UpdateCarInUse()
-    {
-        // Set all cars to be inactive.
-        foreach (var car in CarList.List)
-        {
-            car.PlayCarGameObj.SetActive(false);
-        }
-        
-        // Set the car in use game object to be active.
-        var carInUseGameObj = GameDataController.GetGameData().CarInUseObj.PlayCarGameObj;
-        SetCarInUseState(carInUseGameObj);
     }
 
     private void SetCarInUseState(GameObject carInUseGameObj)
