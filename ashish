@@ -1,0 +1,58 @@
+-- users
+CREATE TABLE users (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email text UNIQUE NOT NULL,
+  name text,
+  role text CHECK (role IN ('student','teacher','admin')),
+  password_hash text,
+  created_at timestamptz DEFAULT now()
+);
+
+-- courses
+CREATE TABLE courses (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title text,
+  description text,
+  created_by uuid REFERENCES users(id),
+  published boolean DEFAULT false
+);
+
+-- lessons
+CREATE TABLE lessons (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  course_id uuid REFERENCES courses(id),
+  title text,
+  content jsonb, -- markdown or structured blocks
+  order_index int
+);
+
+-- quizzes
+CREATE TABLE quizzes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  lesson_id uuid REFERENCES lessons(id),
+  questions jsonb
+);
+
+-- progress
+CREATE TABLE progress (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id),
+  lesson_id uuid REFERENCES lessons(id),
+  status text CHECK (status IN ('not_started','in_progress','complete')),
+  score int,
+  updated_at timestamptz DEFAULT now()
+);
+
+-- gamification
+CREATE TABLE badges (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  key text UNIQUE,
+  name text,
+  criteria jsonb
+);
+CREATE TABLE user_badges (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id),
+  badge_id uuid REFERENCES badges(id),
+  awarded_at timestamptz DEFAULT now()
+);
