@@ -168,6 +168,17 @@
                 },
                 {
                     "name": "",
+                    "id": "9d6f8ddd-b6ff-443b-bf40-c0e638cef6b7",
+                    "path": "<Touchscreen>/Press",
+                    "interactions": "MultiTap",
+                    "processors": "",
+                    "groups": ";Touch",
+                    "action": "Boost",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "138b7586-52a2-4a97-a587-1a395d2497a6",
                     "path": "<Keyboard>/leftArrow",
                     "interactions": "",
