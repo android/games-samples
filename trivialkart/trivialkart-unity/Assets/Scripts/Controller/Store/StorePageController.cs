@@ -14,6 +14,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 /// <summary>
@@ -21,8 +22,9 @@ using UnityEngine.UI;
 /// It switches pages and tabs when different tabs are clicked;
 /// It updates the coin text indicator in the store pages;
 /// </summary>
-public class StoreController : MonoBehaviour
+public class StorePageController : MonoBehaviour
 {
+    public InputActionAsset inputActionAsset;
     public GameObject tab;
     public GameObject gasPage;
     public GameObject coinPage;
@@ -35,6 +37,8 @@ public class StoreController : MonoBehaviour
     private int _currentTabIndex;
     private GameObject[] _tabs;
     private List<GameObject> _storePages;
+    
+    private InputAction _switchTabAction;
 
     private void Awake()
     {
@@ -47,12 +51,15 @@ public class StoreController : MonoBehaviour
         {
             _tabs[tabIndex] = tab.transform.GetChild(tabIndex).gameObject;
         }
+        
+        _switchTabAction = inputActionAsset.FindAction("SwitchTabs");
+        _switchTabAction.Enable();
     }
 
     private void Update()
     {
         // Use tab key to switch between store pages
-        if (Input.GetKeyUp(KeyCode.Tab))
+        if (_switchTabAction.WasPressedThisFrame())
         {
             OnSwitchPageTabClicked((_currentTabIndex + 1) % _storePages.Count);
         }

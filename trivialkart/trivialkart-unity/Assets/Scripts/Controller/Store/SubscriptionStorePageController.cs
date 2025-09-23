@@ -113,8 +113,7 @@ public class SubscriptionStorePageController : MonoBehaviour
         confirmPanel.SetActive(false);
         if (isConfirmed)
         {
-            PurchaseController.PurchaseASubscription(GameDataController.GetGameData().CurSubscriptionObj,
-                _subscriptionToSubscribe);
+            PurchaseController.BuyProductId(_subscriptionToSubscribe.ProductId);
         }
     }
 }

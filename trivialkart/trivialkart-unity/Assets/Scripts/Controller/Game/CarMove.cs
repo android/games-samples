@@ -15,6 +15,7 @@
 using System.Globalization;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// A component script for a specific car game object.
@@ -23,6 +24,7 @@ using UnityEngine.UI;
 /// </summary>
 public class CarMove : MonoBehaviour
 {
+    public InputActionAsset inputActionAsset;
     public GameObject odometerLabel;
     public GameObject tapToDriveText;
     public CarName carName;
@@ -46,6 +48,14 @@ public class CarMove : MonoBehaviour
     // Achievement for going this far
     private const float ACHIEVEMENT_DISTANCE = 100.0f;
 
+    private InputAction _garageAction;
+    private InputAction _pgsAction;
+    private InputAction _storeAction;
+    private InputAction _playPageAction;
+    private InputAction _moveAction;
+    private InputAction _boostAction;
+    
+
     private void Start()
     {
         _clickCounter = 0;
@@ -57,11 +67,29 @@ public class CarMove : MonoBehaviour
         _rigidbody2D = GetComponent<Rigidbody2D>();
         _gas = transform.parent.gameObject.GetComponent<Gas>();
         _odometerText = odometerLabel.GetComponent<Text>();
+        
+        _garageAction = inputActionAsset.FindAction("Garage");
+        _garageAction.Enable();
+        
+        _pgsAction = inputActionAsset.FindAction("PGS");
+        _pgsAction.Enable();
+        
+        _storeAction = inputActionAsset.FindAction("Store");
+        _storeAction.Enable();
+        
+        _playPageAction  = inputActionAsset.FindAction("PlayPage");
+        _playPageAction.Enable();
+        
+        _moveAction = inputActionAsset.FindAction("Move");
+        _moveAction.Enable();
+        
+        _boostAction = inputActionAsset.FindAction("Boost");
+        _boostAction.Enable();
     }
 
     private void FixedUpdate()
     {
-        float newDistance = _rigidbody2D.velocity.x * Time.deltaTime;
+        float newDistance = _rigidbody2D.linearVelocity.x * Time.deltaTime;
         newDistance += GameDataController.GetGameData().distanceTraveled;
         GameDataController.GetGameData().distanceTraveled = newDistance;
 #if PLAY_GAMES_SERVICES
@@ -94,27 +122,27 @@ public class CarMove : MonoBehaviour
         _pgsController.UpdateLeaderboard();
 #endif
         // Use keys to control menu/gameplay
-        if (Input.GetKeyUp(KeyCode.G))
+        if (_garageAction.WasPressedThisFrame())
         {
             _gameManger.OnEnterGaragePageButtonClicked();
         }
-        if (Input.GetKeyUp(KeyCode.P))
+        if (_pgsAction.WasPressedThisFrame())
         {
             _gameManger.OnEnterPGSPageButtonClicked();
         }
-        if (Input.GetKeyUp(KeyCode.S))
+        if (_storeAction.WasPressedThisFrame())
         {
             _gameManger.OnEnterStoreButtonClicked();
         }
-        if (Input.GetKeyUp(KeyCode.Escape))
+        if (_playPageAction.WasPressedThisFrame())
         {
             _gameManger.OnEnterPlayPageButtonClicked();
         }
 
         // Check for keyboard controls
-        if (Input.GetKeyUp(KeyCode.Space))
+        if (_moveAction.WasPressedThisFrame())
         {
-            if (Input.GetKey(KeyCode.LeftShift))
+            if (_boostAction.WasPerformedThisFrame())
             {
                 // left shift + space for turbo
                 ProcessClickAction(TURBO_SPEED);
@@ -125,37 +153,12 @@ public class CarMove : MonoBehaviour
                 ProcessClickAction(NORMAL_SPEED);
             }
         }
-        else
-        {
-            // Check for fresh touches and see if they touched the car.
-            for (int i = 0; i < Input.touchCount; ++i)
-            {
-                var touch = Input.GetTouch(i);
-                if (touch.phase == TouchPhase.Began)
-                {
-                    ProcessTouch(touch.position);
-                }
-            }
-        }
-
-        // left mouse button
-#if UNITY_EDITOR
-        if (Input.GetMouseButtonDown(0))
-        {
-            ProcessTouch(Input.mousePosition);
-        }
-#endif
-        // Check for pending car movements
-        if (_clickCounter > 0 && Time.time - _firstClickTime > ClickDelay)
-        {
-            ProcessClickAction(_clickCounter);
-        }
     }
 
     // Moves the car at a velocity given by the number of clicks
     private void ProcessClickAction(int clicks)
     {
-        if (_rigidbody2D.velocity.magnitude < NoVelocity &&
+        if (_rigidbody2D.linearVelocity.magnitude < NoVelocity &&
                 _gas.HasGas() && _gameManger.IsInPlayCanvas())
         {
             switch (clicks)
@@ -172,20 +175,6 @@ public class CarMove : MonoBehaviour
             }
         }
         _clickCounter = 0;
-    }
-
-    private void ProcessTouch(Vector2 touchPosition)
-    {
-        Ray touchRay = Camera.main.ScreenPointToRay(touchPosition);
-        RaycastHit2D touchHit = Physics2D.Raycast(touchRay.origin, touchRay.direction);
-        if (touchHit.rigidbody == _rigidbody2D)
-        {
-            if (_clickCounter == 0)
-            {
-                _firstClickTime = Time.time;
-            }
-            _clickCounter++;
-        }
     }
 
     private void Drive()
