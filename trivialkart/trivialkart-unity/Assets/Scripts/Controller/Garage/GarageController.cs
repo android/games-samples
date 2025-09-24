@@ -14,6 +14,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 /// <summary>
@@ -24,6 +25,7 @@ using UnityEngine.UI;
 /// </summary>
 public class GarageController : MonoBehaviour
 {
+    public InputActionAsset inputActionAsset;
     public GameObject tab;
     public GameObject carPage;
     public GameObject backgroundPage;
@@ -38,6 +40,7 @@ public class GarageController : MonoBehaviour
     private List<GameObject> _garagePages;
     private int _currentTabIndex;
 
+    private InputAction _switchTabAction;
 
     private void Awake()
     {
@@ -51,12 +54,15 @@ public class GarageController : MonoBehaviour
         {
             _tabs[tabIndex] = tab.transform.GetChild(tabIndex).gameObject;
         }
+        
+        _switchTabAction = inputActionAsset.FindAction("SwitchTabs");
+        _switchTabAction.Enable();
     }
 
     private void Update()
     {
         // Use tab key to switch between garage pages
-        if (Input.GetKeyUp(KeyCode.Tab))
+        if (_switchTabAction.WasPressedThisFrame())
         {
             OnSwitchPageTabClicked((_currentTabIndex + 1) % _garagePages.Count);
         }

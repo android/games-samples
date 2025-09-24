@@ -72,6 +72,7 @@ public class PurchaseController : MonoBehaviour
     }
 }
 #else
+
 using UnityEngine.Purchasing;
 using UnityEngine.Purchasing.Security;
 
@@ -80,96 +81,181 @@ using UnityEngine.Purchasing.Security;
 /// It uses Unity IAP and the Google Play Billing Library plugin
 /// to do purchasing, order verification, and order restore.
 /// </summary>
-public class PurchaseController : MonoBehaviour, IStoreListener
+public class PurchaseController : MonoBehaviour
 {
-    private static IStoreController _storeController; // The Unity Purchasing system.
-    private static IExtensionProvider _storeExtensionProvider; // The store-specific Purchasing subsystems.
-    private static IGooglePlayStoreExtensions _playStoreExtensions;
+    private static StoreController _storeController;
     private static GameManager _gameManager;
     private static UIPriceChangeController _uiPriceChangeController;
 
-    private static bool IsInitialized()
-    {
-        // Only say we are initialized if both the Purchasing references are set.
-        return _storeController != null && _storeExtensionProvider != null;
-    }
+    private static bool IsInitialized => _storeController != null;
 
     private void Start()
     {
-        _gameManager = FindObjectOfType<GameManager>();
-        _uiPriceChangeController = FindObjectOfType<UIPriceChangeController>();
-        // Check if Unity IAP isn't initialized yet
-        if (_storeController == null)
+        _gameManager = FindFirstObjectByType<GameManager>();
+        _uiPriceChangeController = FindFirstObjectByType<UIPriceChangeController>();
+
+        if (!IsInitialized)
         {
-            // Initialize the IAP system
-            InitializePurchasing();
+            InitializeIAP();
         }
     }
 
-    private void InitializePurchasing()
+    private async void InitializeIAP()
     {
-        // If we have already connected to Purchasing ...
-        if (IsInitialized())
+        _storeController = UnityIAPServices.StoreController();
+
+        _storeController.OnPurchasePending += OnPurchasePending;
+        _storeController.OnPurchaseConfirmed += OnPurchaseConfirmed;
+        _storeController.OnPurchaseFailed += OnPurchaseFailed;
+
+        _storeController.OnStoreDisconnected += OnStoreDisconnected;
+        Debug.Log("Connecting to store.");
+        await _storeController.Connect();
+        
+        // Purchasing has succeeded initializing. Collect our Purchasing references.
+        Debug.Log("PurchaseController: OnInitialized success");
+
+        _storeController.OnProductsFetchFailed += OnProductsFetchedFailed;
+        _storeController.OnProductsFetched += OnProductsFetched;
+        FetchProducts();
+        UpdateItemPrices();
+    }
+
+    private void OnProductsFetched(List<Product> obj)
+    {
+        Debug.Log("Products fetched");
+    }
+
+    private static void OnProductsFetchedFailed(ProductFetchFailed obj)
+    {
+        foreach (var e in obj.FailedFetchProducts)
         {
-            // ... we are done here.
-            return;
+            Debug.Log("Fetch failed for product " + e.id + " ");
         }
 
-        // Create a builder, passing in the Google Play store module
-        var builder = (ConfigurationBuilder.Instance(StandardPurchasingModule.Instance()));
-        var googlePlayConfiguration = builder.Configure<IGooglePlayConfiguration>();
-        googlePlayConfiguration?.SetObfuscatedAccountId(TrivialKartClientUtil.GetObfuscatedAccountId());
-        googlePlayConfiguration?.SetDeferredPurchaseListener(
-            delegate(Product product)
-            {
-                ProcessDeferredPurchase(product.definition.id);
-            });
+        Debug.Log("Fetch failed reason " + obj.FailureReason);
+    }
 
-        // Add consumable products (coins) associated with their product types to sell / restore by way of its identifier,
-        // associating the general identifier with its store-specific identifiers.
+    private static void OnStoreDisconnected(StoreConnectionFailureDescription description)
+    {
+        Debug.Log($"Store disconnected details: {description.message}");
+    }
+
+    private static void OnPurchaseFailed(FailedOrder obj)
+    {
+        Debug.Log("Purchase Failed details" + obj.Details + " " + obj.FailureReason);
+    }
+
+    private static void OnPurchaseConfirmed(Order obj)
+    {
+        Debug.Log("Purchase confirmed details" + obj.Info);
+    }
+
+    private static void OnPurchasePending(PendingOrder obj)
+    {
+        Debug.Log("Purchase pending " + obj.Info);
+    }
+
+    private static void FetchProducts()
+    {
+        var catalog = new CatalogProvider();
+
         foreach (var coin in CoinList.List)
         {
-            builder.AddProduct(coin.ProductId, ProductType.Consumable);
+            catalog.AddProduct(coin.ProductId, ProductType.Consumable);
         }
 
-        // Continue adding the non-consumable products (car) with their product types.
         foreach (var car in CarList.List.Where(car => car.IsRealMoneyPurchase && car.Price > 0))
         {
-            builder.AddProduct(car.ProductId, ProductType.NonConsumable);
+            catalog.AddProduct(car.ProductId, ProductType.NonConsumable);
         }
 
-        // Adding subscription products with their product types.
         foreach (var subscription in SubscriptionList.List.Where(subscription =>
-            subscription.Type != SubscriptionType.NoSubscription))
+                     subscription.Type != SubscriptionType.NoSubscription))
         {
-            builder.AddProduct(subscription.ProductId, ProductType.Subscription);
+            catalog.AddProduct(subscription.ProductId, ProductType.Subscription);
         }
 
-        // Launch Unity IAP initialization, which is asynchronous, passing our class instance and the
-        // configuration builder. Results are processed by OnInitialized or OnInitializeFailed.
-        Debug.Log("PurchaseController: Calling UnityPurchasing.Initialize");
-        UnityPurchasing.Initialize(this, builder);
+        catalog.FetchProducts(UnityIAPServices.DefaultProduct().FetchProductsWithNoRetries);
     }
 
+    private static void UpdateItemPrices()
+    {
+        Debug.Log("PurchaseController: UpdateItemPrices");
+
+        // This is a very basic loop through all the items, updating the
+        // default price information with the current localized price
+        // supplied by the store.
+        foreach (var product in _storeController.GetProducts())
+        {
+            float currentPrice = Convert.ToSingle(product.metadata.localizedPrice);
+            string productId = product.definition.storeSpecificId;
+            string localizedPriceString = product.metadata.localizedPriceString;
+            bool foundItem = false;
+
+            foreach (var coin in CoinList.List.Where(coin =>
+                         string.Equals(productId, coin.ProductId, StringComparison.Ordinal)))
+            {
+                Debug.Log($"Updated price for Product: '{productId}', New Price: {currentPrice}");
+                coin.Price = currentPrice;
+                foundItem = true;
+                break;
+            }
+
+            if (!foundItem)
+            {
+                foreach (var car in CarList.List.Where(car => string.Equals(productId, car.ProductId,
+                             StringComparison.Ordinal)))
+                {
+                    Debug.Log($"Updated price for Product: '{productId}', New Price: {currentPrice}");
+                    car.Price = currentPrice;
+                    foundItem = true;
+                    break;
+                }
+            }
+
+            if (!foundItem)
+            {
+                foreach (var subscription in SubscriptionList.List.Where(subscription => string.Equals(productId,
+                             subscription.ProductId,
+                             StringComparison.Ordinal)))
+                {
+                    Debug.Log($"Updated price for Product: '{productId}', New Price: {currentPrice}");
+                    subscription.Price = currentPrice;
+                    foundItem = true;
+                    break;
+                }
+            }
+
+            // If we found the item, update the UI text element that actually displays
+            // the price information for the current item
+            if (foundItem)
+            {
+                _uiPriceChangeController.UpdatePriceTextItem(productId, localizedPriceString);
+            }
+        }
+    }
+
+    // Buying products and upgrading/downgrading subscriptions are merged
     public static void BuyProductId(string productId)
     {
         // If Purchasing has been initialized ...
-        if (IsInitialized())
+        if (IsInitialized)
         {
             // ... look up the Product reference with the general product identifier and the Purchasing
             // system's products collection.
-            var product = _storeController.products.WithID(productId);
+            var product = _storeController.GetProductById(productId);
 
             // If the look up found a product for this device's store and that product is ready to be sold ...
-            if (product != null && product.availableToPurchase)
+            if (product is { availableToPurchase: true })
             {
                 // Bring up the 'Purchasing' modal message
                 _gameManager.SetWaitMessageActive(true);
 
-                Debug.Log(string.Format("PurchaseController: Purchasing product asynchronously: '{0}'", product.definition.id));
+                Debug.Log($"PurchaseController: Purchasing product asynchronously: '{product.definition.id}'");
                 // ... buy the product. Expect a response either through ProcessPurchase or OnPurchaseFailed
                 // asynchronously.
-                _storeController.InitiatePurchase(product);
+                _storeController.PurchaseProduct(product);
             }
             // Otherwise ...
             else
@@ -188,292 +274,22 @@ public class PurchaseController : MonoBehaviour, IStoreListener
         }
     }
 
-    public static void PurchaseASubscription(SubscriptionList.Subscription oldSubscription,
-        SubscriptionList.Subscription newSubscription)
-    {
-        // If the player is subscribe to a new subscription from no subscription,
-        // go through the purchase IAP follow.
-        if (oldSubscription.Type == SubscriptionType.NoSubscription)
-        {
-            BuyProductId(newSubscription.ProductId);
-        }
-        // If the player wants to update or downgrade the subscription,
-        // use the upgrade and downgrade flow.
-        else
-        {
-            _playStoreExtensions.UpgradeDowngradeSubscription(oldSubscription.ProductId, newSubscription.ProductId);
-        }
-    }
-
-    public void OnInitialized(IStoreController controller, IExtensionProvider extensions)
-    {
-        // Purchasing has succeeded initializing. Collect our Purchasing references.
-        Debug.Log("PurchaseController: OnInitialized success");
-
-        // Overall Purchasing system, configured with products for this application.
-        _storeController = controller;
-        // Store specific subsystem, for accessing device-specific store features.
-        _storeExtensionProvider = extensions;
-
-        // Retrieve the current item prices from the store
-        UpdateItemPrices();
-
-        // Set play store extensions.
-        _playStoreExtensions =
-            _storeExtensionProvider.GetExtension<IGooglePlayStoreExtensions>();
-
-        CheckSubscriptionsAvailabilityBasedOnReceipt(controller);
-    }
-
-    public void OnInitializeFailed(InitializationFailureReason error)
-    {
-        // Purchasing set-up has not succeeded. Check error for reason. Consider sharing this reason with the user.
-        Debug.Log("PurchaseController: OnInitializeFailed InitializationFailureReason:" + error);
-    }
-
-    private void UpdateItemPrices()
-    {
-        Debug.Log("PurchaseController: UpdateItemPrices");
-
-        // This is a very basic loop through all the items, updating the
-        // default price information with the current localized price
-        // supplied by the store.
-        foreach (var product in _storeController.products.all)
-        {
-            float currentPrice = Convert.ToSingle(product.metadata.localizedPrice);
-            string productId = product.definition.storeSpecificId;
-            string localizedPriceString = product.metadata.localizedPriceString;
-            bool foundItem = false;
-
-            foreach (var coin in CoinList.List.Where(coin =>
-                string.Equals(productId, coin.ProductId, StringComparison.Ordinal)))
-            {
-                Debug.Log($"Updated price for Product: '{productId}', New Price: {currentPrice}");
-                coin.Price = currentPrice;
-                foundItem = true;
-                break;
-            }
-
-            if (!foundItem)
-            {
-                foreach (var car in CarList.List.Where(car => string.Equals(productId, car.ProductId,
-                    StringComparison.Ordinal)))
-                {
-                    Debug.Log($"Updated price for Product: '{productId}', New Price: {currentPrice}");
-                    car.Price = currentPrice;
-                    foundItem = true;
-                    break;
-                }
-            }
-
-            if (!foundItem)
-            {
-                foreach (var subscription in SubscriptionList.List.Where(subscription => string.Equals(productId,
-                    subscription.ProductId,
-                    StringComparison.Ordinal)))
-                {
-                    Debug.Log($"Updated price for Product: '{productId}', New Price: {currentPrice}");
-                    subscription.Price = currentPrice;
-                    foundItem = true;
-                    break;
-                }
-            }
-
-            // If we found the item, update the UI text element that actually displays
-            // the price information for the current item
-            if (foundItem)
-            {
-                _uiPriceChangeController.UpdatePriceTextItem(productId, localizedPriceString);
-            }
-        }
-    }
-
-    private static void CheckSubscriptionsAvailabilityBasedOnReceipt(IStoreController controller)
-    {
-        var silverSubscriptionProduct = controller.products.WithID(SubscriptionList.SilverSubscription.ProductId);
-        var goldenSubscriptionProduct = controller.products.WithID(SubscriptionList.GoldenSubscription.ProductId);
-        if (!(silverSubscriptionProduct.hasReceipt && ClientSideReceiptValidation(silverSubscriptionProduct.receipt)) &&
-            !(goldenSubscriptionProduct.hasReceipt && ClientSideReceiptValidation(goldenSubscriptionProduct.receipt)))
-        {
-            GameDataController.GetGameData().UpdateSubscription(SubscriptionList.NoSubscription);
-            Debug.Log("PurchaseController: No subscription receipt found. Unsubscribe all subscriptions");
-        }
-    }
-
-    private static void ProcessDeferredPurchase(string productId)
-    {
-        // Check if a consumable (coins) has been deferred purchased by this user.
-        foreach (var coin in CoinList.List.Where(coin =>
-            string.Equals(productId, coin.ProductId, StringComparison.Ordinal)))
-        {
-            CoinStorePageController.SetDeferredPurchaseReminderStatus(coin, true);
-            return;
-        }
-
-        // Check if a non-consumable (car) has been deferred purchased by this user.
-        foreach (var car in CarList.List.Where(car => string.Equals(productId, car.ProductId,
-            StringComparison.Ordinal)))
-        {
-            CarStorePageController.SetDeferredPurchaseReminderStatus(car, true);
-            return;
-        }
-
-        Debug.LogError("PurchaseController: Product ID doesn't match any of exist one-time products that can be deferred purchase.");
-    }
-
-    public PurchaseProcessingResult ProcessPurchase(PurchaseEventArgs args)
-    {
-
-        Debug.Log($"PurchaseController: ProcessPurchase: PASS. Product: '{args.purchasedProduct.definition.id}'");
-        if (args.purchasedProduct.hasReceipt)
-        {
-            Debug.Log($"PurchaseController: ProcessPurchase: Receipt: '{args.purchasedProduct.receipt}'");
-        }
-        else
-        {
-            Debug.Log("PurchaseController: ProcessPurchase: No receipt");
-        }
-#if USE_SERVER
-        Debug.Log("Calling VerifyAndSaveUserPurchase");
-        NetworkRequestController.VerifyAndSaveUserPurchase(args.purchasedProduct);
-        // Make sure the 'Purchasing' modal message is dismissed
-        _gameManager.SetWaitMessageActive(false);
-        return PurchaseProcessingResult.Pending;
-#else
-        if (ClientSideReceiptValidation(args.purchasedProduct.receipt))
-        {
-            // Unlock the appropriate content.
-            GameDataController.UnlockInGameContent(args.purchasedProduct.definition.id);
-        }
-
-        // Make sure the 'Purchasing' modal message is dismissed
-        _gameManager.SetWaitMessageActive(false);
-
-        // Return a flag indicating whether this product has completely been received, or if the application needs
-        // to be reminded of this purchase at next app launch. Use PurchaseProcessingResult.Pending when still
-        // saving purchased products to the cloud, and when that save is delayed.
-        return PurchaseProcessingResult.Complete;
-#endif
-    }
-
-    public static void ConfirmPendingPurchase(Product product, bool purchaseVerifiedSuccess)
-    {
-        if (purchaseVerifiedSuccess)
-        {
-            GameDataController.UnlockInGameContent(product.definition.id);
-        }
-
-        _storeController.ConfirmPendingPurchase(product);
-    }
-
-    private static bool ClientSideReceiptValidation(string unityIapReceipt)
-    {
-        bool validPurchase = true;
-#if UNITY_ANDROID
-        // Prepare the validator with the secrets we prepared in the Editor
-        // obfuscation window.
-        var validator = new CrossPlatformValidator(GooglePlayTangle.Data(),
-            AppleTangle.Data(), Application.identifier);
-
-        try
-        {
-            // Validate the signature of the receipt with unity cross platform validator
-            var result = validator.Validate(unityIapReceipt);
-
-            // Validate the obfuscated account id of the receipt.
-            ObfuscatedAccountIdValidation(unityIapReceipt);
-
-            // For informational purposes, we list the receipt(s).
-            Debug.Log("Receipt is valid. Contents:");
-            foreach (IPurchaseReceipt productReceipt in result)
-            {
-                Debug.Log(productReceipt.productID);
-                Debug.Log(productReceipt.purchaseDate);
-                Debug.Log(productReceipt.transactionID);
-            }
-        }
-        catch (IAPSecurityException)
-        {
-            Debug.Log("PurchaseController: Invalid receipt, not unlocking content");
-            validPurchase = false;
-        }
-#endif
-        return validPurchase;
-    }
-
-    // Check if the obfuscated account id on the receipt is same as the one on the device.
-    private static void ObfuscatedAccountIdValidation(string unityIapReceipt)
-    {
-        Dictionary<string, object> unityIapReceiptDictionary =
-            (Dictionary<string, object>) MiniJson.JsonDecode(unityIapReceipt);
-        string payload = (string) unityIapReceiptDictionary["Payload"];
-        Dictionary<string, object> payLoadDictionary = (Dictionary<string, object>) MiniJson.JsonDecode(payload);
-        string receipt = (string) payLoadDictionary["json"];
-
-        Dictionary<string, object> receiptDictionary = (Dictionary<string, object>) MiniJson.JsonDecode(receipt);
-        if (!receiptDictionary.ContainsKey("obfuscatedAccountId") ||
-            !receiptDictionary["obfuscatedAccountId"].Equals(TrivialKartClientUtil.GetObfuscatedAccountId()))
-        {
-            Debug.Log("PurchaseController: Obfuscated account id is invalid");
-            throw new IAPSecurityException();
-        }
-    }
-
-    public void OnPurchaseFailed(Product product, PurchaseFailureReason failureReason)
-    {
-        // Make sure the 'Purchasing' modal message is dismissed
-        _gameManager.SetWaitMessageActive(false);
-
-        // A product purchase attempt did not succeed. Check failureReason for more detail. Consider sharing
-        // this reason with the user to guide their troubleshooting actions.
-        Debug.Log(
-            $"PurchaseController: OnPurchaseFailed: FAIL. Product: '{product.definition.storeSpecificId}', PurchaseFailureReason: {failureReason}");
-
-        // If the purchase failed with a duplicate transaction response, and the item is not shown in client side,
-        // do a restore purchase to fetch the product.
-        // This situation can occur when the user loses internet connectivity after sending the purchase.
-        if (failureReason == PurchaseFailureReason.DuplicateTransaction)
-        {
-            _playStoreExtensions.RestoreTransactions(null);
-        }
-    }
-
-    public static void ConfirmSubscriptionPriceChange(string productId)
-    {
-        _playStoreExtensions.ConfirmSubscriptionPriceChange(productId,
-            delegate(bool priceChangeSuccess)
-            {
-                if (priceChangeSuccess)
-                {
-                    // Here you can choose to make an update or record that the user accpected the new price
-                    Debug.Log("PurchaseController: The user accepted the price change");
-                }
-                else
-                {
-                    Debug.Log("PurchaseController: The user did not accept the price change");
-                }
-            }
-        );
-    }
-
-    // Restore purchase when the user login to a new device.
     public static void RestorePurchase()
     {
-        _playStoreExtensions.RestoreTransactions(
-            delegate(bool restoreSuccess)
+        _storeController.RestoreTransactions((restoreSuccess, transactionId) =>
+        {
+            var garageController = FindFirstObjectByType<GarageController>();
+            if (restoreSuccess)
             {
-                var garageController = FindObjectOfType<GarageController>();
-                if (restoreSuccess)
-                {
-                    Debug.Log("PurchaseController: Successfully restored purchase!");
-                    garageController.OnRestorePurchaseSuccess();
-                }
-                else
-                {
-                    Debug.Log("PurchaseController: Failed to restore purchase");
-                    garageController.OnRestorePurchaseFail();
-                }
-            });
+                Debug.Log("PurchaseController: Successfully restored purchase! ");
+                garageController.OnRestorePurchaseSuccess();
+            }
+            else
+            {
+                Debug.Log("PurchaseController: Failed to restore purchase" + transactionId);
+                garageController.OnRestorePurchaseFail();
+            }
+        });
     }
 }
 #endif // !NO_IAP

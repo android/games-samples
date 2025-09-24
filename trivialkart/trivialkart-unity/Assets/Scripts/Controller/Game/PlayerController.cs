@@ -51,7 +51,7 @@ public class PlayerController : MonoBehaviour
             _carInUseGameObj.transform.position = _carStartPos;
         }
         
-        _carInUseAnimator.SetFloat(Speed, _rigidbody2D.velocity.magnitude);
+        _carInUseAnimator.SetFloat(Speed, _rigidbody2D.linearVelocity.magnitude);
         
         // Update gas level.
         var distancePerCircle = EndOfRoadPositionX - _carStartPos.x;

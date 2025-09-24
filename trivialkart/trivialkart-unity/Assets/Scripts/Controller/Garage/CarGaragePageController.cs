@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// Controller for the car garage page.
@@ -21,14 +22,27 @@ using UnityEngine;
 /// </summary>
 public class CarGaragePageController : MonoBehaviour
 {
+    public InputActionAsset inputActionAsset;
+    private InputAction _leftTabAction;
+    private InputAction _rightTabAction;
+    
+    private void Awake()
+    {
+        _leftTabAction = inputActionAsset.FindAction("LeftTab");
+        _leftTabAction.Enable();
+        
+        _rightTabAction = inputActionAsset.FindAction("RightTab");
+        _rightTabAction.Enable();
+    }
+    
     private void Update()
     {
         // Use the keyboard arrows to select the car
-        if (Input.GetKeyUp(KeyCode.LeftArrow))
+        if (_leftTabAction.WasPressedThisFrame())
         {
             SwitchToPreviousCar();
         }
-        if (Input.GetKeyUp(KeyCode.RightArrow))
+        if (_rightTabAction.WasPressedThisFrame())
         {
             SwitchToNextCar();
         }
