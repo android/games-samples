@@ -15,6 +15,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// Controller for the tab/page switch in the play games services UI.
@@ -22,6 +23,7 @@ using UnityEngine;
 /// </summary>
 public class PGSPageController : MonoBehaviour
 {
+    public InputActionAsset inputActionAsset;
     public GameObject tab;
     public GameObject signinPage;
     public GameObject achievementPage;
@@ -34,6 +36,8 @@ public class PGSPageController : MonoBehaviour
     private List<GameObject> _pgsPages;
     private int _currentTabIndex;
 
+    private InputAction _switchTabAction;
+    
     private void Awake()
     {
         _currentTabIndex = 0;
@@ -46,12 +50,15 @@ public class PGSPageController : MonoBehaviour
         {
             _tabs[tabIndex] = tab.transform.GetChild(tabIndex).gameObject;
         }
+
+        _switchTabAction = inputActionAsset.FindAction("SwitchTabs");
+        _switchTabAction.Enable();
     }
 
     private void Update()
     {
         // Use tab key to switch between pages
-        if (Input.GetKeyUp(KeyCode.Tab))
+        if (_switchTabAction.WasPressedThisFrame())
         {
             OnSwitchPageTabClicked((_currentTabIndex + 1) % _pgsPages.Count);
         }

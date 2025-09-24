@@ -125,7 +125,7 @@ public class GameData
 
     private void UpdateCoinText()
     {
-        Object.FindObjectOfType<StoreController>().SetCoinsBasedOnGameData();
+        Object.FindObjectOfType<StorePageController>().SetCoinsBasedOnGameData();
     }
 
     // Update coins when player purchases coins.
