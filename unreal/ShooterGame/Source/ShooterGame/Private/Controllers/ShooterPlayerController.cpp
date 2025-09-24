@@ -21,17 +21,22 @@ void AShooterPlayerController::BeginPlay()
 	if (IsLocalPlayerController())
 	{
 
-		// create the bullet counter widget and add it to the screen
-		BulletCounterUI = CreateWidget<UShooterBulletCounterUI>(this, BulletCounterUIClass);
-
-		if (BulletCounterUI)
+		if (TWeakObjectPtr CurrentPlayerState = GetPlayerState<AShooterPlayerState>(); CurrentPlayerState.IsValid())
 		{
-			BulletCounterUI->AddToPlayerScreen(0);
+			if (CurrentPlayerState->bIsInGame)
+			{
+				// create the bullet counter widget and add it to the screen
+				BulletCounterUI = CreateWidget<UShooterBulletCounterUI>(this, BulletCounterUIClass);
 
-		} else {
-
-			UE_LOG(LogShooterGame, Error, TEXT("Could not spawn bullet counter widget."));
-
+				if (BulletCounterUI)
+				{
+					BulletCounterUI->AddToPlayerScreen(0);
+				}
+				else
+				{
+					UE_LOG(LogShooterGame, Error, TEXT("Could not spawn bullet counter widget."));
+				}
+			}
 		}
 		
 	}

@@ -11,6 +11,7 @@
 #include "Engine/World.h"
 #include "Camera/CameraComponent.h"
 #include "TimerManager.h"
+#include "GameInstance/ShooterPlatformGameInstance.h"
 #include "Info/ShooterGameMode.h"
 
 AShooterCharacter::AShooterCharacter()
@@ -206,6 +207,12 @@ void AShooterCharacter::AddWeaponClass(const TSubclassOf<AShooterWeapon>& Weapon
 			// switch to the new weapon
 			CurrentWeapon = AddedWeapon;
 			CurrentWeapon->ActivateWeapon();
+		}
+
+		if (TWeakObjectPtr GameInstance = Cast<UShooterPlatformGameInstance>(GetGameInstance());
+			GameInstance.IsValid())
+		{
+			GameInstance->AddAchievementProgress(100.0f, AddedWeapon->AchievementName, AddedWeapon->AchievementID);
 		}
 	}
 }

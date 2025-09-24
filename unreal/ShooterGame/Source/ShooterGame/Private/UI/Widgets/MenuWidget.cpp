@@ -10,6 +10,7 @@
 #include "Components/WidgetSwitcher.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
+#include "GameInstance/ShooterPlatformGameInstance.h"
 #include "Interfaces/OnlineExternalUIInterface.h"
 
 void UMenuWidget::NativeConstruct()
@@ -19,7 +20,7 @@ void UMenuWidget::NativeConstruct()
 	StartGameButton->OnClicked.AddUniqueDynamic(this, &UMenuWidget::OnStartGameButtonClicked);
 	StoreButton->OnClicked.AddUniqueDynamic(this, &UMenuWidget::OnStoreButtonClicked);
 
-	CheckIfLoginStatusCompleted();
+	SetPlayerData();
 }
 
 void UMenuWidget::NativeDestruct()
@@ -39,21 +40,16 @@ void UMenuWidget::OnLogInButtonClicked()
 			FOnLoginUIClosedDelegate LoginDelegate;
 			LoginDelegate.BindWeakLambda(this, [this](FUniqueNetIdPtr UniqueId, const int ControllerIndex, const FOnlineError& Error)
 			{
-				switch (Error.GetErrorResult())
+				if (Error.GetErrorResult() == EOnlineErrorResult::Success)
 				{
-					case EOnlineErrorResult::Success:
-						{
-							UE_LOG(LogTemp, Log, TEXT("External Login Success for User: %s"), *UniqueId->ToString());
-							CheckIfLoginStatusCompleted();
-						}
-					break;
-					default:
-						{
-							const FString ErrorMessage = Error.ToLogString();
-							UE_LOG(LogTemp, Error, TEXT("%s"), *ErrorMessage);
-							ErrorText->SetText(FText::FromString(ErrorMessage));
-						}
-					break;
+					UE_LOG(LogTemp, Log, TEXT("External Login Success for User: %s"), *UniqueId->ToString());
+					SetPlayerData();
+				}
+				else
+				{
+					const FString ErrorMessage = Error.ToLogString();
+					UE_LOG(LogTemp, Error, TEXT("%s"), *ErrorMessage);
+					ErrorText->SetText(FText::FromString(ErrorMessage));
 				}
 			});
 			if (const bool bStarted = ExternalUI->ShowLoginUI(0, true, false, LoginDelegate); !bStarted)
@@ -75,20 +71,17 @@ void UMenuWidget::OnStoreButtonClicked()
 	PanelSwitcher->SetActiveWidgetIndex(2);
 }
 
-void UMenuWidget::CheckIfLoginStatusCompleted() const
+void UMenuWidget::SetPlayerData() const
 {
-	if (const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld()))
+	if (const TWeakObjectPtr GameInstance = Cast<UShooterPlatformGameInstance>(GetWorld()->GetGameInstance()); GameInstance.IsValid())
 	{
-		if (const IOnlineIdentityPtr IdentityInterface = Subsystem->GetIdentityInterface())
+		if (GameInstance->IsLoggedInToOnlineSubsystem())
 		{
-			if (IdentityInterface->GetLoginStatus(0) == ELoginStatus::LoggedIn)
-			{
-				PanelSwitcher->SetActiveWidgetIndex(1);
-				const FString NickName = IdentityInterface->GetPlayerNickname(0);
-				if (NickName.IsEmpty())
-					return;
-				PlayerNameText->SetText(FText::FromString(NickName));
-			}
+			PanelSwitcher->SetActiveWidgetIndex(1);
+			const FString NickName = GameInstance->GetPlayerName();
+			if (NickName.IsEmpty())
+				return;
+			PlayerNameText->SetText(FText::FromString(NickName));
 		}
 	}
 }

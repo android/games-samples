@@ -10,9 +10,12 @@ void AShooterGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// create the UI
-	ShooterUI = CreateWidget<UShooterUI>(UGameplayStatics::GetPlayerController(GetWorld(), 0), ShooterUIClass);
-	ShooterUI->AddToViewport(0);
+	if (IsValid(ShooterUIClass))
+	{
+		// create the UI
+		ShooterUI = CreateWidget<UShooterUI>(UGameplayStatics::GetPlayerController(GetWorld(), 0), ShooterUIClass);
+		ShooterUI->AddToViewport(0);
+	}
 }
 
 void AShooterGameMode::IncrementTeamScore(uint8 TeamByte)

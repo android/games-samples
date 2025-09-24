@@ -81,6 +81,11 @@ public:
 	AShooterProjectile();
 
 protected:
+	UPROPERTY(EditAnywhere)
+	FString AchievementName;
+
+	UPROPERTY(EditAnywhere)
+	FString AchievementID;
 	
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;

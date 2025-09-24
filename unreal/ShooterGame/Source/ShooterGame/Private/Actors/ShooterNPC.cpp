@@ -11,6 +11,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
+#include "GameInstance/ShooterPlatformGameInstance.h"
 
 void AShooterNPC::BeginPlay()
 {
@@ -179,6 +180,12 @@ void AShooterNPC::Die()
 
 	// schedule actor destruction
 	GetWorld()->GetTimerManager().SetTimer(DeathTimer, this, &AShooterNPC::DeferredDestruction, DeferredDestructionTime, false);
+	if (TWeakObjectPtr GameInstance = Cast<UShooterPlatformGameInstance>(GetGameInstance());
+			GameInstance.IsValid())
+	{
+		//Kill 2 Enemies to complete the Achievement 
+		GameInstance->AddAchievementProgress(50.0f, AchievementName, AchievementID);
+	}
 }
 
 void AShooterNPC::DeferredDestruction()

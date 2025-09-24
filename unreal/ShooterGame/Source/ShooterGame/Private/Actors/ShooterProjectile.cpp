@@ -12,6 +12,7 @@
 #include "Engine/OverlapResult.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
+#include "GameInstance/ShooterPlatformGameInstance.h"
 
 AShooterProjectile::AShooterProjectile()
 {
@@ -42,6 +43,12 @@ void AShooterProjectile::BeginPlay()
 	
 	// ignore the pawn that shot this projectile
 	CollisionComponent->IgnoreActorWhenMoving(GetInstigator(), true);
+	if (TWeakObjectPtr GameInstance = Cast<UShooterPlatformGameInstance>(GetGameInstance());
+			GameInstance.IsValid())
+	{
+		//Shoot 100 Bullets to complete the Achievement 
+		GameInstance->AddAchievementProgress(1.0f, AchievementName, AchievementID);
+	}
 }
 
 void AShooterProjectile::EndPlay(EEndPlayReason::Type EndPlayReason)

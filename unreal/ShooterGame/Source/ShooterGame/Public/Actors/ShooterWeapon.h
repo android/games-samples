@@ -109,8 +109,13 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Perception")
 	FName ShotNoiseTag = FName("Shot");
 
-public:	
-
+public:
+	UPROPERTY(EditAnywhere)
+	FString AchievementName;
+	
+	UPROPERTY(EditAnywhere)
+	FString AchievementID;
+	
 	/** Constructor */
 	AShooterWeapon();
 

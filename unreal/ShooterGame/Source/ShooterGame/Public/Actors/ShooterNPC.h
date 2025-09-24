@@ -137,6 +137,12 @@ public:
 
 protected:
 
+	UPROPERTY(EditAnywhere)
+	FString AchievementName;
+
+	UPROPERTY(EditAnywhere)
+	FString AchievementID;
+	
 	/** Called when HP is depleted and the character should die */
 	void Die();
 

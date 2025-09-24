@@ -50,6 +50,6 @@ private:
 	void OnStartGameButtonClicked();
 	UFUNCTION()
 	void OnStoreButtonClicked();
-	void CheckIfLoginStatusCompleted() const;
+	void SetPlayerData() const;
 	
 };
