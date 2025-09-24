@@ -6,12 +6,14 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "Components/Button.h"
+#include "Components/ListView.h"
 #include "Components/TextBlock.h"
 #include "Components/WidgetSwitcher.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
 #include "GameInstance/ShooterPlatformGameInstance.h"
 #include "Interfaces/OnlineExternalUIInterface.h"
+#include "UI/Widgets/StoreListItemUserWidget.h"
 
 void UMenuWidget::NativeConstruct()
 {
@@ -19,6 +21,7 @@ void UMenuWidget::NativeConstruct()
 	LogInButton->OnClicked.AddUniqueDynamic(this, &UMenuWidget::OnLogInButtonClicked);
 	StartGameButton->OnClicked.AddUniqueDynamic(this, &UMenuWidget::OnStartGameButtonClicked);
 	StoreButton->OnClicked.AddUniqueDynamic(this, &UMenuWidget::OnStoreButtonClicked);
+	BackButton->OnClicked.AddUniqueDynamic(this, &UMenuWidget::OnBackButtonClicked);
 
 	SetPlayerData();
 }
@@ -29,6 +32,7 @@ void UMenuWidget::NativeDestruct()
 	LogInButton->OnClicked.RemoveDynamic(this, &UMenuWidget::OnLogInButtonClicked);
 	StartGameButton->OnClicked.RemoveDynamic(this, &UMenuWidget::OnStartGameButtonClicked);
 	StoreButton->OnClicked.RemoveDynamic(this, &UMenuWidget::OnStoreButtonClicked);
+	BackButton->OnClicked.RemoveDynamic(this, &UMenuWidget::OnBackButtonClicked);
 }
 
 void UMenuWidget::OnLogInButtonClicked()
@@ -71,6 +75,11 @@ void UMenuWidget::OnStoreButtonClicked()
 	PanelSwitcher->SetActiveWidgetIndex(2);
 }
 
+void UMenuWidget::OnBackButtonClicked()
+{
+	PanelSwitcher->SetActiveWidgetIndex(1);
+}
+
 void UMenuWidget::SetPlayerData() const
 {
 	if (const TWeakObjectPtr GameInstance = Cast<UShooterPlatformGameInstance>(GetWorld()->GetGameInstance()); GameInstance.IsValid())
@@ -82,6 +91,16 @@ void UMenuWidget::SetPlayerData() const
 			if (NickName.IsEmpty())
 				return;
 			PlayerNameText->SetText(FText::FromString(NickName));
+			TArray<UStoreItemData*> StoreItems;
+			for (const FOnlineStoreOfferRef Offer : GameInstance->StoreOffers)
+			{
+				UStoreItemData Data = UStoreItemData();
+				Data.Item = Offer;
+				StoreItems.Add(&Data);
+			}
+			if (StoreItems.IsEmpty())
+				return;
+			StoreList->SetListItems(StoreItems);
 		}
 	}
 }

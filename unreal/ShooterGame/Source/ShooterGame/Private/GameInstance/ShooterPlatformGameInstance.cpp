@@ -6,6 +6,8 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "Interfaces/OnlineAchievementsInterface.h"
+#include "Interfaces/OnlinePurchaseInterface.h"
+#include "Interfaces/OnlineStoreInterfaceV2.h"
 
 void UShooterPlatformGameInstance::Init()
 {
@@ -60,6 +62,13 @@ void UShooterPlatformGameInstance::OnLoginCompleted(int32 LocalUserNum, bool bWa
 						FOnQueryAchievementsCompleteDelegate::CreateUObject(this,
 							&UShooterPlatformGameInstance::OnQueryAchievementsCompleted));
 				}
+				if (const IOnlineStoreV2Ptr StoreInterface = Subsystem->GetStoreV2Interface())
+				{
+					TArray<FString> StoreListItemKeys;
+					StoreListItemIDs.GetKeys(StoreListItemKeys);
+					StoreInterface->QueryOffersById(*IdentityInterface->GetUniquePlayerId(0), StoreListItemKeys, FOnQueryOnlineStoreOffersComplete::CreateUObject(this,
+							&UShooterPlatformGameInstance::OnQueryOnlineStoreOfferCompleted));
+				}
 			}
 		}
 	}
@@ -74,8 +83,26 @@ void UShooterPlatformGameInstance::OnQueryAchievementsCompleted(const FUniqueNet
 	}
 }
 
+void UShooterPlatformGameInstance::OnQueryOnlineStoreOfferCompleted(bool bWasSuccessful,
+	const TArray<FUniqueOfferId>& OfferIds, const FString& Error)
+{
+	if (bWasSuccessful)
+	{
+		if (const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld()))
+		{
+			if (const IOnlineIdentityPtr IdentityInterface = Subsystem->GetIdentityInterface())
+			{
+				if (const IOnlineStoreV2Ptr StoreInterface = Subsystem->GetStoreV2Interface())
+				{
+					StoreInterface->GetOffers(StoreOffers);
+				}
+			}
+		}
+	}
+}
+
 void UShooterPlatformGameInstance::AddAchievementProgress(const float Progress,
-	const FString& AchievementName, const FString& AchievementID)
+                                                          const FString& AchievementName, const FString& AchievementID)
 {
 	if (AchievementName.IsEmpty() && AchievementID.IsEmpty())
 		return;
@@ -96,6 +123,51 @@ void UShooterPlatformGameInstance::AddAchievementProgress(const float Progress,
 					FOnlineAchievementsWriteRef AchievementRef = AchievementPtr.ToSharedRef();
 					AchievementsInterface->WriteAchievements(*IdentityInterface->GetUniquePlayerId(0),
 						AchievementRef);
+				}
+			}
+		}
+	}
+}
+
+void UShooterPlatformGameInstance::OnCheckoutComplete(const FOnlineError& OnlineError,
+	const TSharedRef<FPurchaseReceipt>& PurchaseReceipt)
+{
+	if (!OnlineError.WasSuccessful())
+		return;
+	if (const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld()))
+	{
+		if (const IOnlineIdentityPtr IdentityInterface = Subsystem->GetIdentityInterface())
+		{
+			// The Purchase Token is passed as the ReceiptId to tell the platform which purchase to finalize (consume/acknowledge).
+			Subsystem->GetPurchaseInterface()->FinalizePurchase(*IdentityInterface->GetUniquePlayerId(0), PurchaseReceipt->TransactionId);
+		}
+	}
+}
+
+void UShooterPlatformGameInstance::StartPurchasing(FOnlineStoreOfferRef PurchaseItem, int32 Quantity)
+{
+	if (const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld()))
+	{
+		if (const IOnlineIdentityPtr IdentityInterface = Subsystem->GetIdentityInterface())
+		{
+			if (const IOnlinePurchasePtr PurchaseInterface =
+				Subsystem->GetPurchaseInterface(); PurchaseInterface.IsValid())
+			{
+				if (PurchaseInterface->IsAllowedToPurchase(*IdentityInterface->GetUniquePlayerId(0)))
+				{
+					FPurchaseCheckoutRequest CheckoutRequest;
+	
+					// Use the product ID from the Google Play Console (OfferId).
+					// Quantity is 1 for consumables, or can be 0 or 1 for non-consumables depending on platform and use.
+					CheckoutRequest.AddPurchaseOffer(
+						"", 
+						PurchaseItem->OfferId,
+						Quantity,
+						StoreListItemIDs[PurchaseItem->OfferId]
+					);
+					PurchaseInterface->Checkout(*IdentityInterface->GetUniquePlayerId(0),
+						CheckoutRequest,
+						FOnPurchaseCheckoutComplete::CreateUObject(this, &UShooterPlatformGameInstance::OnCheckoutComplete));
 				}
 			}
 		}

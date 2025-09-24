@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "MenuWidget.generated.h"
 
+class UListView;
 class UTextBlock;
 class UButton;
 class UWidgetSwitcher;
@@ -38,6 +39,12 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	TSoftObjectPtr<UWorld> LevelToLoad;
+	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UListView> StoreList;
+	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UButton> BackButton;
 
 public:
 	virtual void NativeConstruct() override;
@@ -50,6 +57,8 @@ private:
 	void OnStartGameButtonClicked();
 	UFUNCTION()
 	void OnStoreButtonClicked();
+	UFUNCTION()
+	void OnBackButtonClicked();
 	void SetPlayerData() const;
 	
 };
