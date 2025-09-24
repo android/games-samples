@@ -71,6 +71,6 @@ for implementing features like
 
 * Google Play Games Authentication
 * Google Play Games Achievements
-* Google Play Billing for in-app purchases using Unity IAP
+* Google Play Billing for in-app purchases
 
 The implementation for each feature is given in c++ as some function are only exposed to c++ and not to blueprints.
