@@ -27,12 +27,11 @@ public class CarMove : MonoBehaviour
     public InputActionAsset inputActionAsset;
     public GameObject odometerLabel;
     public GameObject tapToDriveText;
-    // public CarName carName;
+    public float carSpeed;
 
     private Rigidbody2D _rigidbody2D;
     private GameManager _gameManger;
     private PGSController _pgsController;
-    // private CarList.Car _carObj;
     private Gas _gas;
     private Text _odometerText;
     private const float NoVelocity = 0.01f;
@@ -62,8 +61,6 @@ public class CarMove : MonoBehaviour
         _firstClickTime = 0f;
         _gameManger = FindObjectOfType<GameManager>();
         _pgsController = FindObjectOfType<PGSController>();
-        // Get the carObj corresponding to the car game object the script attached to.
-        // _carObj = CarList.GetCarByName(carName);
         _rigidbody2D = GetComponent<Rigidbody2D>();
         _gas = transform.parent.gameObject.GetComponent<Gas>();
         _odometerText = odometerLabel.GetComponent<Text>();
@@ -170,12 +167,12 @@ public class CarMove : MonoBehaviour
     private void Drive()
     {
         tapToDriveText.SetActive(false);
-        // _rigidbody2D.AddForce(new Vector2(_carObj.Speed, 0));
+        _rigidbody2D.AddForce(new Vector2(carSpeed, 0));
     }
 
     private void Turbo()
     {
         tapToDriveText.SetActive(false);
-        // _rigidbody2D.AddForce(new Vector2(_carObj.Speed * TurboVelocity, 0));
+        _rigidbody2D.AddForce(new Vector2(carSpeed * TurboVelocity, 0));
     }
 }

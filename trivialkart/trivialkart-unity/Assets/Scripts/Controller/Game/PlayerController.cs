@@ -38,6 +38,7 @@ public class PlayerController : MonoBehaviour
     
     private void Start()
     {
+        SetCarInUseState(GameObject.Find("Car/carSedan"));
         InitValues();
     }
 
