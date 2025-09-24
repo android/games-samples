@@ -64,3 +64,13 @@ when using the Unity engine for game development.
 
 The **[codelabs/](codelabs)** directory contains two codelabs on learning how
 to use Play Asset Delivery for games written using C++ or the Unity engine.
+
+## Unreal Engine samples
+The **[unreal/](unreal)** directory contains sample demonstrating how to use Online Subsystem Google Play
+for implementing features like
+
+* Google Play Games Authentication
+* Google Play Games Achievements
+* Google Play Billing for in-app purchases using Unity IAP
+
+The implementation for each feature is given in c++ as some function are only exposed to c++ and not to blueprints.
