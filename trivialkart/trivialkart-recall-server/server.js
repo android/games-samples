@@ -88,7 +88,7 @@ app.get('/', (req, res) => {
     res.send('Node.js server for Unity Recall API is running!');
 });
 
-// MODIFIED: This route now handles new and existing players
+
 app.post('/recall-session', async (req, res) => {
     console.log('\nReceived a request on /recall-session');
     const { token: recallSessionId } = req.body;
@@ -119,7 +119,8 @@ app.post('/recall-session', async (req, res) => {
         if (playerDatabase.has(playerRecallToken)) {
             const playerData = playerDatabase.get(playerRecallToken);
             console.log('Player found in database. Sending data to client.');
-            res.status(200).json({ status: 'AccountFound', playerData });
+            // ***MODIFIED***: Send the playerRecallToken back to the client
+            res.status(200).json({ status: 'AccountFound', playerData, playerRecallToken });
         } else {
             console.warn('Orphaned token found. Google has a link, but DB has no record.');
             res.status(200).json({ status: 'NewPlayer', message: 'Orphaned token detected.' });
@@ -131,7 +132,7 @@ app.post('/recall-session', async (req, res) => {
     }
 });
 
-// NEW: This route handles creating a new linked account
+
 app.post('/create-account', async (req, res) => {
     console.log('\nReceived a request on /create-account');
     const { recallSessionId, username, coinsOwned, distanceTraveled } = req.body;
@@ -152,8 +153,8 @@ app.post('/create-account', async (req, res) => {
         // 4. Create the player record in our database
         const newPlayerData = {
             username: username,
-            coinsOwned: coinsOwned,
-            distanceTraveled: distanceTraveled,
+            coinsOwned: parseInt(coinsOwned, 10), // Ensure types are correct
+            distanceTraveled: parseFloat(distanceTraveled), // Ensure types are correct
             createdAt: new Date().toISOString()
         };
         playerDatabase.set(newRecallToken, newPlayerData);
@@ -161,13 +162,37 @@ app.post('/create-account', async (req, res) => {
         console.log(`Successfully created and linked account for ${username}.`);
 
         // 5. Send the new player data back to the client
-        res.status(201).json({ status: 'AccountCreated', playerData: newPlayerData });
+        // ***MODIFIED***: Send the newRecallToken back to the client
+        res.status(201).json({ status: 'AccountCreated', playerData: newPlayerData, playerRecallToken: newRecallToken });
 
     } catch (error) {
         console.error('An error occurred during account creation:', error.message);
         res.status(500).json({ status: 'error', message: 'Failed to create account.' });
     }
 });
+
+
+app.post('/update-progress', (req, res) => {
+    console.log('\nReceived a request on /update-progress');
+    const { playerRecallToken, distanceTraveled } = req.body;
+
+    if (!playerRecallToken || distanceTraveled === undefined) {
+        return res.status(400).json({ status: 'error', message: 'playerRecallToken and distanceTraveled are required.' });
+    }
+
+    if (playerDatabase.has(playerRecallToken)) {
+        const playerData = playerDatabase.get(playerRecallToken);
+        playerData.distanceTraveled = parseFloat(distanceTraveled);
+        playerDatabase.set(playerRecallToken, playerData); // Update the record in the map
+
+        console.log(`Updated distance for ${playerData.username} to ${playerData.distanceTraveled}`);
+        res.status(200).json({ status: 'ProgressUpdated', message: `Distance updated for ${playerData.username}.` });
+    } else {
+        console.warn(`Attempted to update progress for an unknown token: ${playerRecallToken}`);
+        res.status(404).json({ status: 'error', message: 'Player token not found. Cannot update progress.' });
+    }
+});
+
 
 // --- Server Activation ---
 app.listen(port, () => {
