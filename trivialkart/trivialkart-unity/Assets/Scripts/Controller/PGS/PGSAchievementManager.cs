@@ -92,7 +92,8 @@ public class PGSAchievementManager : MonoBehaviour
 
     public bool GetAchievementUnlocked(TrivialKartAchievements achievementId)
     {
-        return _achievementInfo[(int)achievementId].achievementUnlocked;
+        // return _achievementInfo[(int)achievementId].achievementUnlocked;
+        return false;
     }
 
     public string GetAchievementName(TrivialKartAchievements achievementId)

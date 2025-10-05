@@ -134,7 +134,7 @@ app.post('/recall-session', async (req, res) => {
 // NEW: This route handles creating a new linked account
 app.post('/create-account', async (req, res) => {
     console.log('\nReceived a request on /create-account');
-    const { recallSessionId, username } = req.body;
+    const { recallSessionId, username, coinsOwned, distanceTraveled } = req.body;
 
     if (!recallSessionId || !username) {
         return res.status(400).json({ status: 'error', message: 'Session ID and username are required.' });
@@ -152,8 +152,8 @@ app.post('/create-account', async (req, res) => {
         // 4. Create the player record in our database
         const newPlayerData = {
             username: username,
-            coinsOwned: 1,
-            distanceTraveled: 100,
+            coinsOwned: coinsOwned,
+            distanceTraveled: distanceTraveled,
             createdAt: new Date().toISOString()
         };
         playerDatabase.set(newRecallToken, newPlayerData);

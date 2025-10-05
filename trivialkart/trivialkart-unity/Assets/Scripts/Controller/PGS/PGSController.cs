@@ -48,7 +48,7 @@ public class PGSController : MonoBehaviour
     public PGSAchievementManager AchievementManager { get; private set; }
 
     public PGSCloudSaveManager CloudSaveManager { get; private set; }
-    public PGSRecallManager RecallManager { get; private set; }
+    private PGSRecallManager RecallManager { get; set; }
 
 
     // Start is called before the first frame update
@@ -64,7 +64,7 @@ public class PGSController : MonoBehaviour
 
 
     // Update is called once per frame
-    void Update()
+    private void Update()
     {
         if (!_launchedStartupSignin)
         {
@@ -96,12 +96,12 @@ public class PGSController : MonoBehaviour
 
     public void RunStartupSignin()
     {
-        //PlayGamesPlatform.Instance.Authenticate(ProcessAuthentication);
+        // PlayGamesPlatform.Instance.Authenticate(ProcessAuthentication);
     }
 
     public void RunManualSignin()
     {
-        //PlayGamesPlatform.Instance.ManuallyAuthenticate(ProcessAuthentication);
+        // PlayGamesPlatform.Instance.ManuallyAuthenticate(ProcessAuthentication);
     }
 
     // private void ProcessAuthentication(SignInStatus status)
@@ -113,7 +113,7 @@ public class PGSController : MonoBehaviour
     //         CurrentSignInStatus = PgsSigninStatus.PgsSigninLoggedIn;
     //         _signinPageController.CurrentSignInStatus = CurrentSignInStatus;
     //         _signinPageController.RefreshPage();
-    //         _friendsPageController.InitializeFriendsPage();
+    //         // _friendsPageController.InitializeFriendsPage();
     //     }
     //     else
     //     {

@@ -48,6 +48,6 @@ public class GamePlayCanvasController : MonoBehaviour
 
     private void SetCoinsBasedOnGameData()
     {
-        coinsCount.text = PlayerPrefs.GetInt("coinsOwned", 0).ToString("00");
+        coinsCount.text = PlayerPrefs.GetInt("coinsOwned", 10).ToString("00");
     }
 }

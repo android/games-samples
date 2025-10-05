@@ -9,7 +9,7 @@ using Random = UnityEngine.Random;
 public class PGSRecallManager : MonoBehaviour
 {
     // --- Server Configuration ---
-    private const string SERVER_BASE_URL = "http://192.168.0.100:3000"; // Update with your IP
+    private const string SERVER_BASE_URL = "http://192.168.0.101:3000"; // Update with your IP
     private const string RECALL_SESSION_ENDPOINT = SERVER_BASE_URL + "/recall-session";
     private const string CREATE_ACCOUNT_ENDPOINT = SERVER_BASE_URL + "/create-account";
 
@@ -105,6 +105,8 @@ public class PGSRecallManager : MonoBehaviour
             if (response.status == "AccountFound")
             {
                 Debug.Log($"[PGSRecallManager] Welcome back, {response.playerData.username}!");
+                PlayerPrefs.SetInt("coinsOwned", response.playerData.coinsOwned);
+                PlayerPrefs.SetFloat("dist", response.playerData.distanceTraveled);
             }
             else if (response.status == "NewPlayer")
             {
@@ -116,7 +118,9 @@ public class PGSRecallManager : MonoBehaviour
 
     private IEnumerator SendCreateAccountRequest(string username)
     {
-        var jsonPayload = $"{{\"recallSessionId\":\"{_currentRecallSessionId}\",\"username\":\"{username}\"}}";
+        var jsonPayload = $"{{\"recallSessionId\":\"{_currentRecallSessionId}\"," +
+                          $"\"username\":\"{username}\",\"coinsOwned\":\"{PlayerPrefs.GetInt("coinsOwned")}\"," +
+                          $"\"distanceTraveled\":\"{PlayerPrefs.GetFloat("dist")}\"}}";
         yield return PostRequest(CREATE_ACCOUNT_ENDPOINT, jsonPayload, (responseJson) =>
         {
             var response = JsonUtility.FromJson<ServerResponse>(responseJson);
@@ -127,7 +131,7 @@ public class PGSRecallManager : MonoBehaviour
         });
     }
 
-    private IEnumerator PostRequest(string url, string jsonPayload, Action<string> onSuccess)
+    private static IEnumerator PostRequest(string url, string jsonPayload, Action<string> onSuccess)
     {
         using var www = new UnityWebRequest(url, "POST");
         var bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonPayload);

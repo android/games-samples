@@ -112,10 +112,9 @@ public class CarMove : MonoBehaviour
 
     private void Update()
     {
-#if PLAY_GAMES_SERVICES
         // Checks to see if we are due to update the distance traveled leaderboard
-        _pgsController.UpdateLeaderboard();
-#endif
+        //_pgsController.UpdateLeaderboard();
+
         
         if (_pgsAction.WasPressedThisFrame())
         {
