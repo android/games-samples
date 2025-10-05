@@ -4,10 +4,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 using Random = UnityEngine.Random;
 
-#if PLAY_GAMES_SERVICES
-using GooglePlayGames;
-using GooglePlayGames.BasicApi;
-#endif
+// using GooglePlayGames;
 
 public class PGSRecallManager : MonoBehaviour
 {
@@ -39,32 +36,30 @@ public class PGSRecallManager : MonoBehaviour
     /// </summary>
     public void RestorePlayerSession()
     {
-#if PLAY_GAMES_SERVICES
-        if (!PlayGamesPlatform.Instance.IsAuthenticated())
-        {
-            Debug.LogError("[PGSRecallManager] User is not authenticated with Play Games.");
-            return;
-        }
-
-        Debug.Log("[PGSRecallManager] Requesting Recall Session ID from Google...");
-
-        // The callback receives one parameter. We check if it's null to handle errors.
-        PlayGamesPlatform.Instance.RequestRecallAccess(recallAccess =>
-        {
-            // If the object is not null, the call was successful.
-            if (recallAccess != null)
-            {
-                _currentRecallSessionId = recallAccess.sessionId;
-                Debug.Log($"[PGSRecallManager] Success! Received Session ID: {_currentRecallSessionId.Substring(0, 20)}...");
-                StartCoroutine(ValidateRecallSession(_currentRecallSessionId));
-            }
-            else
-            {
-                // If the object is null, the call failed.
-                Debug.LogError("[PGSRecallManager] Failed to get Recall Session ID. The recallAccess object was null.");
-            }
-        });
-#endif
+        // if (!PlayGamesPlatform.Instance.IsAuthenticated())
+        // {
+        //     Debug.LogError("[PGSRecallManager] User is not authenticated with Play Games.");
+        //     return;
+        // }
+        //
+        // Debug.Log("[PGSRecallManager] Requesting Recall Session ID from Google...");
+        //
+        // // The callback receives one parameter. We check if it's null to handle errors.
+        // PlayGamesPlatform.Instance.RequestRecallAccess(recallAccess =>
+        // {
+        //     // If the object is not null, the call was successful.
+        //     if (recallAccess != null)
+        //     {
+        //         _currentRecallSessionId = recallAccess.sessionId;
+        //         Debug.Log($"[PGSRecallManager] Success! Received Session ID: {_currentRecallSessionId.Substring(0, 20)}...");
+        //         StartCoroutine(ValidateRecallSession(_currentRecallSessionId));
+        //     }
+        //     else
+        //     {
+        //         // If the object is null, the call failed.
+        //         Debug.LogError("[PGSRecallManager] Failed to get Recall Session ID. The recallAccess object was null.");
+        //     }
+        // });
     }
 
     public void DummyLogin()
@@ -77,29 +72,27 @@ public class PGSRecallManager : MonoBehaviour
     /// </summary>
     private void CreateNewAccount(string username)
     {
-#if PLAY_GAMES_SERVICES
-        if (string.IsNullOrEmpty(_currentRecallSessionId))
-        {
-            PlayGamesPlatform.Instance.RequestRecallAccess(recallAccess =>
-            {
-                // If the object is not null, the call was successful.
-                if (recallAccess != null)
-                {
-                    _currentRecallSessionId = recallAccess.sessionId;
-                    Debug.Log($"[PGSRecallManager] Success! Received Session ID: {_currentRecallSessionId.Substring(0, 20)}...");
-                    StartCoroutine(SendCreateAccountRequest(username));
-                }
-                else
-                {
-                    // If the object is null, the call failed.
-                    Debug.LogError("[PGSRecallManager] Failed to get Recall Session ID. The recallAccess object was null.");
-                }
-            });
-            return;
-        }
-        
-        StartCoroutine(SendCreateAccountRequest(username));
-#endif
+        // if (string.IsNullOrEmpty(_currentRecallSessionId))
+        // {
+        //     PlayGamesPlatform.Instance.RequestRecallAccess(recallAccess =>
+        //     {
+        //         // If the object is not null, the call was successful.
+        //         if (recallAccess != null)
+        //         {
+        //             _currentRecallSessionId = recallAccess.sessionId;
+        //             Debug.Log($"[PGSRecallManager] Success! Received Session ID: {_currentRecallSessionId.Substring(0, 20)}...");
+        //             StartCoroutine(SendCreateAccountRequest(username));
+        //         }
+        //         else
+        //         {
+        //             // If the object is null, the call failed.
+        //             Debug.LogError("[PGSRecallManager] Failed to get Recall Session ID. The recallAccess object was null.");
+        //         }
+        //     });
+        //     return;
+        // }
+        //
+        // StartCoroutine(SendCreateAccountRequest(username));
     }
 
     private IEnumerator ValidateRecallSession(string sessionId)
