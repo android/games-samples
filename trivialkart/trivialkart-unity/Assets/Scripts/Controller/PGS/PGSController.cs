@@ -83,7 +83,7 @@ public class PGSController : MonoBehaviour
             {
                 AchievementManager.LoadAchievements();
                 // CloudSaveManager.RetrieveCloudMetadata();
-                RecallManager.TryRestorePlayerSession();
+                // RecallManager.TryRestorePlayerSession();
                 _initializedServices = true;
             }
         }
