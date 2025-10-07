@@ -113,13 +113,13 @@ void UShooterPlatformGameInstance::AddAchievementProgress(const float Progress,
 			if (const IOnlineAchievementsPtr AchievementsInterface =
 				Subsystem->GetAchievementsInterface(); AchievementsInterface.IsValid())
 			{
-				FOnlineAchievement LoginAchievement;
-				AchievementsInterface->GetCachedAchievement(*IdentityInterface->GetUniquePlayerId(0),LoginAchievementID, LoginAchievement);
-				if (LoginAchievement.Progress < 100.0)
+				FOnlineAchievement CurrentAchievement;
+				AchievementsInterface->GetCachedAchievement(*IdentityInterface->GetUniquePlayerId(0),AchievementID, CurrentAchievement);
+				if (CurrentAchievement.Progress < 100.0)
 				{
-					const float CurrentProgress = LoginAchievement.Progress + Progress;
+					const float CurrentProgress = CurrentAchievement.Progress + Progress;
 					const FOnlineAchievementsWritePtr AchievementPtr = MakeShareable(new FOnlineAchievementsWrite());
-					AchievementPtr->SetFloatStat(LoginAchievementName, CurrentProgress);
+					AchievementPtr->SetFloatStat(AchievementName, CurrentProgress);
 					FOnlineAchievementsWriteRef AchievementRef = AchievementPtr.ToSharedRef();
 					AchievementsInterface->WriteAchievements(*IdentityInterface->GetUniquePlayerId(0),
 						AchievementRef);
