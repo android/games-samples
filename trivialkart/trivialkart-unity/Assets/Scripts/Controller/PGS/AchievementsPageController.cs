@@ -33,7 +33,6 @@ public class AchievementsPageController : MonoBehaviour
         RefreshPage();
     }
 
-#if PLAY_GAMES_SERVICES
     private string GenerateAchievementString(PGSAchievementManager.TrivialKartAchievements id)
     {
         var achievementManager = _pgsController.AchievementManager;
@@ -42,11 +41,10 @@ public class AchievementsPageController : MonoBehaviour
         string achievementString = achievementName + " " + (unlocked ? "unlocked\n" : "locked\n");
         return achievementString;
     }
-#endif
+
 
     private void RefreshPage()
     {
-#if PLAY_GAMES_SERVICES
         string achievementString = "Achievements\n";
         achievementString += GenerateAchievementString(
             PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Distance);
@@ -54,6 +52,5 @@ public class AchievementsPageController : MonoBehaviour
             PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Truck);
         Text achievementText = this.achievementText.GetComponent<Text>();
         achievementText.text = achievementString;
-#endif
     }
 }
