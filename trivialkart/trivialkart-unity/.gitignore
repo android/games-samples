@@ -100,3 +100,8 @@ InitTestScene*.unity*
 
 # Backup files
 *.backup*
+
+/[Aa]ssets/ExternalDependencyManager/
+/[Aa]ssets/GeneratedLocalRepo/
+/[Aa]ssets/GooglePlayGames/
+/[Aa]ssets/Plugins/
