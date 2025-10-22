@@ -16,25 +16,19 @@ public class AuthManager : MonoBehaviour
     public Button signInWithGoogleButton;
     public Button signInWithFacebookButton;
     public Button signOutButton;
-    
-    // CHANGED: Corrected the type name
     public TextMeshProUGUI statusText;
 
     private void Awake()
     {
-        // --- Google Play Games Initialization ---
-        statusText.text = "Initializing PGS v1...";
-        PlayGamesClientConfiguration config = new PlayGamesClientConfiguration.Builder()
-            .RequestEmail()
-            .RequestServerAuthCode(false) 
-            .RequestIdToken() 
-            .Build();
-
-        PlayGamesPlatform.InitializeInstance(config);
-        PlayGamesPlatform.DebugLogEnabled = true;
-        PlayGamesPlatform.Activate();
+        statusText.text = "Attempting auto sign-in...";
         
-        // --- Facebook SDK Initialization ---
+        getStartedButton.onClick.AddListener(GetStartedClicked);
+        iAlreadyHaveButton.onClick.AddListener(IAlreadyHaveButtonClicked);
+        signInWithGoogleButton.onClick.AddListener(OnSignInWithGoogleClicked);
+        signInWithFacebookButton.onClick.AddListener(OnSignInWithFacebookClicked);
+        signOutButton.onClick.AddListener(OnSignOutClicked);
+        
+        // --- Facebook SDK Initialization --- ADDED
         if (!FB.IsInitialized)
         {
             // Initialize the Facebook SDK
@@ -45,101 +39,74 @@ public class AuthManager : MonoBehaviour
             // Already initialized, signal an app activation event
             FB.ActivateApp();
         }
-
-        // --- Button Listeners ---
-        getStartedButton.onClick.AddListener(GetStartedClicked);
-        iAlreadyHaveButton.onClick.AddListener(IAlreadyHaveButtonClicked);
-        signInWithGoogleButton.onClick.AddListener(OnSignInWithGoogleClicked);
-        signInWithFacebookButton.onClick.AddListener(OnSignInWithFacebookClicked);
-        signOutButton.onClick.AddListener(OnSignOutClicked);
         
-        // --- Auto Sign-In Logic ---
-        statusText.text = "Checking credentials...";
-        PlayGamesPlatform.Instance.Authenticate(OnSilentSignInFinished, true);
-    }
-    
-    // --- Facebook SDK Helper Methods ---
-
-    private void OnInitComplete()
-    {
-        if (FB.IsInitialized)
-        {
-            FB.ActivateApp();
-            Debug.Log("Facebook SDK Initialized.");
-        }
-        else
-        {
-            Debug.LogError("Failed to Initialize the Facebook SDK.");
-            statusText.text = "Facebook SDK failed to init.";
-        }
+        // This attempts the automatic (silent) sign-in
+        PlayGamesPlatform.Instance.Authenticate(ProcessAuthentication);
     }
 
-    private void OnHideUnity(bool isGameShown)
+    private void ProcessAuthentication(SignInStatus status)
     {
-        // Pause the game time if the Facebook UI is overlaying
-        Time.timeScale = isGameShown ? 1 : 0;
-    }
-
-    // --- Google Play Games Callbacks ---
-
-    private void OnSilentSignInFinished(bool success)
-    {
-        if (success)
-        {
-            Debug.Log("PGS Silent sign-in successful.");
-            ProcessAuthenticationResult(true);
-        }
-        else
-        {
-            Debug.Log("PGS Silent sign-in failed. Showing manual start panel.");
-            statusText.text = "Please sign in.";
-            startPanel.SetActive(true);
-            loginButtonsPanel.SetActive(false);
-            gamePanel.SetActive(false);
-        }
-    }
-
-    private void ProcessAuthenticationResult(bool success)
-    {
-        if (success)
+        if (status == SignInStatus.Success)
         {
             statusText.text = "PGS Sign-in Successful!";
-            string authCode = PlayGamesPlatform.Instance.GetServerAuthCode();
-            string email = PlayGamesPlatform.Instance.GetUserEmail(); 
-
-            if (!string.IsNullOrEmpty(authCode))
-            {
-                Debug.Log($"PGS: Retrieved Server Auth Code: {authCode}");
-                
-                if (!string.IsNullOrEmpty(email))
-                {
-                    Debug.Log("PGS: Email scope was granted!");
-                    statusText.text = $"Signed in as: {email}";
-                    ShowGamePanel();
-                }
-                else
-                {
-                    Debug.LogWarning("PGS: Email scope was NOT granted.");
-                    statusText.text = "Email scope not granted. Please try again.";
-                    ShowStartPanel();
-                }
-            }
-            else
-            {
-                Debug.LogError("PGS: Failed to retrieve Server Auth Code.");
-                statusText.text = "Failed to get server access. Please try again.";
-                ShowStartPanel();
-            }
+            // Auto-sign-in worked, now get server auth code
+            RequestSpecialScopes();
         }
         else
         {
-            Debug.LogError("PGS Sign-in failed or was cancelled.");
-            statusText.text = "Sign-in failed or was cancelled.";
+            // Auto-sign-in failed (e.g., user not signed in, no network, etc.)
+            Debug.LogError($"PGS Sign-in failed with status: {status}");
+            statusText.text = "Auto sign-in failed. Please sign in.";
+            
+            // Show the start panel so the user can manually sign in
             ShowStartPanel();
         }
     }
-    
-    // --- Button Click Handlers ---
+
+    private void RequestSpecialScopes()
+    {
+        var scopes = new System.Collections.Generic.List<AuthScope>
+        {
+            AuthScope.EMAIL,
+            AuthScope.PROFILE
+        };
+
+        PlayGamesPlatform.Instance.RequestServerSideAccess(
+            false,
+            scopes,
+            (authResponse) =>
+            {
+                if (authResponse.GetAuthCode() != null)
+                {
+                    var authCode = authResponse.GetAuthCode();
+                    Debug.Log($"Successfully retrieved Server Auth Code: {authCode}");
+                    
+                    if (authResponse.GetGrantedScopes().Contains(AuthScope.EMAIL))
+                    {
+                        Debug.Log("Email scope was granted!");
+                        // statusText.text = $"Signed in as: {PlayGamesPlatform.Instance.UserEmail}";
+                        
+                        // Show the main game panel
+                        ShowGamePanel();
+                    }
+                    else
+                    {
+                        Debug.LogWarning("Email scope was NOT granted.");
+                        statusText.text = "Email scope not granted. Please try again.";
+                        // Show start panel to allow retry
+                        ShowStartPanel();
+                    }
+                }
+                else
+                {
+                    Debug.LogError("Failed to retrieve Server Auth Code (Inactive Session).");
+                    statusText.text = "Failed to get server access. Please try again.";
+                    
+                    // Show start panel so user can retry the manual sign-in
+                    ShowStartPanel();
+                }
+            });
+    }
     
     private void IAlreadyHaveButtonClicked()
     {
@@ -149,16 +116,22 @@ public class AuthManager : MonoBehaviour
 
     private void GetStartedClicked()
     {
-        statusText.text = "Signing in with Google...";
-        startPanel.SetActive(false); 
-        PlayGamesPlatform.Instance.Authenticate(ProcessAuthenticationResult, false);
+        // This method should trigger the manual sign-in process,
+        // which is what shows the account picker popup.
+        statusText.text = "Showing account picker...";
+        startPanel.SetActive(false); // Hide this panel
+        
+        // This is the call that shows the popup to select from multiple IDs
+        PlayGamesPlatform.Instance.ManuallyAuthenticate(ProcessAuthentication);
     }
     
     private void OnSignInWithGoogleClicked()
     {
         statusText.text = "Signing in with Google...";
         loginButtonsPanel.SetActive(false);
-        PlayGamesPlatform.Instance.Authenticate(ProcessAuthenticationResult, false);
+        
+        // This also shows the account picker popup
+        PlayGamesPlatform.Instance.ManuallyAuthenticate(ProcessAuthentication);
     }
     
     // CHANGED: Implemented Facebook Login
@@ -179,7 +152,43 @@ public class AuthManager : MonoBehaviour
         // Request "public_profile" and "email" permissions
         var perms = new List<string>() { "public_profile", "email" };
         FB.LogInWithReadPermissions(perms, OnFacebookLoginComplete);
-        // FB.LogInWithReadPermissionsAsync(perms, OnFacebookLoginComplete);
+    }
+    
+    private void OnSignOutClicked()
+    {
+        // This is the crucial call to "unlink" or sign out the user
+        statusText.text = "Signing out...";
+        // PlayGamesPlatform.Instance.SignOut();
+        
+        // ADDED: Sign out of Facebook
+        if (FB.IsLoggedIn)
+        {
+            FB.LogOut();
+        }
+        
+        // Now reset the UI to the beginning of the flow
+        ShowStartPanel();
+    }
+    
+    // --- Facebook SDK Helper Methods --- ADDED
+    private void OnInitComplete()
+    {
+        if (FB.IsInitialized)
+        {
+            FB.ActivateApp();
+            Debug.Log("Facebook SDK Initialized.");
+        }
+        else
+        {
+            Debug.LogError("Failed to Initialize the Facebook SDK.");
+            statusText.text = "Facebook SDK failed to init.";
+        }
+    }
+
+    private void OnHideUnity(bool isGameShown)
+    {
+        // Pause the game time if the Facebook UI is overlaying
+        Time.timeScale = isGameShown ? 1 : 0;
     }
 
     // NEW: Callback for Facebook Login attempt
@@ -239,24 +248,7 @@ public class AuthManager : MonoBehaviour
         ShowGamePanel();
     }
     
-    private void OnSignOutClicked()
-    {
-        statusText.text = "Signing out...";
-        
-        // Sign out of both services
-        if (PlayGamesPlatform.Instance.IsAuthenticated())
-        {
-            PlayGamesPlatform.Instance.SignOut();
-        }
-        if (FB.IsLoggedIn)
-        {
-            FB.LogOut();
-        }
-        
-        ShowStartPanel();
-    }
-    
-    // --- UI Helper Methods ---
+    // --- UI Helper Methods --- ADDED
     
     private void ShowGamePanel()
     {

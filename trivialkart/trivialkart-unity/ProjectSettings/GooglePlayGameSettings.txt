@@ -1,5 +1,5 @@
-lastUpgrade=01015
-proj.pluginVersion=0.10.15
+lastUpgrade=20100
+proj.pluginVersion=2.1.0
 proj.AppId=1044312393953
 and.BundleId=com.WickedCube.TrivialKart
 proj.classDir=Assets

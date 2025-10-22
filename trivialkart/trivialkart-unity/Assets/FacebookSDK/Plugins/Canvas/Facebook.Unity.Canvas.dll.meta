@@ -2,7 +2,7 @@ fileFormatVersion: 2
 guid: c57105322a98c474faf1ce607f20c3f8
 PluginImporter:
   externalObjects: {}
-  serializedVersion: 2
+  serializedVersion: 3
   iconMap: {}
   executionOrder: {}
   defineConstraints: []
@@ -11,19 +11,14 @@ PluginImporter:
   isExplicitlyReferenced: 0
   validateReferences: 1
   platformData:
-  - first:
-      Any: 
-    second:
+    Any:
       enabled: 0
       settings: {}
-  - first:
-      Editor: Editor
-    second:
+    Editor:
       enabled: 1
-      settings: {}
-  - first:
-      WebGL: WebGL
-    second:
+      settings:
+        DefaultValueInitialized: true
+    WebGL:
       enabled: 1
       settings: {}
   userData: 
