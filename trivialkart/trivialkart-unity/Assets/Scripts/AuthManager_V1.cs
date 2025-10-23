@@ -9,23 +9,37 @@ using System.Collections.Generic;
 public class AuthManager_V1 : MonoBehaviour
 {
 #if PGS_V1
-    public GameObject startPanel;
-    public GameObject loginButtonsPanel;
-    public GameObject gamePanel;
-    public Button getStartedButton;
-    public Button iAlreadyHaveButton;
-    public Button signInWithGoogleButton;
-    public Button signInWithFacebookButton;
-    public Button signOutButton;
-    
-    // CHANGED: Corrected the type name
-    public TextMeshProUGUI statusText;
+    private GameObject startPanel;
+    private GameObject loginButtonsPanel;
+    private GameObject gamePanel;
+    private Button getStartedButton;
+    private Button iAlreadyHaveButton;
+    private Button signInWithGoogleButton;
+    private Button signInWithFacebookButton;
+    private Button signOutButton;
+    private Button incButton;
+    private TextMeshProUGUI statusText;
+    private TextMeshProUGUI incText;
 
     private void Awake()
     {
-        // --- Google Play Games Initialization ---
+        startPanel = GameObject.Find("Canvas").transform.Find("StartPanel").gameObject;
+        loginButtonsPanel = GameObject.Find("Canvas").transform.Find("LoginPanel").gameObject;
+        gamePanel = GameObject.Find("Canvas").transform.Find("GamePanel").gameObject;
+        statusText = GameObject.Find("Canvas").transform.Find("StatusText").GetComponent<TextMeshProUGUI>();
+        
+        
+        getStartedButton = startPanel.transform.Find("GetStarted").GetComponent<Button>();
+        iAlreadyHaveButton = startPanel.transform.Find("IAlreadyHave").GetComponent<Button>();
+        signInWithGoogleButton = loginButtonsPanel.transform.Find("SIWG").GetComponent<Button>();
+        signInWithFacebookButton = loginButtonsPanel.transform.Find("FB").GetComponent<Button>();
+        signOutButton = gamePanel.transform.Find("SignOut").GetComponent<Button>();
+        incText = gamePanel.transform.Find("IncText").GetComponent<TextMeshProUGUI>();
+        incButton = gamePanel.transform.Find("Inc").GetComponent<Button>();
+        
+        
         statusText.text = "Initializing PGS v1...";
-        PlayGamesClientConfiguration config = new PlayGamesClientConfiguration.Builder()
+        var config = new PlayGamesClientConfiguration.Builder()
             .RequestEmail()
             .RequestServerAuthCode(false) 
             .RequestIdToken() 
@@ -35,31 +49,33 @@ public class AuthManager_V1 : MonoBehaviour
         PlayGamesPlatform.DebugLogEnabled = true;
         PlayGamesPlatform.Activate();
         
-        // --- Facebook SDK Initialization ---
+        
         if (!FB.IsInitialized)
         {
-            // Initialize the Facebook SDK
             FB.Init(OnInitComplete, OnHideUnity);
         }
         else
         {
-            // Already initialized, signal an app activation event
             FB.ActivateApp();
         }
-
-        // --- Button Listeners ---
+        
         getStartedButton.onClick.AddListener(GetStartedClicked);
         iAlreadyHaveButton.onClick.AddListener(IAlreadyHaveButtonClicked);
         signInWithGoogleButton.onClick.AddListener(OnSignInWithGoogleClicked);
         signInWithFacebookButton.onClick.AddListener(OnSignInWithFacebookClicked);
         signOutButton.onClick.AddListener(OnSignOutClicked);
+        incButton.onClick.AddListener(OnIncButtonClicked);
         
-        // --- Auto Sign-In Logic ---
         statusText.text = "Checking credentials...";
         PlayGamesPlatform.Instance.Authenticate(OnSilentSignInFinished, true);
     }
-    
-    // --- Facebook SDK Helper Methods ---
+
+    private void OnIncButtonClicked()
+    {
+        var currNum = int.Parse(incText.text);
+        currNum++;
+        incText.text = currNum.ToString();
+    }
 
     private void OnInitComplete()
     {
@@ -77,11 +93,8 @@ public class AuthManager_V1 : MonoBehaviour
 
     private void OnHideUnity(bool isGameShown)
     {
-        // Pause the game time if the Facebook UI is overlaying
         Time.timeScale = isGameShown ? 1 : 0;
     }
-
-    // --- Google Play Games Callbacks ---
 
     private void OnSilentSignInFinished(bool success)
     {
@@ -162,14 +175,12 @@ public class AuthManager_V1 : MonoBehaviour
         PlayGamesPlatform.Instance.Authenticate(ProcessAuthenticationResult, false);
     }
     
-    // CHANGED: Implemented Facebook Login
     private void OnSignInWithFacebookClicked()
     {
         if (!FB.IsInitialized)
         {
             statusText.text = "Facebook SDK not ready. Retrying init...";
             Debug.Log("FB SDK not ready. Calling Init...");
-            // Try to init again
             FB.Init(OnInitComplete, OnHideUnity);
             return;
         }
@@ -177,13 +188,10 @@ public class AuthManager_V1 : MonoBehaviour
         statusText.text = "Logging in with Facebook...";
         loginButtonsPanel.SetActive(false);
         
-        // Request "public_profile" and "email" permissions
         var perms = new List<string>() { "public_profile", "email" };
         FB.LogInWithReadPermissions(perms, OnFacebookLoginComplete);
-        // FB.LogInWithReadPermissionsAsync(perms, OnFacebookLoginComplete);
     }
-
-    // NEW: Callback for Facebook Login attempt
+    
     private void OnFacebookLoginComplete(ILoginResult result)
     {
         if (result.Error != null)
@@ -201,15 +209,13 @@ public class AuthManager_V1 : MonoBehaviour
             ShowStartPanel();
             return;
         }
-
-        // If we get here, login was successful
+        
         if (FB.IsLoggedIn)
         {
             var aToken = AccessToken.CurrentAccessToken;
             Debug.Log($"Facebook User ID: {aToken.UserId}");
             Debug.Log($"Facebook Access Token: {aToken.TokenString}");
             
-            // You can now get the user's email/profile info
             FB.API("/me?fields=name,email", HttpMethod.GET, OnFacebookGraphResult);
         }
         else
@@ -219,8 +225,7 @@ public class AuthManager_V1 : MonoBehaviour
             ShowStartPanel();
         }
     }
-
-    // NEW: Callback for getting Facebook user data
+    
     private void OnFacebookGraphResult(IGraphResult result)
     {
         if (result.Error != null)
@@ -230,12 +235,11 @@ public class AuthManager_V1 : MonoBehaviour
             ShowStartPanel();
             return;
         }
-
-        // Get user's name and email
-        string name =
- result.ResultDictionary.ContainsKey("name") ? result.ResultDictionary["name"].ToString() : "FB User";
-        string email =
- result.ResultDictionary.ContainsKey("email") ? result.ResultDictionary["email"].ToString() : "No Email";
+        
+        var name =
+ result.ResultDictionary.TryGetValue("name", out var value) ? value.ToString() : "FB User";
+        var email =
+ result.ResultDictionary.TryGetValue("email", out var value1) ? value1.ToString() : "No Email";
 
         Debug.Log($"Facebook Name: {name}, Email: {email}");
         statusText.text = $"Signed in as: {name} ({email})";
@@ -246,7 +250,6 @@ public class AuthManager_V1 : MonoBehaviour
     {
         statusText.text = "Signing out...";
         
-        // Sign out of both services
         if (PlayGamesPlatform.Instance.IsAuthenticated())
         {
             PlayGamesPlatform.Instance.SignOut();
@@ -258,8 +261,6 @@ public class AuthManager_V1 : MonoBehaviour
         
         ShowStartPanel();
     }
-    
-    // --- UI Helper Methods ---
     
     private void ShowGamePanel()
     {

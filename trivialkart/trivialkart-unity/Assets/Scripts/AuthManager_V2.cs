@@ -9,18 +9,34 @@ using System.Collections.Generic;
 public class AuthManager_V2 : MonoBehaviour
 {
 #if PGS_V2
-    public GameObject startPanel;
-    public GameObject loginButtonsPanel;
-    public GameObject gamePanel;
-    public Button getStartedButton;
-    public Button iAlreadyHaveButton;
-    public Button signInWithGoogleButton;
-    public Button signInWithFacebookButton;
-    public Button signOutButton;
-    public TextMeshProUGUI statusText;
+    private GameObject startPanel;
+    private GameObject loginButtonsPanel;
+    private GameObject gamePanel;
+    private Button getStartedButton;
+    private Button iAlreadyHaveButton;
+    private Button signInWithGoogleButton;
+    private Button signInWithFacebookButton;
+    private Button signOutButton;
+    private Button incButton;
+    private TextMeshProUGUI statusText;
+    private TextMeshProUGUI incText;
 
     private void Awake()
     {
+        startPanel = GameObject.Find("Canvas").transform.Find("StartPanel").gameObject;
+        loginButtonsPanel = GameObject.Find("Canvas").transform.Find("LoginPanel").gameObject;
+        gamePanel = GameObject.Find("Canvas").transform.Find("GamePanel").gameObject;
+        statusText = GameObject.Find("Canvas").transform.Find("StatusText").GetComponent<TextMeshProUGUI>();
+        
+        
+        getStartedButton = startPanel.transform.Find("GetStarted").GetComponent<Button>();
+        iAlreadyHaveButton = startPanel.transform.Find("IAlreadyHave").GetComponent<Button>();
+        signInWithGoogleButton = loginButtonsPanel.transform.Find("SIWG").GetComponent<Button>();
+        signInWithFacebookButton = loginButtonsPanel.transform.Find("FB").GetComponent<Button>();
+        signOutButton = gamePanel.transform.Find("SignOut").GetComponent<Button>();
+        incText = gamePanel.transform.Find("IncText").GetComponent<TextMeshProUGUI>();
+        incButton = gamePanel.transform.Find("Inc").GetComponent<Button>();
+        
         statusText.text = "Attempting auto sign-in...";
         
         getStartedButton.onClick.AddListener(GetStartedClicked);
@@ -28,6 +44,7 @@ public class AuthManager_V2 : MonoBehaviour
         signInWithGoogleButton.onClick.AddListener(OnSignInWithGoogleClicked);
         signInWithFacebookButton.onClick.AddListener(OnSignInWithFacebookClicked);
         signOutButton.onClick.AddListener(OnSignOutClicked);
+        incButton.onClick.AddListener(OnIncButtonClicked);
         
         // --- Facebook SDK Initialization --- ADDED
         if (!FB.IsInitialized)
@@ -43,6 +60,13 @@ public class AuthManager_V2 : MonoBehaviour
         
         // This attempts the automatic (silent) sign-in
         PlayGamesPlatform.Instance.Authenticate(ProcessAuthentication);
+    }
+
+    private void OnIncButtonClicked()
+    {
+        var currNum = int.Parse(incText.text);
+        currNum++;
+        incText.text = currNum.ToString();
     }
 
     private void ProcessAuthentication(SignInStatus status)
