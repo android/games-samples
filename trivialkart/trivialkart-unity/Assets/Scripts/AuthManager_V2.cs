@@ -6,8 +6,9 @@ using TMPro;
 using Facebook.Unity;
 using System.Collections.Generic;
 
-public class AuthManager : MonoBehaviour
+public class AuthManager_V2 : MonoBehaviour
 {
+#if PGS_V2
     public GameObject startPanel;
     public GameObject loginButtonsPanel;
     public GameObject gamePanel;
@@ -240,8 +241,10 @@ public class AuthManager : MonoBehaviour
         }
 
         // Get user's name and email
-        string name = result.ResultDictionary.ContainsKey("name") ? result.ResultDictionary["name"].ToString() : "FB User";
-        string email = result.ResultDictionary.ContainsKey("email") ? result.ResultDictionary["email"].ToString() : "No Email";
+        string name =
+ result.ResultDictionary.ContainsKey("name") ? result.ResultDictionary["name"].ToString() : "FB User";
+        string email =
+ result.ResultDictionary.ContainsKey("email") ? result.ResultDictionary["email"].ToString() : "No Email";
 
         Debug.Log($"Facebook Name: {name}, Email: {email}");
         statusText.text = $"Signed in as: {name} ({email})";
@@ -263,4 +266,5 @@ public class AuthManager : MonoBehaviour
         startPanel.SetActive(true);
         loginButtonsPanel.SetActive(false);
     }
+#endif
 }

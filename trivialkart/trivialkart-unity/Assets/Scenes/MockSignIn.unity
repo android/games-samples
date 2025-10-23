@@ -997,7 +997,7 @@ GameObject:
   - component: {fileID: 970678195}
   - component: {fileID: 970678196}
   m_Layer: 0
-  m_Name: AuthManager
+  m_Name: AuthManager_V1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1027,18 +1027,53 @@ MonoBehaviour:
   m_GameObject: {fileID: 970678194}
   m_Enabled: 1
   m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4867f4476c05a4895b5329aba596dd26, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AuthManager
+--- !u!1 &1769802424
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1769802426}
+  - component: {fileID: 1769802425}
+  m_Layer: 0
+  m_Name: AuthManager_V2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1769802425
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1769802424}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3063b22abefbe40eab2425720fd417c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  startPanel: {fileID: 587443211}
-  loginButtonsPanel: {fileID: 1880440403}
-  gamePanel: {fileID: 57672535}
-  getStartedButton: {fileID: 308863103}
-  iAlreadyHaveButton: {fileID: 96670318}
-  signInWithGoogleButton: {fileID: 2111160945}
-  signInWithFacebookButton: {fileID: 498317449}
-  signOutButton: {fileID: 1794241063}
-  statusText: {fileID: 592816835}
+--- !u!4 &1769802426
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1769802424}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1782378024
 GameObject:
   m_ObjectHideFlags: 0
@@ -2111,3 +2146,4 @@ SceneRoots:
   - {fileID: 2001894001}
   - {fileID: 619702709}
   - {fileID: 970678195}
+  - {fileID: 1769802426}
