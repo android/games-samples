@@ -2,8 +2,8 @@ const express = require('express');
 const { OAuth2Client } = require('google-auth-library');
 
 // --- CONFIGURATION ---
-const YOUR_WEB_CLIENT_ID = "1044312393953-bthrq07q6j866o95acfeoliam1fbispd.apps.googleusercontent.com";
-const YOUR_WEB_CLIENT_SECRET = "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";
+const YOUR_WEB_CLIENT_ID = "";
+const YOUR_WEB_CLIENT_SECRET = "";
 const PORT = 3000;
 // ---------------------
 

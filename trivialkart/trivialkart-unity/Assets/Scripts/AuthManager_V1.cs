@@ -63,7 +63,7 @@ public class AuthManager_V1 : MonoBehaviour
         statusText.text = "Initializing PGS v1...";
         var config = new PlayGamesClientConfiguration.Builder()
             .RequestEmail()
-            .RequestServerAuthCode(true) 
+            .RequestServerAuthCode(false) 
             .RequestIdToken() 
             .Build();
 
