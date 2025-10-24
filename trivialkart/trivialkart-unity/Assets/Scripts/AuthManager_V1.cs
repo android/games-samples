@@ -5,6 +5,9 @@ using GooglePlayGames.BasicApi;
 using TMPro;
 using Facebook.Unity;
 using System.Collections.Generic;
+using System.Collections;
+using UnityEngine.Networking;
+using System.Text;
 
 public class AuthManager_V1 : MonoBehaviour
 {
@@ -21,8 +24,27 @@ public class AuthManager_V1 : MonoBehaviour
     private TextMeshProUGUI statusText;
     private TextMeshProUGUI incText;
 
+    // We'll store the backend URL here
+    private string backendUrl = "http://192.168.0.101:3000/verify_and_link";
+
+    // Helper classes for JSON serialization
+    [System.Serializable]
+    private class AuthRequest
+    {
+        public string authCode;
+    }
+
+    [System.Serializable]
+    private class LinkResponse
+    {
+        public string email;
+        public string inGameAccountId;
+    }
+
+
     private void Awake()
     {
+        // ... (all your existing Awake() code up to the point of config is fine)
         startPanel = GameObject.Find("Canvas").transform.Find("StartPanel").gameObject;
         loginButtonsPanel = GameObject.Find("Canvas").transform.Find("LoginPanel").gameObject;
         gamePanel = GameObject.Find("Canvas").transform.Find("GamePanel").gameObject;
@@ -41,10 +63,11 @@ public class AuthManager_V1 : MonoBehaviour
         statusText.text = "Initializing PGS v1...";
         var config = new PlayGamesClientConfiguration.Builder()
             .RequestEmail()
-            .RequestServerAuthCode(false) 
+            .RequestServerAuthCode(true) 
             .RequestIdToken() 
             .Build();
 
+        // ... (the rest of your Awake() method is fine)
         PlayGamesPlatform.InitializeInstance(config);
         PlayGamesPlatform.DebugLogEnabled = true;
         PlayGamesPlatform.Activate();
@@ -100,8 +123,10 @@ public class AuthManager_V1 : MonoBehaviour
     {
         if (success)
         {
-            Debug.Log("PGS Silent sign-in successful.");
-            ProcessAuthenticationResult(true);
+            Debug.Log("PGS Silent sign-in successful. Verifying with server...");
+            statusText.text = "Verifying with server...";
+            // We successfully signed in, now process the result (which will call the backend)
+            ProcessAuthenticationResult(true); 
         }
         else
         {
@@ -113,30 +138,21 @@ public class AuthManager_V1 : MonoBehaviour
         }
     }
 
+
+    // --- THIS IS THE MAINLY EDITED METHOD ---
     private void ProcessAuthenticationResult(bool success)
     {
         if (success)
         {
-            statusText.text = "PGS Sign-in Successful!";
+            statusText.text = "PGS Sign-in Successful! Getting Server Code...";
             string authCode = PlayGamesPlatform.Instance.GetServerAuthCode();
-            string email = PlayGamesPlatform.Instance.GetUserEmail(); 
 
             if (!string.IsNullOrEmpty(authCode))
             {
-                Debug.Log($"PGS: Retrieved Server Auth Code: {authCode}");
-                
-                if (!string.IsNullOrEmpty(email))
-                {
-                    Debug.Log("PGS: Email scope was granted!");
-                    statusText.text = $"Signed in as: {email}";
-                    ShowGamePanel();
-                }
-                else
-                {
-                    Debug.LogWarning("PGS: Email scope was NOT granted.");
-                    statusText.text = "Email scope not granted. Please try again.";
-                    ShowStartPanel();
-                }
+                Debug.Log($"PGS: Retrieved Server Auth Code. Sending to backend...");
+                statusText.text = "Connecting to game server...";
+                // Send the code to the server for verification and linking
+                StartCoroutine(VerifyAndLinkAccount(authCode));
             }
             else
             {
@@ -152,9 +168,48 @@ public class AuthManager_V1 : MonoBehaviour
             ShowStartPanel();
         }
     }
-    
-    // --- Button Click Handlers ---
-    
+
+    // --- THIS IS THE NEW COROUTINE ---
+    private IEnumerator VerifyAndLinkAccount(string authCode)
+    {
+        // 1. Create the request payload
+        AuthRequest requestData = new AuthRequest { authCode = authCode };
+        string jsonPayload = JsonUtility.ToJson(requestData);
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
+
+        // 2. Create the UnityWebRequest
+        UnityWebRequest request = new UnityWebRequest(backendUrl, "POST");
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
+
+        // 3. Send the request and wait for a response
+        yield return request.SendWebRequest();
+
+        // 4. Handle the response
+        if (request.result != UnityWebRequest.Result.Success)
+        {
+            Debug.LogError($"Backend Error: {request.error}");
+            Debug.LogError($"Response: {request.downloadHandler.text}");
+            statusText.text = "Failed to link account. Server error.";
+            ShowStartPanel();
+        }
+        else
+        {
+            // 5. Success! Parse the response from the server
+            string jsonResponse = request.downloadHandler.text;
+            LinkResponse response = JsonUtility.FromJson<LinkResponse>(jsonResponse);
+
+            Debug.Log($"Successfully linked! Email: {response.email}, In-Game ID: {response.inGameAccountId}");
+            
+            // Store the in-game ID, update the UI, and show the game
+            // You might want to save response.inGameAccountId to a static class or PlayerPrefs
+            
+            statusText.text = $"Signed in as: {response.email}\nIn-Game ID: {response.inGameAccountId}";
+            ShowGamePanel();
+        }
+    }
+        
     private void IAlreadyHaveButtonClicked()
     {
         startPanel.SetActive(false);
@@ -241,6 +296,8 @@ public class AuthManager_V1 : MonoBehaviour
         var email =
  result.ResultDictionary.TryGetValue("email", out var value1) ? value1.ToString() : "No Email";
 
+        // TODO: You would also send the FB Access Token to your server
+        // to verify and link the FB account, just like you do for Google.
         Debug.Log($"Facebook Name: {name}, Email: {email}");
         statusText.text = $"Signed in as: {name} ({email})";
         ShowGamePanel();
