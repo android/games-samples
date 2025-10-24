@@ -18,7 +18,7 @@ MonoBehaviour:
   appIds:
   - 801345869173779
   appLabels:
-  - TrivialKart
+  - LevelUp_MultiLoginFlow
   cookie: 1
   logging: 1
   status: 1

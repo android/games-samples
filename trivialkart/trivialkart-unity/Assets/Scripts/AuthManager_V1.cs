@@ -1,13 +1,13 @@
-using UnityEngine;
-using UnityEngine.UI;
+using Facebook.Unity;
 using GooglePlayGames;
 using GooglePlayGames.BasicApi;
-using TMPro;
-using Facebook.Unity;
 using System.Collections.Generic;
 using System.Collections;
-using UnityEngine.Networking;
 using System.Text;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.Networking;
 
 public class AuthManager_V1 : MonoBehaviour
 {
@@ -23,33 +23,45 @@ public class AuthManager_V1 : MonoBehaviour
     private Button incButton;
     private TextMeshProUGUI statusText;
     private TextMeshProUGUI incText;
-
-    // We'll store the backend URL here
-    private string backendUrl = "http://192.168.0.101:3000/verify_and_link";
-
-    // Helper classes for JSON serialization
+    private string customJwtToken;
+    
+    private const string verify_and_link_google = "http://192.168.0.101:3000/verify_and_link_google";
+    private const string verify_and_link_facebook = "http://192.168.0.101:3000/verify_and_link_facebook";
+    private const string post_count = "http://192.168.0.101:3000/post_count";
+    
     [System.Serializable]
-    private class AuthRequest
+    private class GoogleAuthRequest
     {
         public string authCode;
+    }
+    
+    [System.Serializable]
+    private class FacebookAuthRequest
+    {
+        public string accessToken;
+    }
+    
+    [System.Serializable]
+    private class PostCountRequest
+    {
+        public int count;
     }
 
     [System.Serializable]
     private class LinkResponse
     {
         public string email;
-        public string inGameAccountId;
+        public string inGameAccountID;
+        public int inGameCount;
+        public string jwtToken;
     }
-
 
     private void Awake()
     {
-        // ... (all your existing Awake() code up to the point of config is fine)
         startPanel = GameObject.Find("Canvas").transform.Find("StartPanel").gameObject;
         loginButtonsPanel = GameObject.Find("Canvas").transform.Find("LoginPanel").gameObject;
         gamePanel = GameObject.Find("Canvas").transform.Find("GamePanel").gameObject;
         statusText = GameObject.Find("Canvas").transform.Find("StatusText").GetComponent<TextMeshProUGUI>();
-        
         
         getStartedButton = startPanel.transform.Find("GetStarted").GetComponent<Button>();
         iAlreadyHaveButton = startPanel.transform.Find("IAlreadyHave").GetComponent<Button>();
@@ -63,11 +75,10 @@ public class AuthManager_V1 : MonoBehaviour
         statusText.text = "Initializing PGS v1...";
         var config = new PlayGamesClientConfiguration.Builder()
             .RequestEmail()
-            .RequestServerAuthCode(false) 
+            .RequestServerAuthCode(false)
             .RequestIdToken() 
             .Build();
-
-        // ... (the rest of your Awake() method is fine)
+        
         PlayGamesPlatform.InitializeInstance(config);
         PlayGamesPlatform.DebugLogEnabled = true;
         PlayGamesPlatform.Activate();
@@ -98,6 +109,8 @@ public class AuthManager_V1 : MonoBehaviour
         var currNum = int.Parse(incText.text);
         currNum++;
         incText.text = currNum.ToString();
+        
+        StartCoroutine(PostScore());
     }
 
     private void OnInitComplete()
@@ -137,9 +150,7 @@ public class AuthManager_V1 : MonoBehaviour
             gamePanel.SetActive(false);
         }
     }
-
-
-    // --- THIS IS THE MAINLY EDITED METHOD ---
+    
     private void ProcessAuthenticationResult(bool success)
     {
         if (success)
@@ -152,7 +163,7 @@ public class AuthManager_V1 : MonoBehaviour
                 Debug.Log($"PGS: Retrieved Server Auth Code. Sending to backend...");
                 statusText.text = "Connecting to game server...";
                 // Send the code to the server for verification and linking
-                StartCoroutine(VerifyAndLinkAccount(authCode));
+                StartCoroutine(VerifyAndLinkGoogleAccount(authCode));
             }
             else
             {
@@ -168,17 +179,16 @@ public class AuthManager_V1 : MonoBehaviour
             ShowStartPanel();
         }
     }
-
-    // --- THIS IS THE NEW COROUTINE ---
-    private IEnumerator VerifyAndLinkAccount(string authCode)
+    
+    private IEnumerator VerifyAndLinkGoogleAccount(string authCode)
     {
         // 1. Create the request payload
-        AuthRequest requestData = new AuthRequest { authCode = authCode };
+        GoogleAuthRequest requestData = new GoogleAuthRequest { authCode = authCode };
         string jsonPayload = JsonUtility.ToJson(requestData);
         byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
 
         // 2. Create the UnityWebRequest
-        UnityWebRequest request = new UnityWebRequest(backendUrl, "POST");
+        UnityWebRequest request = new UnityWebRequest(verify_and_link_google, "POST");
         request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
         request.SetRequestHeader("Content-Type", "application/json");
@@ -197,16 +207,71 @@ public class AuthManager_V1 : MonoBehaviour
         else
         {
             // 5. Success! Parse the response from the server
-            string jsonResponse = request.downloadHandler.text;
-            LinkResponse response = JsonUtility.FromJson<LinkResponse>(jsonResponse);
+            var jsonResponse = request.downloadHandler.text;
+            var response = JsonUtility.FromJson<LinkResponse>(jsonResponse);
 
-            Debug.Log($"Successfully linked! Email: {response.email}, In-Game ID: {response.inGameAccountId}");
+            Debug.Log($"Successfully linked! Email: {response.email}, In-Game ID: {response.inGameAccountID}");
             
-            // Store the in-game ID, update the UI, and show the game
-            // You might want to save response.inGameAccountId to a static class or PlayerPrefs
+            statusText.text = $"Signed in as: {response.email}\nIn-Game ID: {response.inGameAccountID}";
+            incText.text = response.inGameCount.ToString("000");
             
-            statusText.text = $"Signed in as: {response.email}\nIn-Game ID: {response.inGameAccountId}";
+            customJwtToken = response.jwtToken;
+            
             ShowGamePanel();
+        }
+    }
+    
+    private IEnumerator PostScore()
+    {
+        if (string.IsNullOrEmpty(customJwtToken))
+        {
+            Debug.LogError("Not logged in! (customJwtToken is null).");
+            statusText.text = "Error: Not signed in. Cannot save.";
+            yield break;
+        }
+
+        // 1. Create the new, simpler payload
+        PostCountRequest requestData = new PostCountRequest
+        {
+            count = int.Parse(incText.text)
+        };
+        string jsonPayload = JsonUtility.ToJson(requestData);
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
+
+        // 2. Create the UnityWebRequest
+        UnityWebRequest request = new UnityWebRequest(post_count, "POST");
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        
+        // 3. --- NEW: Add the JWT as an Authorization header ---
+        request.SetRequestHeader("Content-Type", "application/json");
+        request.SetRequestHeader("Authorization", "Bearer " + this.customJwtToken);
+
+        // 4. Send the request
+        yield return request.SendWebRequest();
+
+        // 5. Handle response
+        if (request.result != UnityWebRequest.Result.Success)
+        {
+            Debug.LogError($"Backend Error: {request.error}");
+            Debug.LogError($"Response: {request.downloadHandler.text}");
+            statusText.text = "Failed to post count. Server error.";
+
+            if (request.responseCode == 401 || request.responseCode == 403)
+            {
+                statusText.text = "Session expired. Please sign out and in again.";
+                // Here you should force the user to sign out and log in again
+                // OnSignOutClicked();
+            }
+        }
+        else
+        {
+            // 6. Success!
+            var jsonResponse = request.downloadHandler.text;
+            var response = JsonUtility.FromJson<LinkResponse>(jsonResponse);
+            
+            // Update UI (text is already correct, but this confirms)
+            incText.text = response.inGameCount.ToString("000");
         }
     }
         
@@ -268,10 +333,15 @@ public class AuthManager_V1 : MonoBehaviour
         if (FB.IsLoggedIn)
         {
             var aToken = AccessToken.CurrentAccessToken;
-            Debug.Log($"Facebook User ID: {aToken.UserId}");
             Debug.Log($"Facebook Access Token: {aToken.TokenString}");
             
-            FB.API("/me?fields=name,email", HttpMethod.GET, OnFacebookGraphResult);
+            // --- REMOVED THIS LINE ---
+            // FB.API("/me?fields=name,email", HttpMethod.GET, OnFacebookGraphResult);
+
+            // --- ADD THIS LINE ---
+            // Send the token to our server for secure verification
+            statusText.text = "Connecting to game server...";
+            StartCoroutine(VerifyAndLinkFacebookAccount(aToken.TokenString));
         }
         else
         {
@@ -281,26 +351,46 @@ public class AuthManager_V1 : MonoBehaviour
         }
     }
     
-    private void OnFacebookGraphResult(IGraphResult result)
+    private IEnumerator VerifyAndLinkFacebookAccount(string accessToken)
     {
-        if (result.Error != null)
-        {
-            Debug.LogError($"Facebook Graph Error: {result.Error}");
-            statusText.text = "FB login error (Graph).";
-            ShowStartPanel();
-            return;
-        }
-        
-        var name =
- result.ResultDictionary.TryGetValue("name", out var value) ? value.ToString() : "FB User";
-        var email =
- result.ResultDictionary.TryGetValue("email", out var value1) ? value1.ToString() : "No Email";
+        // 1. Create the request payload
+        FacebookAuthRequest requestData = new FacebookAuthRequest { accessToken = accessToken };
+        string jsonPayload = JsonUtility.ToJson(requestData);
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
 
-        // TODO: You would also send the FB Access Token to your server
-        // to verify and link the FB account, just like you do for Google.
-        Debug.Log($"Facebook Name: {name}, Email: {email}");
-        statusText.text = $"Signed in as: {name} ({email})";
-        ShowGamePanel();
+        // 2. Create the UnityWebRequest
+        UnityWebRequest request = new UnityWebRequest(verify_and_link_facebook, "POST");
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
+
+        // 3. Send the request
+        yield return request.SendWebRequest();
+
+        // 4. Handle the response (this is identical to VerifyAndLinkAccount)
+        if (request.result != UnityWebRequest.Result.Success)
+        {
+            Debug.LogError($"Backend Error: {request.error}");
+            Debug.LogError($"Response: {request.downloadHandler.text}");
+            statusText.text = "Failed to link FB account. Server error.";
+            ShowStartPanel();
+        }
+        else
+        {
+            // 5. Success! Parse the response
+            var jsonResponse = request.downloadHandler.text;
+            var response = JsonUtility.FromJson<LinkResponse>(jsonResponse);
+
+            Debug.Log($"Successfully linked! Email: {response.email}, In-Game ID: {response.inGameAccountID}");
+            
+            // Note: response.email might be null if the user didn't grant permission
+            statusText.text = $"Signed in as: {response.email ?? "Facebook User"}\nIn-Game ID: {response.inGameAccountID}";
+            incText.text = response.inGameCount.ToString("000");
+            
+            customJwtToken = response.jwtToken;
+            
+            ShowGamePanel();
+        }
     }
     
     private void OnSignOutClicked()

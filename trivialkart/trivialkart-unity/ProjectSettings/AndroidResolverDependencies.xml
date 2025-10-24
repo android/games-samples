@@ -17,7 +17,7 @@
     <file>Assets/GeneratedLocalRepo/GooglePlayGames/Editor/m2repository/com/google/games/gpgs-plugin-support/0.10.15/gpgs-plugin-support-0.10.15.pom</file>
   </files>
   <settings>
-    <setting name="androidAbis" value="arm64-v8a,armeabi-v7a,x86,x86_64" />
+    <setting name="androidAbis" value="arm64-v8a" />
     <setting name="bundleId" value="com.WickedCube.TrivialKart" />
     <setting name="explodeAars" value="True" />
     <setting name="gradleBuildEnabled" value="True" />

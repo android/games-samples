@@ -1,10 +1,10 @@
+// using Facebook.Unity;
+// using GooglePlayGames;
+// using GooglePlayGames.BasicApi;
+using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using GooglePlayGames;
-using GooglePlayGames.BasicApi;
-using TMPro;
-using Facebook.Unity;
-using System.Collections.Generic;
 
 public class AuthManager_V2 : MonoBehaviour
 {
