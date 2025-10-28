@@ -21,18 +21,21 @@ public class AuthManager_V1 : MonoBehaviour
     private Button signInWithFacebookButton;
     private Button signOutButton;
     private Button incButton;
+    private Button unlockAchievementButton;
+    private Button showAchievementButton;
     private TextMeshProUGUI statusText;
     private TextMeshProUGUI incText;
     private string customJwtToken;
     
-    private const string verify_and_link_google = "http://192.168.0.101:3000/verify_and_link_google";
-    private const string verify_and_link_facebook = "http://192.168.0.101:3000/verify_and_link_facebook";
-    private const string post_count = "http://192.168.0.101:3000/post_count";
+    private const string verify_and_link_google = "http://192.168.0.102:3000/verify_and_link_google";
+    private const string verify_and_link_facebook = "http://192.168.0.102:3000/verify_and_link_facebook";
+    private const string post_count = "http://192.168.0.102:3000/post_count";
     
     [System.Serializable]
     private class GoogleAuthRequest
     {
-        public string authCode;
+        public string idToken;
+        public string playerID;
     }
     
     [System.Serializable]
@@ -70,12 +73,14 @@ public class AuthManager_V1 : MonoBehaviour
         signOutButton = gamePanel.transform.Find("SignOut").GetComponent<Button>();
         incText = gamePanel.transform.Find("IncText").GetComponent<TextMeshProUGUI>();
         incButton = gamePanel.transform.Find("Inc").GetComponent<Button>();
+        unlockAchievementButton = gamePanel.transform.Find("UnlockAchievement").GetComponent<Button>();
+        showAchievementButton =  gamePanel.transform.Find("ShowAchievement").GetComponent<Button>();
         
         
         statusText.text = "Initializing PGS v1...";
         var config = new PlayGamesClientConfiguration.Builder()
             .RequestEmail()
-            .RequestServerAuthCode(false)
+            // .RequestServerAuthCode(false)
             .RequestIdToken() 
             .Build();
         
@@ -99,9 +104,47 @@ public class AuthManager_V1 : MonoBehaviour
         signInWithFacebookButton.onClick.AddListener(OnSignInWithFacebookClicked);
         signOutButton.onClick.AddListener(OnSignOutClicked);
         incButton.onClick.AddListener(OnIncButtonClicked);
+        unlockAchievementButton.onClick.AddListener(OnAchievementUnlockButtonClicked);
+        showAchievementButton.onClick.AddListener(OnShowAchievementsButtonClicked);
         
         statusText.text = "Checking credentials...";
         PlayGamesPlatform.Instance.Authenticate(OnSilentSignInFinished, true);
+    }
+
+    private void OnShowAchievementsButtonClicked()
+    {
+        Debug.Log("Show achievement button");
+        PlayGamesPlatform.Instance.ShowAchievementsUI();
+    }
+
+    private void OnAchievementUnlockButtonClicked()
+    {
+        if (!PlayGamesPlatform.Instance.IsAuthenticated())
+        {
+            Debug.LogWarning("Not authenticated. Cannot unlock achievement.");
+            statusText.text = "Error: Not signed in.";
+            return;
+        }
+        
+        statusText.text = "Unlocking achievement...";
+        
+        // Report 100% progress to unlock the achievement
+        PlayGamesPlatform.Instance.ReportProgress(
+            GPGSIds.achievement_tk_achievement_rand, 
+            100f,
+            (bool success) =>
+            {
+                if (success)
+                {
+                    Debug.Log("Achievement unlocked successfully!");
+                    statusText.text = "Achievement Unlocked!";
+                }
+                else
+                {
+                    Debug.LogWarning("Failed to unlock achievement.");
+                    statusText.text = "Failed to unlock achievement.";
+                }
+            });
     }
 
     private void OnIncButtonClicked()
@@ -156,14 +199,15 @@ public class AuthManager_V1 : MonoBehaviour
         if (success)
         {
             statusText.text = "PGS Sign-in Successful! Getting Server Code...";
-            string authCode = PlayGamesPlatform.Instance.GetServerAuthCode();
+            string idToken = PlayGamesPlatform.Instance.GetIdToken();
+            string playerID = PlayGamesPlatform.Instance.GetUserId();
 
-            if (!string.IsNullOrEmpty(authCode))
+            if (!string.IsNullOrEmpty(idToken))
             {
                 Debug.Log($"PGS: Retrieved Server Auth Code. Sending to backend...");
                 statusText.text = "Connecting to game server...";
                 // Send the code to the server for verification and linking
-                StartCoroutine(VerifyAndLinkGoogleAccount(authCode));
+                StartCoroutine(VerifyAndLinkGoogleAccount(idToken, playerID));
             }
             else
             {
@@ -180,10 +224,10 @@ public class AuthManager_V1 : MonoBehaviour
         }
     }
     
-    private IEnumerator VerifyAndLinkGoogleAccount(string authCode)
+    private IEnumerator VerifyAndLinkGoogleAccount(string idToken, string playerID)
     {
         // 1. Create the request payload
-        GoogleAuthRequest requestData = new GoogleAuthRequest { authCode = authCode };
+        GoogleAuthRequest requestData = new GoogleAuthRequest { idToken = idToken, playerID = playerID };
         string jsonPayload = JsonUtility.ToJson(requestData);
         byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
 
