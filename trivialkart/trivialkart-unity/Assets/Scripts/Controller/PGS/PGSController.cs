@@ -16,10 +16,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-
-// using GooglePlayGames;
-// using GooglePlayGames.BasicApi;
-// using UnityEngine.SocialPlatforms;
+#if PGS
+using GooglePlayGames;
+using GooglePlayGames.BasicApi;
+using UnityEngine.SocialPlatforms;
+#endif
 
 public class PGSController : MonoBehaviour
 {
@@ -69,10 +70,11 @@ public class PGSController : MonoBehaviour
         if (!_launchedStartupSignin)
         {
             _launchedStartupSignin = true;
-            // PlayGamesPlatform.DebugLogEnabled = true;
-            // Activate the Google Play Games platform
-            // PlayGamesPlatform.Activate();
+#if PGS
+            PlayGamesPlatform.DebugLogEnabled = true;
+            PlayGamesPlatform.Activate();
             RunStartupSignin();
+#endif
         }
 
         if (!_initializedServices)
@@ -81,10 +83,11 @@ public class PGSController : MonoBehaviour
             // has been loaded/created and the user is signed in.
             if (_localSaveDataReady && CurrentSignInStatus == PgsSigninStatus.PgsSigninLoggedIn)
             {
+#if PGS                
                 AchievementManager.LoadAchievements();
-                // CloudSaveManager.RetrieveCloudMetadata();
-                // RecallManager.TryRestorePlayerSession();
+                //RecallManager.TryRestorePlayerSession();
                 _initializedServices = true;
+#endif
             }
         }
     }
@@ -96,30 +99,36 @@ public class PGSController : MonoBehaviour
 
     public void RunStartupSignin()
     {
-        // PlayGamesPlatform.Instance.Authenticate(ProcessAuthentication);
+#if PGS
+        PlayGamesPlatform.Instance.Authenticate(ProcessAuthentication);
+#endif
     }
 
     public void RunManualSignin()
     {
-        // PlayGamesPlatform.Instance.ManuallyAuthenticate(ProcessAuthentication);
+#if PGS
+        PlayGamesPlatform.Instance.ManuallyAuthenticate(ProcessAuthentication);
+#endif
     }
 
-    // private void ProcessAuthentication(SignInStatus status)
-    // {
-    //     if (status == SignInStatus.Success)
-    //     {
-    //         _signinPageController.CurrentUserName =
-    //             PlayGamesPlatform.Instance.GetUserDisplayName();
-    //         CurrentSignInStatus = PgsSigninStatus.PgsSigninLoggedIn;
-    //         _signinPageController.CurrentSignInStatus = CurrentSignInStatus;
-    //         _signinPageController.RefreshPage();
-    //         // _friendsPageController.InitializeFriendsPage();
-    //     }
-    //     else
-    //     {
-    //         CurrentSignInStatus = PgsSigninStatus.PgsSigninNotLoggedIn;
-    //         _signinPageController.CurrentSignInStatus = CurrentSignInStatus;
-    //         _signinPageController.RefreshPage();
-    //     }
-    // }
+#if PGS
+    private void ProcessAuthentication(SignInStatus status)
+    {
+        if (status == SignInStatus.Success)
+        {
+            _signinPageController.CurrentUserName =
+                PlayGamesPlatform.Instance.GetUserDisplayName();
+            CurrentSignInStatus = PgsSigninStatus.PgsSigninLoggedIn;
+            _signinPageController.CurrentSignInStatus = CurrentSignInStatus;
+            _signinPageController.RefreshPage();
+            // _friendsPageController.InitializeFriendsPage();
+        }
+        else
+        {
+            CurrentSignInStatus = PgsSigninStatus.PgsSigninNotLoggedIn;
+            _signinPageController.CurrentSignInStatus = CurrentSignInStatus;
+            _signinPageController.RefreshPage();
+        }
+    }
+#endif
 }

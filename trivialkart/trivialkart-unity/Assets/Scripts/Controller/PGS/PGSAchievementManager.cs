@@ -17,9 +17,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-// using GooglePlayGames;
-// using GooglePlayGames.BasicApi;
-// using UnityEngine.SocialPlatforms;
+#if PGS
+using GooglePlayGames;
+using GooglePlayGames.BasicApi;
+using UnityEngine.SocialPlatforms;
+#endif
 
 public class PGSAchievementManager : MonoBehaviour
 {
@@ -61,33 +63,35 @@ public class PGSAchievementManager : MonoBehaviour
     // internal description and unlock status using the achievement data.
     public void LoadAchievements()
     {
-        // PlayGamesPlatform.Instance.LoadAchievements((achievements) =>
-        // {
-        //     foreach (var achievement in achievements)
-        //     {
-        //         foreach (var achievementInfo in _achievementInfo)
-        //         {
-        //             if (achievement.id.Equals(achievementInfo.achievementId))
-        //             {
-        //                 achievementInfo.achievementUnlocked = achievement.completed;
-        //             }
-        //         }
-        //     }
-        // });
+#if PGS
+        PlayGamesPlatform.Instance.LoadAchievements((achievements) =>
+        {
+            foreach (var achievement in achievements)
+            {
+                foreach (var achievementInfo in _achievementInfo)
+                {
+                    if (achievement.id.Equals(achievementInfo.achievementId))
+                    {
+                        achievementInfo.achievementUnlocked = achievement.completed;
+                    }
+                }
+            }
+        });
 
-        // PlayGamesPlatform.Instance.LoadAchievementDescriptions(achievementDescriptions =>
-        // {
-        //     foreach (var description in achievementDescriptions)
-        //     {
-        //         foreach (var achievementInfo in _achievementInfo)
-        //         {
-        //             if (description.id.Equals(achievementInfo.achievementId))
-        //             {
-        //                 achievementInfo.achievementName = description.unachievedDescription;
-        //             }
-        //         }
-        //     }
-        // });
+        PlayGamesPlatform.Instance.LoadAchievementDescriptions(achievementDescriptions =>
+        {
+            foreach (var description in achievementDescriptions)
+            {
+                foreach (var achievementInfo in _achievementInfo)
+                {
+                    if (description.id.Equals(achievementInfo.achievementId))
+                    {
+                        achievementInfo.achievementName = description.unachievedDescription;
+                    }
+                }
+            }
+        });
+#endif
     }
 
     public bool GetAchievementUnlocked(TrivialKartAchievements achievementId)
