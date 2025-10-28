@@ -24,7 +24,7 @@ const client = new OAuth2Client(WEB_CLIENT_ID, WEB_CLIENT_SECRET);
 const app = express();
 app.use(express.json());
 
-//{ "google-gaia-id": "ingame-1001" }
+//{ "playerID": "ingame-1001" }
 const userDatabase = new Map();
 
 //{ "ingame-1001": 10 }
@@ -54,18 +54,13 @@ const verifyToken = (req, res, next) => {
 let nextInGameAccountId = 1001;
 
 app.post('/verify_and_link_google', async (req, res) => {
-    const { authCode } = req.body;
+    const { idToken, playerID } = req.body;
 
-    if (!authCode) {
-        return res.status(400).json({ error: "authCode is required" });
+    if (!idToken || !playerID) {
+        return res.status(400).json({ error: "idToken and playerId are required" });
     }
 
     try {
-        // 1. Exchange the code for tokens
-        const { tokens } = await client.getToken(authCode);
-        const idToken = tokens.id_token;
-
-        // 2. Verify the ID token to get the user's info
         const ticket = await client.verifyIdToken({
             idToken: idToken,
             audience: WEB_CLIENT_ID,
@@ -73,35 +68,36 @@ app.post('/verify_and_link_google', async (req, res) => {
 
         const payload = ticket.getPayload();
         const email = payload.email;
-        const googleId = payload.sub; // This is the user's unique GAIA ID
+        //const googleId = payload.sub; // GAIA ID
 
-        console.log(`Successfully verified user: ${email} (Google ID: ${googleId})`);
+        console.log(`Successfully verified authCode for: ${email}`);
+        console.warn(`Using playerID from client: ${playerID}`);
 
         // 3. Find or create the in-game account using GAIA ID
         let inGameAccountID
-        if (userDatabase.has(googleId)) {
+        if (userDatabase.has(playerID)) {
             // User already exists, retrieve their ID
-            inGameAccountID = userDatabase.get(googleId);
+            inGameAccountID = userDatabase.get(playerID);
             console.log(`Existing user. In-Game ID: ${inGameAccountID}`);
         } else {
             // New user, create a new in-game ID and store it
             inGameAccountID = `ingame-${nextInGameAccountId++}`;
 
-            userDatabase.set(googleId, inGameAccountID);
+            userDatabase.set(playerID, inGameAccountID);
             inGameDatabase.set(inGameAccountID, 0);
             
             console.log(`New user. Created In-Game ID: ${inGameAccountID}`);
         }
 
         const tokenPayload = {
-            googleId: googleId,
+            playerID: playerID,
             inGameAccountID: inGameAccountID
         };
         const customJwtToken = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
 
         // 4. Send the success response back to the client
         res.status(200).json({
-            googleId: googleId,
+            playerID: playerID,
             email: email,
             inGameAccountID: inGameAccountID,
             inGameCount : inGameDatabase.get(inGameAccountID),
@@ -170,7 +166,7 @@ app.post('/verify_and_link_facebook', async (req, res) => {
         
         // 5. Send the success response back to the client
         res.status(200).json({
-            googleId: prefixedFacebookId, // We re-use this field
+            playerID: prefixedFacebookId, // We re-use this field
             email: email,
             inGameAccountID: inGameAccountID,
             inGameCount : inGameDatabase.get(inGameAccountID),
@@ -189,7 +185,7 @@ app.post('/post_count', verifyToken, async (req, res) => {
 
     // 2. Get the user's info FROM THE MIDDLEWARE (req.user)
     // This is 100% secure because the token was already verified.
-    const { inGameAccountID, googleId, facebookId } = req.user;
+    const { inGameAccountID, playerID, facebookId } = req.user;
 
     if (typeof count === 'undefined') {
         return res.status(400).json({ error: "count is required" });
@@ -203,7 +199,7 @@ app.post('/post_count', verifyToken, async (req, res) => {
 
         // 4. Send back the success response
         res.status(200).json({
-            googleId: googleId || facebookId,
+            playerID: playerID || facebookId,
             email: "",
             inGameAccountID: inGameAccountID,
             inGameCount : inGameDatabase.get(inGameAccountID)
