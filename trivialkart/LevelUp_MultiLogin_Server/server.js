@@ -1,6 +1,7 @@
 const express = require('express');
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
 
 require('dotenv').config();
 
@@ -29,6 +30,29 @@ const userDatabase = new Map();
 
 //{ "ingame-1001": 10 }
 const inGameDatabase = new Map();
+
+const googleAccountLinkDB = new Map();
+
+
+async function getPlayerInfo(accessToken) {
+    try {
+        const response = await axios.get(
+            'https://games.googleapis.com/games/v1/players/me',
+            {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            }
+        );
+
+        // The response contains the player data
+        return response.data;
+
+    } catch (error) {
+        console.error("Failed to get player info from Google API:", error.response?.data?.error);
+        throw new Error("Failed to fetch PGS player data.");
+    }
+}
 
 const verifyToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -117,61 +141,66 @@ app.post('/verify_and_link_google', async (req, res) => {
 // ---
 // NEW: PGS v2 (v0.11.x+) ENDPOINT
 // This endpoint receives a one-time Auth Code from the client,
-// exchanges it for tokens, and then links the account.
+// exchanges it for tokens, verifies the token, and links the account
 // ---
 app.post('/exchange_authcode_and_link', async (req, res) => {
-    const { authCode, playerID } = req.body;
+    const { authCode } = req.body;
 
-    if (!authCode || !playerID) {
-        return res.status(400).json({ error: "authCode and playerID are required" });
+    if (!authCode) {
+        return res.status(400).json({ error: "authCode is required" });
     }
 
     try {
         // 1. Exchange the one-time auth code for tokens
-        // This call implicitly verifies the authCode and audience
         console.log(`(PGS v2) Exchanging authCode for tokens...`);
         const { tokens } = await client.getToken(authCode);
         const idToken = tokens.id_token;
+        const accessToken = tokens.access_token;
 
         if (!idToken) {
             throw new Error("Failed to retrieve id_token from authCode exchange.");
         }
 
         // 2. We now have an ID Token, so we can verify it to get the payload
-        // (This step is technically redundant if we trust the .getToken() call,
-        // but it's good practice and reuses our logic)
         const ticket = await client.verifyIdToken({
             idToken: idToken,
-            audience: WEB_CLIENT_ID,
+            audience: WEB_CLIENT_ID, // Ensures the token was meant for this server
         });
 
         const payload = ticket.getPayload();
         const email = payload.email;
-        // const googleId = payload.sub; // GAIA ID
+        const googleId = payload.sub;
 
         console.log(`(PGS v2) Successfully verified authCode for: ${email}`);
-        console.warn(`(PGS v2) Using playerID from client: ${playerID}`);
 
-        // 3. Find or create the in-game account (Identical logic to v1)
+        const playerInfo = await getPlayerInfo(accessToken);
+        const playerID = playerInfo.playerId;
+        
+        if (!playerID) {
+            console.error("Payload dump:", payload);
+            throw new Error("player_id not found in token payload. Ensure client requested 'https://www.googleapis.com/auth/games_lite' scope.");
+        }
+        
         let inGameAccountID;
         if (userDatabase.has(playerID)) {
             inGameAccountID = userDatabase.get(playerID);
             console.log(`(PGS v2) Existing user. In-Game ID: ${inGameAccountID}`);
         } else {
             inGameAccountID = `ingame-${nextInGameAccountId++}`;
-            userDatabase.set(playerID, inGameAccountID);
+            userDatabase.set(playerID, inGameAccountID); // Keyed by trusted PGS Player ID
             inGameDatabase.set(inGameAccountID, 0);
             console.log(`(PGS v2) New user. Created In-Game ID: ${inGameAccountID}`);
+            googleAccountLinkDB.set(googleId, playerID);
         }
 
-        // 4. Create our custom JWT
+        // 3. Create our custom JWT
         const tokenPayload = {
             playerID: playerID,
             inGameAccountID: inGameAccountID
         };
         const customJwtToken = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
 
-        // 5. Send the success response back to the client
+        // 4. Send the success response back to the client
         res.status(200).json({
             playerID: playerID,
             email: email,

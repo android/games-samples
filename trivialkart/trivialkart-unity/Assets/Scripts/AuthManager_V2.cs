@@ -29,14 +29,15 @@ public class AuthManager_V2 : MonoBehaviour
     private TextMeshProUGUI incText;
     private string customJwtToken;
     
-    private const string verify_and_link_google = "http://192.168.0.102:3000/verify_and_link_google";
-    private const string verify_and_link_facebook = "http://192.168.0.102:3000/verify_and_link_facebook";
-    private const string post_count = "http://192.168.0.102:3000/post_count";
+    private const string verify_and_link_google = "http://192.168.0.105:3000/verify_and_link_google";
+    private const string exchange_authcode_and_link = "http://192.168.0.105:3000/exchange_authcode_and_link";
+    private const string verify_and_link_facebook = "http://192.168.0.105:3000/verify_and_link_facebook";
+    private const string post_count = "http://192.168.0.105:3000/post_count";
     
     [System.Serializable]
     private class GoogleAuthRequest
     {
-        public string idToken; 
+        public string authCode; 
         public string playerID;
     }
     
@@ -171,7 +172,14 @@ public class AuthManager_V2 : MonoBehaviour
         {
             Debug.Log("PGS Sign-in successful.");
             statusText.text = "Sign-in successful. Getting Server Code...";
-            PlayGamesPlatform.Instance.RequestServerSideAccess(false, OnServerAuthCodeReceived);
+            
+            var scopes = new List<AuthScope>
+            {
+                AuthScope.EMAIL,
+                AuthScope.OPEN_ID,
+            };
+            
+            PlayGamesPlatform.Instance.RequestServerSideAccess(false, scopes, OnServerAuthCodeReceived);
         }
         else
         {
@@ -181,9 +189,9 @@ public class AuthManager_V2 : MonoBehaviour
         }
     }
     
-    private void OnServerAuthCodeReceived(string serverAuthCode)
+    private void OnServerAuthCodeReceived(AuthResponse authResponse)
     {
-        if (string.IsNullOrEmpty(serverAuthCode))
+        if (string.IsNullOrEmpty(authResponse.GetAuthCode()))
         {
             Debug.LogError("PGS: Failed to retrieve Server Auth Code.");
             statusText.text = "Failed to get server access. Please try again.";
@@ -191,23 +199,24 @@ public class AuthManager_V2 : MonoBehaviour
         }
         else
         {
-            string playerID = PlayGamesPlatform.Instance.GetUserId();
             Debug.Log($"PGS: Retrieved Server Auth Code. Sending to backend...");
             statusText.text = "Connecting to game server...";
             
-            StartCoroutine(VerifyAndLinkGoogleAccount(serverAuthCode, playerID));
+            StartCoroutine(ExchangeAuthcodeAndLink(authResponse.GetAuthCode()));
         }
     }
     
-    private IEnumerator VerifyAndLinkGoogleAccount(string serverAuthCode, string playerID)
+    private IEnumerator ExchangeAuthcodeAndLink(string serverAuthCode)
     {
+        Debug.Log("Exchange Authcode And Link " + serverAuthCode);
         // 1. Create the request payload
-        GoogleAuthRequest requestData = new GoogleAuthRequest { idToken = serverAuthCode, playerID = playerID };
+        GoogleAuthRequest requestData = new GoogleAuthRequest { authCode = serverAuthCode};
         string jsonPayload = JsonUtility.ToJson(requestData);
         byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
 
         // 2. Create the UnityWebRequest
-        UnityWebRequest request = new UnityWebRequest(verify_and_link_google, "POST");
+        // UnityWebRequest request = new UnityWebRequest(verify_and_link_google, "POST");
+        UnityWebRequest request = new UnityWebRequest(exchange_authcode_and_link, "POST");
         request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
         request.SetRequestHeader("Content-Type", "application/json");
