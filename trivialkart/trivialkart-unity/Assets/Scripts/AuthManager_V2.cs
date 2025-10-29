@@ -1,15 +1,16 @@
-using Facebook.Unity;
 #if PGS_V2
+using Facebook.Unity;
 using GooglePlayGames;
 using GooglePlayGames.BasicApi; 
-#endif
 using System.Collections.Generic;
 using System.Collections;
 using System.Text;
 using TMPro;
+#endif
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Networking;
+
 
 public class AuthManager_V2 : MonoBehaviour
 {

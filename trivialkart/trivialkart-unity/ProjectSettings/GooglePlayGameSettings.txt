@@ -1,9 +1,7 @@
-lastUpgrade=01015
-proj.pluginVersion=0.10.15
+lastUpgrade=20100
+proj.pluginVersion=2.1.0
 proj.AppId=1044312393953
 and.BundleId=com.WickedCube.TrivialKart
 proj.classDir=Assets
 proj.ConstantsClassName=GPGSIds
-and.ResourceData=%3c%3fxml+version%3d%221.0%22+encoding%3d%22utf-8%22%3f%3e%0a%3c%21--Google+Play+game+services+IDs.+Save+this+file+as+res%2fvalues%2fgames-ids.xml+in+your+project.--%3e%0a%3cresources%3e%0a++%3c%21--app_id--%3e%0a++%3cstring+name%3d%22app_id%22+translatable%3d%22false%22%3e1044312393953%3c%2fstring%3e%0a++%3c%21--package_name--%3e%0a++%3cstring+name%3d%22package_name%22+translatable%3d%22false%22%3ecom.WickedCube.TrivialKart%3c%2fstring%3e%0a++%3c%21--achievement+tk_achievement_drive--%3e%0a++%3cstring+name%3d%22achievement_tk_achievement_drive%22+translatable%3d%22false%22%3eCgkI4ZH6rrIeEAIQAw%3c%2fstring%3e%0a++%3c%21--achievement+tk_achievement_truck--%3e%0a++%3cstring+name%3d%22achievement_tk_achievement_truck%22+translatable%3d%22false%22%3eCgkI4ZH6rrIeEAIQBA%3c%2fstring%3e%0a++%3c%21--leaderboard+tk_leaderboard_distance--%3e%0a++%3cstring+name%3d%22leaderboard_tk_leaderboard_distance%22+translatable%3d%22false%22%3eCgkI4ZH6rrIeEAIQBg%3c%2fstring%3e%0a%3c%2fresources%3e
-and.ClientId=1044312393953-bthrq07q6j866o95acfeoliam1fbispd.apps.googleusercontent.com
 android.SetupDone=true
