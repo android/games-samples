@@ -1380,7 +1380,7 @@ GameObject:
   - component: {fileID: 970678195}
   - component: {fileID: 970678196}
   m_Layer: 0
-  m_Name: AuthManager_V1
+  m_Name: AuthManager_V2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1410,9 +1410,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 970678194}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4867f4476c05a4895b5329aba596dd26, type: 3}
+  m_Script: {fileID: 11500000, guid: 3063b22abefbe40eab2425720fd417c5, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AuthManager
+  m_EditorClassIdentifier: Assembly-CSharp::AuthManager_V2
 --- !u!1 &1162833870
 GameObject:
   m_ObjectHideFlags: 0
@@ -1830,26 +1830,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1769802426}
-  - component: {fileID: 1769802425}
+  - component: {fileID: 1769802427}
   m_Layer: 0
-  m_Name: AuthManager_V2
+  m_Name: AuthManager_V1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
---- !u!114 &1769802425
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1769802424}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3063b22abefbe40eab2425720fd417c5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: '::'
 --- !u!4 &1769802426
 Transform:
   m_ObjectHideFlags: 0
@@ -1865,6 +1853,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1769802427
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1769802424}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4867f4476c05a4895b5329aba596dd26, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AuthManager_V1
 --- !u!1 &1782378024
 GameObject:
   m_ObjectHideFlags: 0
@@ -3132,5 +3132,5 @@ SceneRoots:
   - {fileID: 1863545584}
   - {fileID: 2001894001}
   - {fileID: 619702709}
-  - {fileID: 970678195}
   - {fileID: 1769802426}
+  - {fileID: 970678195}

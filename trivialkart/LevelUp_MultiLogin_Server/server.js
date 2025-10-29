@@ -53,6 +53,10 @@ const verifyToken = (req, res, next) => {
 
 let nextInGameAccountId = 1001;
 
+// ---
+// PGS v1 (v0.10.x) ENDPOINT
+// This endpoint receives an ID Token directly from the client.
+// ---
 app.post('/verify_and_link_google', async (req, res) => {
     const { idToken, playerID } = req.body;
 
@@ -70,23 +74,23 @@ app.post('/verify_and_link_google', async (req, res) => {
         const email = payload.email;
         //const googleId = payload.sub; // GAIA ID
 
-        console.log(`Successfully verified authCode for: ${email}`);
-        console.warn(`Using playerID from client: ${playerID}`);
+        console.log(`(PGS v1) Successfully verified idToken for: ${email}`);
+        console.warn(`(PGS v1) Using playerID from client: ${playerID}`);
 
         // 3. Find or create the in-game account using GAIA ID
         let inGameAccountID
         if (userDatabase.has(playerID)) {
             // User already exists, retrieve their ID
             inGameAccountID = userDatabase.get(playerID);
-            console.log(`Existing user. In-Game ID: ${inGameAccountID}`);
+            console.log(`(PGS v1) Existing user. In-Game ID: ${inGameAccountID}`);
         } else {
             // New user, create a new in-game ID and store it
             inGameAccountID = `ingame-${nextInGameAccountId++}`;
 
             userDatabase.set(playerID, inGameAccountID);
             inGameDatabase.set(inGameAccountID, 0);
-            
-            console.log(`New user. Created In-Game ID: ${inGameAccountID}`);
+
+            console.log(`(PGS v1) New user. Created In-Game ID: ${inGameAccountID}`);
         }
 
         const tokenPayload = {
@@ -109,6 +113,79 @@ app.post('/verify_and_link_google', async (req, res) => {
         res.status(500).json({ error: "Failed to verify authentication" });
     }
 });
+
+// ---
+// NEW: PGS v2 (v0.11.x+) ENDPOINT
+// This endpoint receives a one-time Auth Code from the client,
+// exchanges it for tokens, and then links the account.
+// ---
+app.post('/exchange_authcode_and_link', async (req, res) => {
+    const { authCode, playerID } = req.body;
+
+    if (!authCode || !playerID) {
+        return res.status(400).json({ error: "authCode and playerID are required" });
+    }
+
+    try {
+        // 1. Exchange the one-time auth code for tokens
+        // This call implicitly verifies the authCode and audience
+        console.log(`(PGS v2) Exchanging authCode for tokens...`);
+        const { tokens } = await client.getToken(authCode);
+        const idToken = tokens.id_token;
+
+        if (!idToken) {
+            throw new Error("Failed to retrieve id_token from authCode exchange.");
+        }
+
+        // 2. We now have an ID Token, so we can verify it to get the payload
+        // (This step is technically redundant if we trust the .getToken() call,
+        // but it's good practice and reuses our logic)
+        const ticket = await client.verifyIdToken({
+            idToken: idToken,
+            audience: WEB_CLIENT_ID,
+        });
+
+        const payload = ticket.getPayload();
+        const email = payload.email;
+        // const googleId = payload.sub; // GAIA ID
+
+        console.log(`(PGS v2) Successfully verified authCode for: ${email}`);
+        console.warn(`(PGS v2) Using playerID from client: ${playerID}`);
+
+        // 3. Find or create the in-game account (Identical logic to v1)
+        let inGameAccountID;
+        if (userDatabase.has(playerID)) {
+            inGameAccountID = userDatabase.get(playerID);
+            console.log(`(PGS v2) Existing user. In-Game ID: ${inGameAccountID}`);
+        } else {
+            inGameAccountID = `ingame-${nextInGameAccountId++}`;
+            userDatabase.set(playerID, inGameAccountID);
+            inGameDatabase.set(inGameAccountID, 0);
+            console.log(`(PGS v2) New user. Created In-Game ID: ${inGameAccountID}`);
+        }
+
+        // 4. Create our custom JWT
+        const tokenPayload = {
+            playerID: playerID,
+            inGameAccountID: inGameAccountID
+        };
+        const customJwtToken = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
+
+        // 5. Send the success response back to the client
+        res.status(200).json({
+            playerID: playerID,
+            email: email,
+            inGameAccountID: inGameAccountID,
+            inGameCount: inGameDatabase.get(inGameAccountID),
+            jwtToken: customJwtToken
+        });
+
+    } catch (error) {
+        console.error("Error during authCode exchange:", error.message);
+        res.status(500).json({ error: "Failed to verify authentication" });
+    }
+});
+
 
 app.post('/verify_and_link_facebook', async (req, res) => {
     const { accessToken } = req.body;
@@ -163,7 +240,7 @@ app.post('/verify_and_link_facebook', async (req, res) => {
             inGameAccountID: inGameAccountID
         };
         const customJwtToken = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
-        
+
         // 5. Send the success response back to the client
         res.status(200).json({
             playerID: prefixedFacebookId, // We re-use this field

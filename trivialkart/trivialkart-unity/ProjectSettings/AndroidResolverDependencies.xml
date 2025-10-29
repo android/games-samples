@@ -9,12 +9,12 @@
     <package>com.facebook.android:facebook-gamingservices:[18.0.0,19)</package>
     <package>com.facebook.android:facebook-login:[18.0.0,19)</package>
     <package>com.facebook.android:facebook-share:[18.0.0,19)</package>
-    <package>com.google.games:gpgs-plugin-support:0.10.15</package>
+    <package>com.google.games:gpgs-plugin-support:2.1.0</package>
     <package>com.parse.bolts:bolts-android:1.4.0</package>
   </packages>
   <files>
-    <file>Assets/GeneratedLocalRepo/GooglePlayGames/Editor/m2repository/com/google/games/gpgs-plugin-support/0.10.15/gpgs-plugin-support-0.10.15.aar</file>
-    <file>Assets/GeneratedLocalRepo/GooglePlayGames/Editor/m2repository/com/google/games/gpgs-plugin-support/0.10.15/gpgs-plugin-support-0.10.15.pom</file>
+    <file>Assets/GeneratedLocalRepo/GooglePlayGames/com.google.play.games/Editor/m2repository/com/google/games/gpgs-plugin-support/2.1.0/gpgs-plugin-support-2.1.0.aar</file>
+    <file>Assets/GeneratedLocalRepo/GooglePlayGames/com.google.play.games/Editor/m2repository/com/google/games/gpgs-plugin-support/2.1.0/gpgs-plugin-support-2.1.0.pom</file>
   </files>
   <settings>
     <setting name="androidAbis" value="arm64-v8a" />

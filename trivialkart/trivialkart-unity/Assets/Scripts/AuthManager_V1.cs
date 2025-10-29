@@ -1,6 +1,8 @@
 using Facebook.Unity;
+#if PGS_V1
 using GooglePlayGames;
 using GooglePlayGames.BasicApi;
+#endif
 using System.Collections.Generic;
 using System.Collections;
 using System.Text;
