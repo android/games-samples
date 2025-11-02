@@ -11,7 +11,7 @@ public class PGSRecallManager : MonoBehaviour
 {
 #if RECALL_API
     // --- Server Configuration ---
-    private const string SERVER_BASE_URL = "http://192.168.0.101:3000"; // Update with your IP
+    private const string SERVER_BASE_URL = "http://192.168.0.103:3000"; // Update with your IP
     private const string RECALL_SESSION_ENDPOINT = SERVER_BASE_URL + "/recall-session";
     private const string CREATE_ACCOUNT_ENDPOINT = SERVER_BASE_URL + "/create-account";
     private const string UPDATE_PROGRESS_ENDPOINT = SERVER_BASE_URL + "/update-progress";
@@ -157,7 +157,6 @@ public class PGSRecallManager : MonoBehaviour
                 _dummyLoginPanel.gameObject.SetActive(false);
                 Debug.Log($"[PGSRecallManager] Welcome back, {response.playerData.username}!");
                 
-                // ***MODIFIED***: Store the token and start the update loop
                 _playerRecallToken = response.playerRecallToken;
                 StartProgressUpdateLoop();
 

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if !RECALL_API
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -303,3 +304,4 @@ public class PGSCloudSaveManager : MonoBehaviour
     }
 #endif
 }
+#endif

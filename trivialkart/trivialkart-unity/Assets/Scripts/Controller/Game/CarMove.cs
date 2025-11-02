@@ -90,8 +90,15 @@ public class CarMove : MonoBehaviour
     private void FixedUpdate()
     {
         float newDistance = _rigidbody2D.linearVelocity.x * Time.deltaTime;
-        newDistance += GameDataController.GetGameData().distanceTraveled;
-        GameDataController.GetGameData().distanceTraveled = newDistance;
+        
+        #if RECALL_API
+            newDistance += PlayerPrefs.GetFloat("dist", 0f);
+            PlayerPrefs.SetFloat("dist", newDistance);
+        #else
+            newDistance += GameDataController.GetGameData().distanceTraveled;
+            GameDataController.GetGameData().distanceTraveled = newDistance;
+        #endif
+        
 #if PLAY_GAMES_SERVICES
         CheckDistanceAchievement(newDistance);
 #endif

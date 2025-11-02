@@ -6,12 +6,8 @@ const axios = require('axios');
 const { v4: uuidv4 } = require('uuid'); // Used for generating unique tokens
 require('dotenv').config();
 
-// --- Simulated Database ---
-// In a real application, this would be a real database like PostgreSQL, MongoDB, etc.
-// We use the unique 'recallToken' as the key.
 const playerDatabase = new Map();
 
-// --- Google Auth Initialization (Unchanged) ---
 const KEY_FILE_PATH = process.env.KEY_FILE_PATH;
 const SCOPES = ['https://www.googleapis.com/auth/androidpublisher'];
 
@@ -63,7 +59,6 @@ async function linkNewPersona(recallSessionId, persona, token) {
         await axios.post(apiUrl, {
             token: token,
             persona: persona,
-            // cardinality_constraint: 'ONE_TOKEN_PER_PERSONA_PER_GAME',
             conflicting_links_resolution_policy: 'CREATE_NEW_LINK'
         }, {
             headers: {
