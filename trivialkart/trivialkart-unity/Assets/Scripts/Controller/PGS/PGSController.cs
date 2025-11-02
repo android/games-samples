@@ -52,10 +52,14 @@ public class PGSController : MonoBehaviour
     public PGSAchievementManager AchievementManager { get; private set; }
 
     public PGSCloudSaveManager CloudSaveManager { get; private set; }
+    
+    #if RECALL_API
+    private PGSRecallManager RecallManager { get; set; }
+    #endif
 #endif
 
     // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
 #if PLAY_GAMES_SERVICES
         _friendsPageController = friendsPage.GetComponent<FriendsPageController>();
@@ -63,6 +67,9 @@ public class PGSController : MonoBehaviour
         _signinPageController = signinPage.GetComponent<SigninPageController>();
         AchievementManager = GetComponent<PGSAchievementManager>();
         CloudSaveManager = GetComponent<PGSCloudSaveManager>();
+#if RECALL_API
+        RecallManager = GetComponent<PGSRecallManager>();
+#endif
         CurrentSignInStatus = PgsSigninStatus.PgsSigninNotLoggedIn;
         PgsEnabled = true;
 #else
@@ -92,7 +99,11 @@ public class PGSController : MonoBehaviour
             {
                 _leaderboardPageController.EnableLeaderboardReporting();
                 AchievementManager.LoadAchievements();
+#if RECALL_API
+                RecallManager.TryRestorePlayerSession();
+#else
                 CloudSaveManager.RetrieveCloudMetadata();
+#endif
                 _initializedServices = true;
             }
         }
