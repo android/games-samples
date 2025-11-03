@@ -294,6 +294,29 @@ Note that in a real game, you would not directly return the decrypted verdict in
 but communicate the results in a way that makes sense for your game. For simplicity, this
 sample expects the raw verdict json.
 
+
+
+## Recall API
+
+This project includes a sample implementation of the **Recall API**.
+
+This feature is demonstrated in the new scene: `TrivialKartScene_RecallAPI`.
+
+### Setup
+
+To enable this feature in the Unity project, follow these steps:
+
+From the Unity menu bar, enable
+`TrivialKart -> BuildOptions -> Build with Google Play Games Services`
+
+followed by
+`TrivialKart -> PlayGameServices -> Recall API`
+
+For complete documentation, including the required server-side setup, please refer to the server's README file located in the project at
+* **[trivialkart/trivialkart-recall-server](/trivialkart/trivialkart-recall-server)**
+
+
+
 ## Building for Google Play Games
 
 1. Enable x86 ABI architecture. This can be activated using `Player Settings > Other Settings > Target Architectures` and enabling both x86 (Chrome OS) and x86-64 (Chrome OS).
