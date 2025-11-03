@@ -166,14 +166,14 @@ PlayerSettings:
   androidMaxAspectRatio: 2.1
   androidMinAspectRatio: 1
   applicationIdentifier:
-    Android: com.WickedCube.TrivialKart
+    Android: com.GoogleLLC.TrivialKart
     Standalone: com.Google-LLC.TrivialKart
   buildNumber:
     Standalone: 0
     VisionOS: 0
     iPhone: 0
     tvOS: 0
-  overrideDefaultApplicationIdentifier: 1
+  overrideDefaultApplicationIdentifier: 0
   AndroidBundleVersionCode: 1
   AndroidMinSdkVersion: 23
   AndroidTargetSdkVersion: 0
@@ -811,7 +811,7 @@ PlayerSettings:
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
   scriptingDefineSymbols:
-    Android: NO_IAP;PLAY_GAMES_SERVICES;RECALL_API
+    Android: NO_IAP
     Standalone: NO_IAP
   additionalCompilerArguments: {}
   platformArchitecture: {}
