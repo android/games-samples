@@ -27,13 +27,25 @@ public static class EditorMenuBuildOptions
         "TrivialKart/BuildOptions/Build with Google Play Games Services";
     private const string PLAY_INTEGRITY_MENU_NAME =
         "TrivialKart/BuildOptions/Build with Play Integrity";
+    private const string RECALL_API_MENU_NAME =
+        "TrivialKart/PlayGameServices/Recall API";
 
     private static BuildMenuItem _iapItem;
     private static BuildMenuItem _playGamesPCItem;
     private static BuildMenuItem _playGamesServicesItem;
     private static BuildMenuItem _playIntegrityItem;
+    private static BuildMenuItem _recallAPI;
 
     private static IList<BuildMenuItem> _buildItems;
+    
+    private static readonly HashSet<string> AllManagedDirectives = new HashSet<string>()
+    {
+        "USE_IAP", "NO_IAP",
+        "PLAY_GAMES_PC",
+        "PLAY_GAMES_SERVICES",
+        "PLAY_INTEGRITY",
+        "RECALL_API"
+    };
 
     // InitializeOnLoad attribute means this is called on load
     static EditorMenuBuildOptions()
@@ -46,13 +58,16 @@ public static class EditorMenuBuildOptions
             EditorPrefs.GetBool(PLAY_GAMES_SERVICES_MENU_NAME, false), "PLAY_GAMES_SERVICES");
         _playIntegrityItem = new BuildMenuItem(PLAY_INTEGRITY_MENU_NAME,
             EditorPrefs.GetBool(PLAY_INTEGRITY_MENU_NAME, false), "PLAY_INTEGRITY");
+        _recallAPI = new BuildMenuItem(RECALL_API_MENU_NAME,
+            EditorPrefs.GetBool(RECALL_API_MENU_NAME, false), "RECALL_API");
 
         _buildItems = new List<BuildMenuItem>()
         {
             _iapItem,
             _playGamesPCItem,
             _playGamesServicesItem,
-            _playIntegrityItem
+            _playIntegrityItem,
+            _recallAPI
         };
 
         // Delaying until first editor tick so that the menu
@@ -95,7 +110,16 @@ public static class EditorMenuBuildOptions
     private static void TogglePlayGamesServicesAction()
     {
         // Toggling action
-        PerformAction(_playGamesServicesItem);
+        _playGamesServicesItem.IsEnabled = !_playGamesServicesItem.IsEnabled;
+        UpdateMenu(_playGamesServicesItem);
+
+        if (!_playGamesServicesItem.IsEnabled && _recallAPI.IsEnabled)
+        {
+            _recallAPI.IsEnabled = false;
+            UpdateMenu(_recallAPI);
+        }
+
+        SetBuildDirectives();
     }
 
     [MenuItem(PLAY_INTEGRITY_MENU_NAME)]
@@ -105,6 +129,30 @@ public static class EditorMenuBuildOptions
         PerformAction(_playIntegrityItem);
     }
 
+    [MenuItem(RECALL_API_MENU_NAME)]
+    private static void ToggleRecallAPIAction()
+    {
+        if (_playGamesServicesItem.IsEnabled)
+        {
+            _recallAPI.IsEnabled = !_recallAPI.IsEnabled;
+            UpdateMenu(_recallAPI);
+            SetBuildDirectives();
+        }
+    }
+
+    [MenuItem(RECALL_API_MENU_NAME, true)]
+    private static bool ValidateRecallAPIAction()
+    {
+        // This can be called before the static constructor finishes
+        if (_playGamesServicesItem == null)
+        {
+            // Fallback to reading the preference directly
+            return EditorPrefs.GetBool(PLAY_GAMES_SERVICES_MENU_NAME, false);
+        }
+        // Enable the "Recall API" option only if "Play Games Services" is enabled
+        return _playGamesServicesItem.IsEnabled;
+    }
+    
     private static void PerformAction(BuildMenuItem buildItem)
     {
         buildItem.IsEnabled = !buildItem.IsEnabled;
@@ -114,22 +162,43 @@ public static class EditorMenuBuildOptions
 
     private static void SetBuildDirectives()
     {
-        int defineCount = 0;
-        string defineString = "";
+        var activeBuildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
+
+#if UNITY_2021_3_OR_NEWER
+        var activeBuildTarget = UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(activeBuildTargetGroup);
+        var currentDefinesArray = PlayerSettings.GetScriptingDefineSymbols(activeBuildTarget).Split(';');
+#else
+        currentDefinesArray = PlayerSettings.GetScriptingDefineSymbolsForGroup(activeBuildTargetGroup).Split(';');
+#endif
+        
+        var defines = new HashSet<string>(
+            currentDefinesArray
+                .SelectMany(s => s.Split(';'))
+                .Where(s => !string.IsNullOrEmpty(s))
+        );
+
+        defines.ExceptWith(AllManagedDirectives);
+
         foreach (BuildMenuItem buildItem in _buildItems)
         {
-            if (!string.IsNullOrEmpty(buildItem.GetDirective))
+            if (buildItem == _recallAPI && !_playGamesServicesItem.IsEnabled)
             {
-                if (defineCount > 0)
-                {
-                    defineString += ";";
-                }
-                Debug.Log(buildItem.GetDirective);
-                defineString += buildItem.GetDirective;
-                ++defineCount;
+                continue;
+            }
+        
+            string activeDirective = buildItem.GetDirective;
+            if (!string.IsNullOrEmpty(activeDirective))
+            {
+                defines.Add(activeDirective);
             }
         }
-        PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.Android,
-            defineString);
+
+        var newDefines = defines.ToArray();
+    
+#if UNITY_2021_3_OR_NEWER
+        PlayerSettings.SetScriptingDefineSymbols(activeBuildTarget, newDefines);
+#else
+        PlayerSettings.SetScriptingDefineSymbolsForGroup(activeBuildTargetGroup, string.Join(";", newDefines));
+#endif
     }
 }

@@ -98,10 +98,13 @@ public class GameManager : MonoBehaviour
 #if PLAY_GAMES_SERVICES
         _pgsController = FindObjectOfType<PGSController>();
         _pgsController.SetLocalSaveDataReady();
-        _cloudStatus = CloudStatus.CloudStatus_WaitingForInit;
-        // Display a please wait message while PGS signin and cloud save
-        // resolution happens
-        SetWaitMessageActive(true);
+        
+        #if RECALL_API
+            SetWaitMessageActive(false);
+        #else
+            _cloudStatus = CloudStatus.CloudStatus_WaitingForInit;
+            SetWaitMessageActive(true);
+        #endif
 #else
         SetWaitMessageActive(false);
 #endif
@@ -139,20 +142,23 @@ public class GameManager : MonoBehaviour
     // Only used if PGS is active to monitor cloud save operations
     public void Update()
     {
-        if (_cloudStatus == CloudStatus.CloudStatus_WaitingForInit)
-        {
-            UpdateCloudWaitingForInit();
-        }
-        else if (_cloudStatus == CloudStatus.CloudStatus_WaitingForLoad)
-        {
-            UpdateCloudWaitingForLoad();
-        }
-        else if (_cloudStatus == CloudStatus.CloudStatus_Idle)
-        {
-            CheckForUpdatedCloudSave();
-        }
+        #if !RECALL_API
+            if (_cloudStatus == CloudStatus.CloudStatus_WaitingForInit)
+            {
+                UpdateCloudWaitingForInit();
+            }
+            else if (_cloudStatus == CloudStatus.CloudStatus_WaitingForLoad)
+            {
+                UpdateCloudWaitingForLoad();
+            }
+            else if (_cloudStatus == CloudStatus.CloudStatus_Idle)
+            {
+                CheckForUpdatedCloudSave();
+            }
+        #endif
     }
 
+#if !RECALL_API
     private void UpdateCloudWaitingForInit()
     {
         var cloudSaveManager = _pgsController.CloudSaveManager;
@@ -230,11 +236,12 @@ public class GameManager : MonoBehaviour
             DoSaveGame();
         }
     }
+    #endif
 #endif
 
     public void OnConfirmCloudLoadButtonClicked()
     {
-#if PLAY_GAMES_SERVICES
+#if PLAY_GAMES_SERVICES && !RECALL_API
         _pgsController.CloudSaveManager.LoadLaterCloudSave();
         SetCloudLoadMessageActive(false);
         _cloudStatus = CloudStatus.CloudStatus_WaitingForLoad;
@@ -243,7 +250,7 @@ public class GameManager : MonoBehaviour
 
     public void OnDeclineCloudLoadButtonClicked()
     {
-#if PLAY_GAMES_SERVICES
+#if PLAY_GAMES_SERVICES && !RECALL_API
         _pgsController.CloudSaveManager.IgnoreLaterCloudSave();
         SetCloudLoadMessageActive(false);
         _cloudStatus = CloudStatus.CloudStatus_Idle;
@@ -400,7 +407,7 @@ public class GameManager : MonoBehaviour
     private void DoSaveGame()
     {
         GameDataController.SaveGameData();
-#if PLAY_GAMES_SERVICES
+#if PLAY_GAMES_SERVICES && !RECALL_API
         if (_pgsController != null)
         {
             if (_pgsController.CurrentSignInStatus ==
@@ -430,7 +437,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-#if PLAY_GAMES_SERVICES
+#if PLAY_GAMES_SERVICES && !RECALL_API
     private void OnApplicationPause(bool pauseStatus)
     {
         if (!pauseStatus && _pgsController != null)
