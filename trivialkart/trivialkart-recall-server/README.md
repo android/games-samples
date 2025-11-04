@@ -2,6 +2,11 @@
 
 This guide will walk you through setting up a complete, end-to-end demonstration of the Google Play Games Services (PGS) Recall API. It has been updated to include a persistent progress-saving mechanism. The goal is to show how a player can start playing on one device, save their progress in near real-time, and then seamlessly continue with that exact progress on a new device without needing a traditional login screen. We'll use a local Node.js server to act as your game's backend and a Unity client to simulate the game.
 
+Note : This example uses the server to store and retrieve data to demonstrate the Recall API's functionality, and is not intended to replace Cloud Save. You can find more information about Cloud Save and the Recall API here:
+
+* **[Cloud Save](https://developer.android.com/games/pgs/savedgames)**
+* **[Recall](https://developer.android.com/games/pgs/recall)**
+ 
 ## Repo
 
 * **[Unity Client](/trivialkart/trivialkart-unity)**
