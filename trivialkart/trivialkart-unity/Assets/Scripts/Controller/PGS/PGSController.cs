@@ -14,7 +14,9 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 #if PLAY_GAMES_SERVICES
 using GooglePlayGames;
@@ -38,6 +40,8 @@ public class PGSController : MonoBehaviour
     public GameObject friendsPage;
     public GameObject leaderboardPage;
     public GameObject signinPage;
+    public InputField ageString;
+    public Text ageGateText;
 
 #if PLAY_GAMES_SERVICES
     private FriendsPageController _friendsPageController;
@@ -50,6 +54,7 @@ public class PGSController : MonoBehaviour
     private bool _initializedServices = false;
     private bool _launchedStartupSignin = false;
     private bool _localSaveDataReady = false;
+    private int _enteredAge;
 
     public PGSAchievementManager AchievementManager { get; private set; }
 #if !RECALL_API
@@ -91,8 +96,8 @@ public class PGSController : MonoBehaviour
             _launchedStartupSignin = true;
             PlayGamesPlatform.DebugLogEnabled = true;
             // Activate the Google Play Games platform
-            PlayGamesPlatform.Activate();
-            RunStartupSignin();
+            //PlayGamesPlatform.Activate();
+            //RunStartupSignin();
         }
 
         if (!_initializedServices)
@@ -146,11 +151,33 @@ public class PGSController : MonoBehaviour
             _signinPageController.RefreshPage();
             _friendsPageController.InitializeFriendsPage();
         }
-        else
+        else 
         {
             CurrentSignInStatus = PgsSigninStatus.PgsSigninNotLoggedIn;
             _signinPageController.CurrentSignInStatus = CurrentSignInStatus;
             _signinPageController.RefreshPage();
+        }
+    }
+
+    public void OnAgeValueChange()
+    {
+        Debug.Log("OnAgeValueChange: " + ageString.text);
+        _enteredAge = int.Parse(ageString.text);
+    }
+
+    public void AgeNextButton()
+    {
+        ageString.transform.parent.gameObject.SetActive(false);
+        if (_enteredAge > 13)
+        {
+            RunManualSignin();
+            ageGateText.text = "Age > 13, PGS Signed in";
+            Debug.Log("Age > 13, Regular flow");
+        }
+        else
+        {
+            ageGateText.text = "Age <= 13, Guest Mode";
+            Debug.Log("Age <= 13, Guest Mode");
         }
     }
 #endif // PLAY_GAMES_SERVICES

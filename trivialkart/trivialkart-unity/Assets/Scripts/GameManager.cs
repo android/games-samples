@@ -103,7 +103,7 @@ public class GameManager : MonoBehaviour
             SetWaitMessageActive(false);
         #else
             _cloudStatus = CloudStatus.CloudStatus_WaitingForInit;
-            SetWaitMessageActive(true);
+            // SetWaitMessageActive(true);
         #endif
 #else
         SetWaitMessageActive(false);

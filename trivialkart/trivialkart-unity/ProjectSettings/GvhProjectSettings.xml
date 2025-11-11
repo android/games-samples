@@ -6,4 +6,5 @@
   <projectSetting name="Google.VersionHandler.VersionHandlingEnabled" value="True" />
   <projectSetting name="GooglePlayServices.PromptBeforeAutoResolution" value="False" />
   <projectSetting name="GooglePlayServices.UseJetifier" value="True" />
+  <projectSetting name="GooglePlayServices.UserRejectedGradleUpgrade" value="True" />
 </projectSettings>

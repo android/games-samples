@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<dependencies>
+  <!-- Internal library dependency generated at build time. 
+    It also defines the transitive dependencies on play-services
+-->
+  <androidPackages>
+    <androidPackage spec="com.google.games:gpgs-plugin-support:2.1.0">
+      <repositories>
+        <repository>Assets/GooglePlayGames/com.google.play.games/Editor/m2repository</repository>
+      </repositories>
+    </androidPackage>
+  </androidPackages>
+</dependencies>
