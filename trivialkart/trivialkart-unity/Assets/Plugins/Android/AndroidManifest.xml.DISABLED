@@ -20,6 +20,5 @@
             <meta-data android:name="android.app.lib_name" android:value="game" />
         </activity>
         -->
-    <provider android:name="com.google.android.gms.games.provider.PlayGamesInitProvider" android:authorities="com.WickedCube.TrivialKart.playgamesinitprovider" android:exported="false" tools:node="remove" />
   </application>
 </manifest>

@@ -11,7 +11,7 @@ public class PGSRecallManager : MonoBehaviour
 {
 #if RECALL_API
     // --- Server Configuration ---
-    private const string SERVER_BASE_URL = "http://192.168.0.103:3000"; // Update with your IP
+    private const string SERVER_BASE_URL = "http://192.168.0.102:3000"; // Update with your IP
     private const string RECALL_SESSION_ENDPOINT = SERVER_BASE_URL + "/recall-session";
     private const string CREATE_ACCOUNT_ENDPOINT = SERVER_BASE_URL + "/create-account";
     private const string UPDATE_PROGRESS_ENDPOINT = SERVER_BASE_URL + "/update-progress";
@@ -26,6 +26,7 @@ public class PGSRecallManager : MonoBehaviour
     private InputField _usernameInputField;
     private Button _loginButton;
     private Text _usernameText;
+    private Transform _waitScreen;
     
     [Serializable]
     public class ServerResponse
@@ -69,6 +70,7 @@ public class PGSRecallManager : MonoBehaviour
         _usernameText = playboardCanvas.transform.Find("UsernameLabel").GetComponent<Text>();
         _usernameInputField = _dummyLoginPanel.transform.Find("Username").GetComponent<InputField>();
         _loginButton = _dummyLoginPanel.transform.Find("Login").GetComponent<Button>();
+        _waitScreen = _dummyLoginPanel.transform.Find("WaitScreen");
         
         _loginButton.onClick.AddListener(DummyLogin);
     }
@@ -97,6 +99,7 @@ public class PGSRecallManager : MonoBehaviour
             }
             else
             {
+                _waitScreen.gameObject.SetActive(false);
                 Debug.LogError("[PGSRecallManager] Failed to get Recall Session ID. The recallAccess object was null.");
             }
         });
@@ -167,7 +170,7 @@ public class PGSRecallManager : MonoBehaviour
             else if (response.status == "NewPlayer")
             {
                 Debug.Log("[PGSRecallManager] This is a new player. Showing account creation UI...");
-                _dummyLoginPanel.gameObject.SetActive(true);
+                _waitScreen.gameObject.SetActive(false);
             }
         });
     }

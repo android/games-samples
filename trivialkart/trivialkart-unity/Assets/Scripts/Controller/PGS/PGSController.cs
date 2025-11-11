@@ -95,9 +95,10 @@ public class PGSController : MonoBehaviour
         {
             _launchedStartupSignin = true;
             PlayGamesPlatform.DebugLogEnabled = true;
+            
             // Activate the Google Play Games platform
-            //PlayGamesPlatform.Activate();
-            //RunStartupSignin();
+            PlayGamesPlatform.Activate();
+            RunStartupSignin();
         }
 
         if (!_initializedServices)
