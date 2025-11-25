@@ -4,7 +4,9 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 
-// using GooglePlayGames;
+#if PGS
+using GooglePlayGames;
+#endif
 
 public class PGSRecallManager : MonoBehaviour
 {
@@ -80,6 +82,7 @@ public class PGSRecallManager : MonoBehaviour
     /// </summary>
     public void TryRestorePlayerSession()
     {
+        // #if PGS
         // if (!PlayGamesPlatform.Instance.IsAuthenticated())
         // {
         //     Debug.LogError("[PGSRecallManager] User is not authenticated with Play Games.");
@@ -101,6 +104,7 @@ public class PGSRecallManager : MonoBehaviour
         //         Debug.LogError("[PGSRecallManager] Failed to get Recall Session ID. The recallAccess object was null.");
         //     }
         // });
+        // #endif
     }
 
     private void DummyLogin()
@@ -120,6 +124,7 @@ public class PGSRecallManager : MonoBehaviour
     /// </summary>
     private void CreateNewAccount(string username)
     {
+        // #if PGS
         // if (string.IsNullOrEmpty(_currentRecallSessionId))
         // {
         //     PlayGamesPlatform.Instance.RequestRecallAccess(recallAccess =>
@@ -139,6 +144,7 @@ public class PGSRecallManager : MonoBehaviour
         // }
         //
         // StartCoroutine(SendCreateAccountRequest(username));
+        // #endif
     }
 
     private IEnumerator ValidateRecallSession(string sessionId)

@@ -37,6 +37,7 @@ public class Gas : MonoBehaviour
     private float _gasLevel = 5.0f;
     private float _totalDistanceDriven = 0f;
     private Image _gasLevelImage;
+    private PGSController _pgsController;
 
     public float GasLevel => _gasLevel;
 
@@ -47,6 +48,7 @@ public class Gas : MonoBehaviour
     private void Start()
     {
         _gasLevelImage = gasLevelImageObj.GetComponent<Image>();
+        _pgsController = FindObjectOfType<PGSController>();
     }
 
     // Check if there is gas left in the tank.
@@ -59,6 +61,7 @@ public class Gas : MonoBehaviour
         else
         {
             noGasText.SetActive(true);
+            TriggerGasAchivement();
             return false;
         }
     }
@@ -105,6 +108,20 @@ public class Gas : MonoBehaviour
         else
         {
             gasLevelImage.color = _greenColor;
+        }
+    }
+
+    private void TriggerGasAchivement()
+    {
+        if (_pgsController.CurrentSignInStatus == PGSController.PgsSigninStatus.PgsSigninLoggedIn)
+        {
+            var achievementManager = _pgsController.AchievementManager;
+            if (!achievementManager.GetAchievementUnlocked(
+                    PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Gas))
+            {
+                achievementManager.UnlockAchievement(
+                    PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Gas);
+            }
         }
     }
 }

@@ -45,7 +45,7 @@ public class CarMove : MonoBehaviour
     private const int TURBO_SPEED = 2;
 
     // Achievement for going this far
-    private const float ACHIEVEMENT_DISTANCE = 100.0f;
+    private const float ACHIEVEMENT_DISTANCE = 30.0f;
 
     private InputAction _garageAction;
     private InputAction _pgsAction;

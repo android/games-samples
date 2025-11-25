@@ -29,8 +29,8 @@ public class PGSAchievementManager : MonoBehaviour
     {
         // Achievement for driving more than a certain distance
         Tk_Achievement_Distance = 0,
-        // Achievement for purchasing the truck
-        Tk_Achievement_Truck = 1
+        // Achievement running ot of gas
+        Tk_Achievement_Gas = 1
     }
 
     // Internal state object for achievement status and description
@@ -55,7 +55,7 @@ public class PGSAchievementManager : MonoBehaviour
         // _achievementInfo = new AchievementInfo[]
         //     {
         //         new AchievementInfo(GPGSIds.achievement_tk_achievement_drive),
-        //         new AchievementInfo(GPGSIds.achievement_tk_achievement_truck)
+        //         new AchievementInfo(GPGSIds.achievement_tk_achievement_gas)
         //     };
     }
 

@@ -49,7 +49,7 @@ public class AchievementsPageController : MonoBehaviour
         achievementString += GenerateAchievementString(
             PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Distance);
         achievementString += GenerateAchievementString(
-            PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Truck);
+            PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Gas);
         Text achievementText = this.achievementText.GetComponent<Text>();
         achievementText.text = achievementString;
     }
