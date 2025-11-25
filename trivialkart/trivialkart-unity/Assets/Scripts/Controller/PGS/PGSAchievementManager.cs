@@ -63,7 +63,10 @@ public class PGSAchievementManager : MonoBehaviour
     // internal description and unlock status using the achievement data.
     public void LoadAchievements()
     {
-#if PGS
+        if (_achievementInfo == null)
+            return;
+
+        #if PGS
         PlayGamesPlatform.Instance.LoadAchievements((achievements) =>
         {
             foreach (var achievement in achievements)
@@ -91,22 +94,30 @@ public class PGSAchievementManager : MonoBehaviour
                 }
             }
         });
-#endif
+        #endif
     }
 
     public bool GetAchievementUnlocked(TrivialKartAchievements achievementId)
     {
-        // return _achievementInfo[(int)achievementId].achievementUnlocked;
-        return false;
+        if (_achievementInfo == null)
+            return false;
+
+        return _achievementInfo[(int)achievementId].achievementUnlocked;
     }
 
     public string GetAchievementName(TrivialKartAchievements achievementId)
     {
+        if (_achievementInfo == null)
+            return "";
+
         return _achievementInfo[(int)achievementId].achievementName;
     }
 
     public void UnlockAchievement(TrivialKartAchievements achievementId)
     {
+        if(_achievementInfo == null)
+            return;
+
         Social.ReportProgress(_achievementInfo[(int)achievementId].achievementId,
             100.0f, (bool success) =>
             {
