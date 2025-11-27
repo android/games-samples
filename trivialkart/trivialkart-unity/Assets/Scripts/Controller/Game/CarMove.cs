@@ -118,7 +118,7 @@ public class CarMove : MonoBehaviour
         // Checks to see if we are due to update the distance traveled leaderboard
         //_pgsController.UpdateLeaderboard();
 
-        if(_loginPanel.activeSelf)
+        if(_loginPanel != null && _loginPanel.activeSelf)
         {
             // Do not check input if the login panel is active.
             return;
