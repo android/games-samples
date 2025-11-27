@@ -34,6 +34,7 @@ public class CarMove : MonoBehaviour
     private PGSController _pgsController;
     private Gas _gas;
     private Text _odometerText;
+    private GameObject _loginPanel;
     private const float NoVelocity = 0.01f;
     private const float TurboVelocity = 1.5f;
 
@@ -82,6 +83,8 @@ public class CarMove : MonoBehaviour
         
         _boostAction = inputActionAsset.FindAction("Boost");
         _boostAction.Enable();
+
+        _loginPanel = GameObject.Find("DummyLoginPanel");
         
         PlayerPrefs.SetFloat("dist", 0f);
     }
@@ -115,7 +118,12 @@ public class CarMove : MonoBehaviour
         // Checks to see if we are due to update the distance traveled leaderboard
         //_pgsController.UpdateLeaderboard();
 
-        
+        if(_loginPanel.activeSelf)
+        {
+            // Do not check input if the login panel is active.
+            return;
+        }
+
         if (_pgsAction.WasPressedThisFrame())
         {
             _gameManger.OnEnterPGSPageButtonClicked();
