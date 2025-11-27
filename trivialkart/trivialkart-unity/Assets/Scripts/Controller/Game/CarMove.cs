@@ -26,6 +26,7 @@ public class CarMove : MonoBehaviour
 {
     public InputActionAsset inputActionAsset;
     public GameObject odometerLabel;
+    public GameObject recordText;
     public GameObject tapToDriveText;
     public float carSpeed;
 
@@ -34,6 +35,7 @@ public class CarMove : MonoBehaviour
     private PGSController _pgsController;
     private Gas _gas;
     private Text _odometerText;
+    private Text _recordText;
     private GameObject _loginPanel;
     private const float NoVelocity = 0.01f;
     private const float TurboVelocity = 1.5f;
@@ -65,6 +67,7 @@ public class CarMove : MonoBehaviour
         _rigidbody2D = GetComponent<Rigidbody2D>();
         _gas = transform.parent.gameObject.GetComponent<Gas>();
         _odometerText = odometerLabel.GetComponent<Text>();
+        _recordText = recordText.GetComponent<Text>();
         
         _garageAction = inputActionAsset.FindAction("Garage");
         _garageAction.Enable();
@@ -96,6 +99,15 @@ public class CarMove : MonoBehaviour
         PlayerPrefs.SetFloat("dist", newDistance);
         CheckDistanceAchievement(newDistance);
         _odometerText.text = newDistance.ToString("N1", CultureInfo.CurrentCulture);
+
+        float currentRecord = float.Parse(_recordText.text);
+       
+        if(currentRecord > newDistance)
+        {
+            return;
+        }
+        
+        _recordText.text = newDistance.ToString("N1", CultureInfo.CurrentCulture);
     }
     
     private void CheckDistanceAchievement(float newDistance)

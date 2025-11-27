@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
+using System.Globalization;
 
 #if PGS
 using GooglePlayGames;
@@ -71,6 +72,7 @@ public class PGSRecallManager : MonoBehaviour
         var playboardCanvas = GameObject.Find("PlayBoardCanvas");
         _dummyLoginPanel = playboardCanvas.transform.Find("DummyLoginPanel");
         _usernameText = playboardCanvas.transform.Find("UsernameLabel").GetComponent<Text>();
+        _recordText = GameObject.Find("RecordText").GetComponent<Text>();
         _usernameInputField = _dummyLoginPanel.transform.Find("Username").GetComponent<InputField>();
         _loginButton = _dummyLoginPanel.transform.Find("Login").GetComponent<Button>();
         
@@ -166,6 +168,7 @@ public class PGSRecallManager : MonoBehaviour
                 StartProgressUpdateLoop();
 
                 _usernameText.text = response.playerData.username;
+                _recordText.text = response.playerData.distanceTraveled.ToString("N1", CultureInfo.CurrentCulture);;
                 PlayerPrefs.SetInt("coinsOwned", response.playerData.coinsOwned);
                 PlayerPrefs.SetFloat("dist", response.playerData.distanceTraveled);
             }
@@ -184,7 +187,7 @@ public class PGSRecallManager : MonoBehaviour
             recallSessionId = _currentRecallSessionId,
             username = username,
             coinsOwned = PlayerPrefs.GetInt("coinsOwned"),
-            distanceTraveled = PlayerPrefs.GetFloat("dist")
+            distanceTraveled = float.Parse(_recordText.text)
         };
         var jsonPayload = JsonUtility.ToJson(payload);
 
@@ -225,12 +228,12 @@ public class PGSRecallManager : MonoBehaviour
         {
             yield return new WaitForSeconds(UPDATE_INTERVAL_SECONDS);
 
-            float currentDistance = PlayerPrefs.GetFloat("dist", 0f);
+            float currentRecord = float.Parse(_recordText.text);
 
             // Only send an update if the value has changed meaningfully
-            if (Mathf.Abs(currentDistance - _lastDistanceSentToServer) > 0.1f)
+            if (Mathf.Abs(currentRecord - _lastDistanceSentToServer) > 0.1f)
             {
-                StartCoroutine(SendDistanceUpdate(currentDistance));
+                StartCoroutine(SendDistanceUpdate(currentRecord));
             }
         }
     }
