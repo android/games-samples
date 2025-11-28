@@ -85,29 +85,29 @@ public class PGSRecallManager : MonoBehaviour
     /// </summary>
     public void TryRestorePlayerSession()
     {
-        // #if PGS
-        // if (!PlayGamesPlatform.Instance.IsAuthenticated())
-        // {
-        //     Debug.LogError("[PGSRecallManager] User is not authenticated with Play Games.");
-        //     return;
-        // }
-        //
-        // Debug.Log("[PGSRecallManager] Requesting Recall Session ID from Google...");
-        //
-        // PlayGamesPlatform.Instance.RequestRecallAccess(recallAccess =>
-        // {
-        //     if (recallAccess != null)
-        //     {
-        //         _currentRecallSessionId = recallAccess.sessionId;
-        //         Debug.Log($"[PGSRecallManager] Success! Received Session ID: {_currentRecallSessionId[..20]}...");
-        //         StartCoroutine(ValidateRecallSession(_currentRecallSessionId));
-        //     }
-        //     else
-        //     {
-        //         Debug.LogError("[PGSRecallManager] Failed to get Recall Session ID. The recallAccess object was null.");
-        //     }
-        // });
-        // #endif
+        #if PGS
+        if (!PlayGamesPlatform.Instance.IsAuthenticated())
+        {
+            Debug.LogError("[PGSRecallManager] User is not authenticated with Play Games.");
+            return;
+        }
+        
+        Debug.Log("[PGSRecallManager] Requesting Recall Session ID from Google...");
+        
+        PlayGamesPlatform.Instance.RequestRecallAccess(recallAccess =>
+        {
+            if (recallAccess != null)
+            {
+                _currentRecallSessionId = recallAccess.sessionId;
+                Debug.Log($"[PGSRecallManager] Success! Received Session ID: {_currentRecallSessionId[..20]}...");
+                StartCoroutine(ValidateRecallSession(_currentRecallSessionId));
+            }
+            else
+            {
+                Debug.LogError("[PGSRecallManager] Failed to get Recall Session ID. The recallAccess object was null.");
+            }
+        });
+        #endif
     }
 
     private void DummyLogin()
@@ -127,27 +127,27 @@ public class PGSRecallManager : MonoBehaviour
     /// </summary>
     private void CreateNewAccount(string username)
     {
-        // #if PGS
-        // if (string.IsNullOrEmpty(_currentRecallSessionId))
-        // {
-        //     PlayGamesPlatform.Instance.RequestRecallAccess(recallAccess =>
-        //     {
-        //         if (recallAccess != null)
-        //         {
-        //             _currentRecallSessionId = recallAccess.sessionId;
-        //             Debug.Log($"[PGSRecallManager] Success! Received Session ID: {_currentRecallSessionId.Substring(0, 20)}...");
-        //             StartCoroutine(SendCreateAccountRequest(username));
-        //         }
-        //         else
-        //         {
-        //             Debug.LogError("[PGSRecallManager] Failed to get Recall Session ID. The recallAccess object was null.");
-        //         }
-        //     });
-        //     return;
-        // }
-        //
-        // StartCoroutine(SendCreateAccountRequest(username));
-        // #endif
+        #if PGS
+        if (string.IsNullOrEmpty(_currentRecallSessionId))
+        {
+            PlayGamesPlatform.Instance.RequestRecallAccess(recallAccess =>
+            {
+                if (recallAccess != null)
+                {
+                    _currentRecallSessionId = recallAccess.sessionId;
+                    Debug.Log($"[PGSRecallManager] Success! Received Session ID: {_currentRecallSessionId.Substring(0, 20)}...");
+                    StartCoroutine(SendCreateAccountRequest(username));
+                }
+                else
+                {
+                    Debug.LogError("[PGSRecallManager] Failed to get Recall Session ID. The recallAccess object was null.");
+                }
+            });
+            return;
+        }
+        
+        StartCoroutine(SendCreateAccountRequest(username));
+        #endif
     }
 
     private IEnumerator ValidateRecallSession(string sessionId)
@@ -171,7 +171,6 @@ public class PGSRecallManager : MonoBehaviour
                 _usernameText.text = response.playerData.username;
                 _recordText.text = response.playerData.distanceTraveled.ToString("N1", CultureInfo.CurrentCulture);;
                 PlayerPrefs.SetInt("coinsOwned", response.playerData.coinsOwned);
-                PlayerPrefs.SetFloat("dist", response.playerData.distanceTraveled);
             }
             else if (response.status == "NewPlayer")
             {
