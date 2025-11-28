@@ -29,6 +29,7 @@ public class PGSRecallManager : MonoBehaviour
     private InputField _usernameInputField;
     private Button _loginButton;
     private Text _usernameText;
+    private Text _recordText;
 
     // --- JSON Helper Classes ---
     [Serializable]
