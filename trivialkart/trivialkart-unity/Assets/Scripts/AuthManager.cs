@@ -44,15 +44,16 @@ public class AuthManager : MonoBehaviour
     private Exception googleSignInException = null;
     private string authCodeToExchange = null;
 #endif
-    
+
+    public string serverUrl;
 #if PGS_V1
     private const string verify_and_link_google = "http://192.168.0.102:3000/verify_and_link_google";
     private const string verify_and_link_facebook = "http://192.168.0.102:3000/verify_and_link_facebook";
     private const string post_count = "http://192.168.0.102:3000/post_count";
 #elif PGS_V2
-    private const string exchange_authcode_and_link = "http://192.168.0.105:3000/exchange_authcode_and_link";
-    private const string verify_and_link_facebook = "http://192.168.0.105:3000/verify_and_link_facebook";
-    private const string post_count = "http://192.168.0.105:3000/post_count";
+    private string exchange_authcode_and_link;
+    private string verify_and_link_facebook;
+    private string post_count;
 #endif
 
     [System.Serializable]
@@ -89,6 +90,10 @@ public class AuthManager : MonoBehaviour
 
     private void Awake()
     {
+        exchange_authcode_and_link = serverUrl + "/exchange_authcode_and_link";
+        verify_and_link_facebook = serverUrl + "/verify_and_link_facebook";
+        post_count = serverUrl + "/post_count";
+        
         // UI setup
         startPanel = GameObject.Find("Canvas").transform.Find("StartPanel").gameObject;
         loginButtonsPanel = GameObject.Find("Canvas").transform.Find("LoginPanel").gameObject;
@@ -121,7 +126,7 @@ public class AuthManager : MonoBehaviour
         statusText.text = "Initializing Google Sign-In...";
         GoogleSignIn.Configuration = new GoogleSignInConfiguration
         {
-            WebClientId = "",
+            WebClientId = "1044312393953-eq0gni71js6od3c4cqjjc2i167men5qq.apps.googleusercontent.com",
             ForceTokenRefresh = true,
             
             UseGameSignIn = false,

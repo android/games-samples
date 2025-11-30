@@ -1413,6 +1413,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2311910cc97440aebb79108e9bf4d5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AuthManager
+  serverUrl: http://192.168.0.115:3000
 --- !u!1 &1162833870
 GameObject:
   m_ObjectHideFlags: 0
