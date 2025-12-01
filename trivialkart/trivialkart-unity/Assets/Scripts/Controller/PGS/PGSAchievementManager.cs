@@ -138,6 +138,9 @@ public class PGSAchievementManager : MonoBehaviour
 
     public void IncrementAchievement(TrivialKartAchievements achievementId, int progress)
     {
+        if(_achievementInfo == null)
+            return;
+            
         PlayGamesPlatform.Instance.IncrementAchievement(
             _achievementInfo[(int)achievementId].achievementId, progress, (bool success) => {
                     if (!success)
