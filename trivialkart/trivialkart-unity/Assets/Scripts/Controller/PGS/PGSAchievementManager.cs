@@ -30,7 +30,9 @@ public class PGSAchievementManager : MonoBehaviour
         // Achievement for driving more than a certain distance
         Tk_Achievement_Distance = 0,
         // Achievement running ot of gas
-        Tk_Achievement_Gas = 1
+        Tk_Achievement_Gas = 1,
+        // Achievement playing the game      
+        Tk_Achievement_Play = 2
     }
 
     // Internal state object for achievement status and description
@@ -55,7 +57,8 @@ public class PGSAchievementManager : MonoBehaviour
         // _achievementInfo = new AchievementInfo[]
         //     {
         //         new AchievementInfo(GPGSIds.achievement_tk_achievement_drive),
-        //         new AchievementInfo(GPGSIds.achievement_tk_achievement_gas)
+        //         new AchievementInfo(GPGSIds.achievement_tk_achievement_gas),
+        //         new AchievementInfo(GPGSIds.achievement_tk_achievement_play)
         //     };
     }
 
@@ -132,4 +135,18 @@ public class PGSAchievementManager : MonoBehaviour
                 }
             });
     }
+
+    public void IncrementAchievement(TrivialKartAchievements achievementId, int progress)
+    {
+        PlayGamesPlatform.Instance.IncrementAchievement(
+            _achievementInfo[(int)achievementId].achievementId, progress, (bool success) => {
+                    if (!success)
+            {
+                Debug.Log("Increment achievement failed for " +
+                            _achievementInfo[(int)achievementId].achievementId);
+            }
+        });
+    }
+
+    public static void ShowPGSAchievements() => Social.ShowAchievementsUI();
 }

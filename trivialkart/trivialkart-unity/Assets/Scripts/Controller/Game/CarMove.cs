@@ -185,7 +185,11 @@ public class CarMove : MonoBehaviour
 
     private void Drive()
     {
-        tapToDriveText.SetActive(false);
+        if (tapToDriveText.activeSelf)
+        {
+            CheckPlayAchievement();
+            tapToDriveText.SetActive(false);
+        }
         _rigidbody2D.AddForce(new Vector2(carSpeed, 0));
     }
 
@@ -193,5 +197,16 @@ public class CarMove : MonoBehaviour
     {
         tapToDriveText.SetActive(false);
         _rigidbody2D.AddForce(new Vector2(carSpeed * TurboVelocity, 0));
+    }
+
+    private void CheckPlayAchievement()
+    {
+        var achievementManager = _pgsController.AchievementManager;
+        if(!achievementManager.GetAchievementUnlocked(
+            PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Play))
+        {
+            // Increase "Play" achievement when playing the game. Once per game.
+            achievementManager.IncrementAchievement(PGSAchievementManager.TrivialKartAchievements.Tk_Achievement_Play, 1);
+        }
     }
 }
