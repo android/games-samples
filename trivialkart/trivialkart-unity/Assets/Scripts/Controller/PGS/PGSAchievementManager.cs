@@ -140,7 +140,8 @@ public class PGSAchievementManager : MonoBehaviour
     {
         if(_achievementInfo == null)
             return;
-            
+
+        #if PGS
         PlayGamesPlatform.Instance.IncrementAchievement(
             _achievementInfo[(int)achievementId].achievementId, progress, (bool success) => {
                     if (!success)
@@ -149,6 +150,7 @@ public class PGSAchievementManager : MonoBehaviour
                             _achievementInfo[(int)achievementId].achievementId);
             }
         });
+        #endif
     }
 
     public static void ShowPGSAchievements() => Social.ShowAchievementsUI();
