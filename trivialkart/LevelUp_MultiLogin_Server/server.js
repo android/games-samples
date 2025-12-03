@@ -58,10 +58,10 @@ let nextInGameAccountId = 1001;
 // This endpoint receives an ID Token directly from the client.
 // ---
 app.post('/verify_and_link_google', async (req, res) => {
-    const { idToken, playerID } = req.body;
+    const { idToken } = req.body;
 
-    if (!idToken || !playerID) {
-        return res.status(400).json({ error: "idToken and playerId are required" });
+    if (!idToken) {
+        return res.status(400).json({ error: "idToken is required" });
     }
 
     try {
@@ -73,34 +73,40 @@ app.post('/verify_and_link_google', async (req, res) => {
         const payload = ticket.getPayload();
         const email = payload.email;
 
-        console.log(`(PGS v1) Successfully verified idToken for: ${email}`);
-        console.warn(`(PGS v1) Using playerID from client: ${playerID}`);
+        // 1. Get the Google Subject ID (OpenID)
+        const openId = payload.sub;
 
-        // 3. Find or create the in-game account using GAIA ID
-        let inGameAccountID
-        if (userDatabase.has(playerID)) {
+        // 2. Create the consistent DB Key (matches PGS v2 implementation)
+        const dbKey = `google-${openId}`;
+
+        console.log(`(PGS v1) Successfully verified idToken for: ${email}, OpenID: ${openId}`);
+
+        // 3. Find or create the in-game account using the DB Key
+        let inGameAccountID;
+
+        if (userDatabase.has(dbKey)) {
             // User already exists, retrieve their ID
-            inGameAccountID = userDatabase.get(playerID);
+            inGameAccountID = userDatabase.get(dbKey);
             console.log(`(PGS v1) Existing user. In-Game ID: ${inGameAccountID}`);
         } else {
             // New user, create a new in-game ID and store it
             inGameAccountID = `ingame-${nextInGameAccountId++}`;
 
-            userDatabase.set(playerID, inGameAccountID);
+            userDatabase.set(dbKey, inGameAccountID);
             inGameDatabase.set(inGameAccountID, 0);
 
             console.log(`(PGS v1) New user. Created In-Game ID: ${inGameAccountID}`);
         }
 
         const tokenPayload = {
-            playerID: playerID,
+            playerID: dbKey, // Use the dbKey as the playerID for consistency
             inGameAccountID: inGameAccountID
         };
         const customJwtToken = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
 
         // 4. Send the success response back to the client
         res.status(200).json({
-            playerID: playerID,
+            playerID: dbKey,
             email: email,
             inGameAccountID: inGameAccountID,
             inGameCount : inGameDatabase.get(inGameAccountID),

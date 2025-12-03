@@ -46,15 +46,10 @@ public class AuthManager : MonoBehaviour
 #endif
 
     public string serverUrl;
-#if PGS_V1
-    private const string verify_and_link_google = "http://192.168.0.102:3000/verify_and_link_google";
-    private const string verify_and_link_facebook = "http://192.168.0.102:3000/verify_and_link_facebook";
-    private const string post_count = "http://192.168.0.102:3000/post_count";
-#elif PGS_V2
+    private string verify_and_link_google;
     private string exchange_authcode_and_link;
     private string verify_and_link_facebook;
     private string post_count;
-#endif
 
     [System.Serializable]
     private class GoogleAuthRequest
@@ -90,8 +85,9 @@ public class AuthManager : MonoBehaviour
 
     private void Awake()
     {
-        exchange_authcode_and_link = serverUrl + "/exchange_authcode_and_link";
+        verify_and_link_google = serverUrl + "/verify_and_link_google";
         verify_and_link_facebook = serverUrl + "/verify_and_link_facebook";
+        exchange_authcode_and_link = serverUrl + "/exchange_authcode_and_link";
         post_count = serverUrl + "/post_count";
         
         // UI setup
@@ -126,17 +122,12 @@ public class AuthManager : MonoBehaviour
         statusText.text = "Initializing Google Sign-In...";
         GoogleSignIn.Configuration = new GoogleSignInConfiguration
         {
-            WebClientId = "1044312393953-eq0gni71js6od3c4cqjjc2i167men5qq.apps.googleusercontent.com",
+            WebClientId = "",
             ForceTokenRefresh = true,
             
             UseGameSignIn = false,
             RequestEmail = true,
             RequestAuthCode = true,
-            
-            // AdditionalScopes = new List<string>
-            // {
-            //     "https://www.googleapis.com/auth/games_lite"
-            // }
         };
 
         PlayGamesPlatform.DebugLogEnabled = true;
@@ -235,7 +226,7 @@ public class AuthManager : MonoBehaviour
         {
             Debug.LogWarning("Not authenticated with PGS. Cannot unlock achievement.");
             statusText.text = "Error: Not signed in to PGS.";
-            SignInToPlayGamesServices();
+            //SignInToPlayGamesServices();
             return;
         }
 
@@ -312,13 +303,12 @@ public class AuthManager : MonoBehaviour
         {
             statusText.text = "PGS Sign-in Successful! Getting Server Code...";
             string idToken = PlayGamesPlatform.Instance.GetIdToken();
-            string playerID = PlayGamesPlatform.Instance.GetUserId();
 
             if (!string.IsNullOrEmpty(idToken))
             {
                 Debug.Log($"PGS: Retrieved Server Auth Code. Sending to backend...");
                 statusText.text = "Connecting to game server...";
-                StartCoroutine(VerifyAndLinkGoogleAccount(idToken, playerID));
+                StartCoroutine(VerifyAndLinkGoogleAccount(idToken));
             }
             else
             {
@@ -335,9 +325,9 @@ public class AuthManager : MonoBehaviour
         }
     }
     
-    private IEnumerator VerifyAndLinkGoogleAccount(string idToken, string playerID)
+    private IEnumerator VerifyAndLinkGoogleAccount(string idToken)
     {
-        GoogleAuthRequest requestData = new GoogleAuthRequest { idToken = idToken, playerID = playerID };
+        GoogleAuthRequest requestData = new GoogleAuthRequest { idToken = idToken };
         string jsonPayload = JsonUtility.ToJson(requestData);
         byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
 
