@@ -811,7 +811,7 @@ PlayerSettings:
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
   scriptingDefineSymbols:
-    Android: NO_IAP;PLAY_GAMES_SERVICES
+    Android: NO_IAP
     Standalone: NO_IAP
   additionalCompilerArguments: {}
   platformArchitecture: {}
