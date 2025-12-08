@@ -40,8 +40,7 @@ public class PGSController : MonoBehaviour
     public GameObject friendsPage;
     public GameObject leaderboardPage;
     public GameObject signinPage;
-    public InputField ageString;
-    public Text ageGateText;
+    public GameObject ageGatePage;
 
 #if PLAY_GAMES_SERVICES
     private FriendsPageController _friendsPageController;
@@ -81,6 +80,10 @@ public class PGSController : MonoBehaviour
 #endif
         CurrentSignInStatus = PgsSigninStatus.PgsSigninNotLoggedIn;
         PgsEnabled = true;
+        
+#if AGE_GATE
+    ageGatePage.gameObject.SetActive(true);
+#endif
 #else
         CurrentSignInStatus = PgsSigninStatus.PgsSigninDisabled;
         PgsEnabled = false;
@@ -131,7 +134,7 @@ public class PGSController : MonoBehaviour
         _localSaveDataReady = true;
     }
 
-    public void RunStartupSignin()
+    private void RunStartupSignin()
     {
         PlayGamesPlatform.Instance.Authenticate(ProcessAuthentication);
     }
@@ -162,13 +165,18 @@ public class PGSController : MonoBehaviour
 
     public void OnAgeValueChange()
     {
+        InputField ageString = ageGatePage.transform.Find("Username").GetComponent<InputField>();
         Debug.Log("OnAgeValueChange: " + ageString.text);
         _enteredAge = int.Parse(ageString.text);
     }
 
     public void AgeNextButton()
     {
-        ageString.transform.parent.gameObject.SetActive(false);
+        ageGatePage.gameObject.SetActive(false);
+        
+        var playboardCanvas = GameObject.Find("PlayBoardCanvas");
+        Text ageGateText = playboardCanvas.transform.Find("AgeGateLabel").GetComponent<Text>();
+        
         if (_enteredAge > 13)
         {
             RunManualSignin();

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if !RECALL_API
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -30,6 +29,7 @@ using UnityEditor;
 
 public class PGSCloudSaveManager : MonoBehaviour
 {
+#if !RECALL_API
     private const string CloudSaveFilename = "TKCloud.save";
 
     public enum PgsCloudSaveStatus
@@ -303,5 +303,5 @@ public class PGSCloudSaveManager : MonoBehaviour
         }
     }
 #endif
-}
 #endif
+}

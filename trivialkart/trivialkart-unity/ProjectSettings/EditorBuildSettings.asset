@@ -6,8 +6,8 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/TrivialKartScene_RecallAPI.unity
-    guid: b5570534c28ad4f3fa2167a847372118
+    path: Assets/Scenes/TrivialKartScene_AgeGate.unity
+    guid: 49950609d256442488fa11a9b773e7ed
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: c44a0d3d8804e4fd887590aa86260552, type: 3}
   m_UseUCBPForAssetBundles: 0

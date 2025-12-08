@@ -13,7 +13,6 @@
 // limitations under the License.
 
 using UnityEditor;
-using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -29,12 +28,15 @@ public static class EditorMenuBuildOptions
         "TrivialKart/BuildOptions/Build with Play Integrity";
     private const string RECALL_API_MENU_NAME =
         "TrivialKart/PlayGameServices/Recall API";
+    private const string AGE_GATE_MENU_NAME = 
+        "TrivialKart/PlayGameServices/Age Gate Example";
 
     private static BuildMenuItem _iapItem;
     private static BuildMenuItem _playGamesPCItem;
     private static BuildMenuItem _playGamesServicesItem;
     private static BuildMenuItem _playIntegrityItem;
     private static BuildMenuItem _recallAPI;
+    private static BuildMenuItem _ageGate;
 
     private static IList<BuildMenuItem> _buildItems;
     
@@ -44,7 +46,8 @@ public static class EditorMenuBuildOptions
         "PLAY_GAMES_PC",
         "PLAY_GAMES_SERVICES",
         "PLAY_INTEGRITY",
-        "RECALL_API"
+        "RECALL_API",
+        "AGE_GATE"
     };
 
     // InitializeOnLoad attribute means this is called on load
@@ -60,6 +63,8 @@ public static class EditorMenuBuildOptions
             EditorPrefs.GetBool(PLAY_INTEGRITY_MENU_NAME, false), "PLAY_INTEGRITY");
         _recallAPI = new BuildMenuItem(RECALL_API_MENU_NAME,
             EditorPrefs.GetBool(RECALL_API_MENU_NAME, false), "RECALL_API");
+        _ageGate = new BuildMenuItem(AGE_GATE_MENU_NAME,
+            EditorPrefs.GetBool(AGE_GATE_MENU_NAME, false), "AGE_GATE");
 
         _buildItems = new List<BuildMenuItem>()
         {
@@ -67,7 +72,8 @@ public static class EditorMenuBuildOptions
             _playGamesPCItem,
             _playGamesServicesItem,
             _playIntegrityItem,
-            _recallAPI
+            _recallAPI,
+            _ageGate
         };
 
         // Delaying until first editor tick so that the menu
@@ -139,20 +145,35 @@ public static class EditorMenuBuildOptions
             SetBuildDirectives();
         }
     }
+    
+    [MenuItem(AGE_GATE_MENU_NAME)]
+    private static void ToggleAgeGateAction()
+    {
+        if (_playGamesServicesItem.IsEnabled)
+        {
+            _ageGate.IsEnabled = !_ageGate.IsEnabled;
+            UpdateMenu(_ageGate);
+            SetBuildDirectives();
+        }
+    }
 
     [MenuItem(RECALL_API_MENU_NAME, true)]
     private static bool ValidateRecallAPIAction()
     {
-        // This can be called before the static constructor finishes
-        if (_playGamesServicesItem == null)
-        {
-            // Fallback to reading the preference directly
-            return EditorPrefs.GetBool(PLAY_GAMES_SERVICES_MENU_NAME, false);
-        }
-        // Enable the "Recall API" option only if "Play Games Services" is enabled
-        return _playGamesServicesItem.IsEnabled;
+        return isPlayGameServicesEnabled();
     }
     
+    [MenuItem(AGE_GATE_MENU_NAME, true)]
+    private static bool ValidateAgeGateAction()
+    {
+        return isPlayGameServicesEnabled();
+    }
+
+    private static bool isPlayGameServicesEnabled()
+    {
+        return _playGamesServicesItem == null ? EditorPrefs.GetBool(PLAY_GAMES_SERVICES_MENU_NAME, false) : _playGamesServicesItem.IsEnabled;
+    }
+
     private static void PerformAction(BuildMenuItem buildItem)
     {
         buildItem.IsEnabled = !buildItem.IsEnabled;

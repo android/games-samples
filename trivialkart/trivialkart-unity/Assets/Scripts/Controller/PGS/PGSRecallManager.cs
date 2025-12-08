@@ -11,10 +11,11 @@ public class PGSRecallManager : MonoBehaviour
 {
 #if RECALL_API
     // --- Server Configuration ---
-    private const string SERVER_BASE_URL = "http://192.168.0.102:3000"; // Update with your IP
-    private const string RECALL_SESSION_ENDPOINT = SERVER_BASE_URL + "/recall-session";
-    private const string CREATE_ACCOUNT_ENDPOINT = SERVER_BASE_URL + "/create-account";
-    private const string UPDATE_PROGRESS_ENDPOINT = SERVER_BASE_URL + "/update-progress";
+    public string SERVER_BASE_URL; // Update with your IP
+    private string RECALL_SESSION_ENDPOINT;
+    private string CREATE_ACCOUNT_ENDPOINT;
+    private string UPDATE_PROGRESS_ENDPOINT;
+    private string LIST_ACCOUNTS_ENDPOINT;
     
     private string _currentRecallSessionId;
     private string _playerRecallToken;
@@ -22,11 +23,15 @@ public class PGSRecallManager : MonoBehaviour
     private float _lastDistanceSentToServer = -1f;
     private const float UPDATE_INTERVAL_SECONDS = 5.0f;
     
-    private Transform _dummyLoginPanel;
+    private Transform _pgsAuthPanel;
+    private Transform _inGameAccountPanel;
+    private Transform _loadingText;
     private InputField _usernameInputField;
     private Button _loginButton;
+    private Button _createAccountButton;
     private Text _usernameText;
     private Transform _waitScreen;
+    private Transform _signInOptions;
     
     [Serializable]
     public class ServerResponse
@@ -65,13 +70,29 @@ public class PGSRecallManager : MonoBehaviour
     
     private void Start()
     {
+        RECALL_SESSION_ENDPOINT = SERVER_BASE_URL + "/recall-session";
+        CREATE_ACCOUNT_ENDPOINT = SERVER_BASE_URL + "/create-account";
+        CREATE_ACCOUNT_ENDPOINT = SERVER_BASE_URL + "/create-account";
+        UPDATE_PROGRESS_ENDPOINT = SERVER_BASE_URL + "/update-progress";
+        LIST_ACCOUNTS_ENDPOINT = SERVER_BASE_URL + "/list-linked-accounts";
+
         var playboardCanvas = GameObject.Find("PlayBoardCanvas");
-        _dummyLoginPanel = playboardCanvas.transform.Find("DummyLoginPanel");
+        _pgsAuthPanel = playboardCanvas.transform.Find("PGSAuth");
         _usernameText = playboardCanvas.transform.Find("UsernameLabel").GetComponent<Text>();
-        _usernameInputField = _dummyLoginPanel.transform.Find("Username").GetComponent<InputField>();
-        _loginButton = _dummyLoginPanel.transform.Find("Login").GetComponent<Button>();
-        _waitScreen = _dummyLoginPanel.transform.Find("WaitScreen");
-        
+        _usernameInputField = _pgsAuthPanel.transform.Find("InGameAccountPanel/Username").GetComponent<InputField>();
+        _loginButton = _pgsAuthPanel.transform.Find("InGameAccountPanel/Login").GetComponent<Button>();
+        _waitScreen = _pgsAuthPanel.transform.Find("AuthWaitScreen");
+        _loadingText = _waitScreen.transform.Find("LoadingText");
+        _signInOptions = _waitScreen.transform.Find("SignInOptions");
+        _inGameAccountPanel = _pgsAuthPanel.transform.Find("InGameAccountPanel");
+        _createAccountButton = _signInOptions.transform.Find("CreateAccount").GetComponent<Button>();
+
+        _createAccountButton.onClick.AddListener(() =>
+        {
+            _inGameAccountPanel.gameObject.SetActive(true);
+            _signInOptions.gameObject.SetActive(false);
+        });
+
         _loginButton.onClick.AddListener(DummyLogin);
     }
 
@@ -99,7 +120,6 @@ public class PGSRecallManager : MonoBehaviour
             }
             else
             {
-                _waitScreen.gameObject.SetActive(false);
                 Debug.LogError("[PGSRecallManager] Failed to get Recall Session ID. The recallAccess object was null.");
             }
         });
@@ -157,7 +177,7 @@ public class PGSRecallManager : MonoBehaviour
 
             if (response.status == "AccountFound")
             {
-                _dummyLoginPanel.gameObject.SetActive(false);
+                _pgsAuthPanel.gameObject.SetActive(false);
                 Debug.Log($"[PGSRecallManager] Welcome back, {response.playerData.username}!");
                 
                 _playerRecallToken = response.playerRecallToken;
@@ -166,11 +186,15 @@ public class PGSRecallManager : MonoBehaviour
                 _usernameText.text = response.playerData.username;
                 PlayerPrefs.SetInt("coinsOwned", response.playerData.coinsOwned);
                 PlayerPrefs.SetFloat("dist", response.playerData.distanceTraveled);
+                _loadingText.gameObject.SetActive(false);
             }
             else if (response.status == "NewPlayer")
             {
                 Debug.Log("[PGSRecallManager] This is a new player. Showing account creation UI...");
-                _waitScreen.gameObject.SetActive(false);
+                PlayerPrefs.SetInt("coinsOwned", 0);
+                PlayerPrefs.SetFloat("dist", 0f);
+                _loadingText.gameObject.SetActive(false);
+                _signInOptions.gameObject.SetActive(true);
             }
         });
     }
@@ -191,7 +215,7 @@ public class PGSRecallManager : MonoBehaviour
             var response = JsonUtility.FromJson<ServerResponse>(responseJson);
             if(response.status == "AccountCreated")
             {
-                _dummyLoginPanel.gameObject.SetActive(false);
+                _pgsAuthPanel.gameObject.SetActive(false);
                 Debug.Log($"[PGSRecallManager] New account created for {response.playerData.username}! Welcome!");
                 
                 // ***MODIFIED***: Store the token and start the update loop
