@@ -38,7 +38,7 @@ By using this `sub` value as the key in your database (e.g., `google-123456789`)
 1.  **Install Dependencies**:
 
     ```bash
-    npm install express google-auth-library jsonwebtoken dotenv
+    npm install express google-auth-library jsonwebtoken dotenv axios
     ```
 
 2.  **Configure Environment**: Create a `.env` file in the same directory as `server.js`:

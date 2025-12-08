@@ -1,6 +1,7 @@
 const express = require('express');
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
 
 require('dotenv').config();
 
@@ -206,8 +207,8 @@ app.post('/verify_and_link_facebook', async (req, res) => {
         // 1. Verify the client's token by calling Facebook's debug_token endpoint
         const debugUrl = `https://graph.facebook.com/debug_token?input_token=${accessToken}&access_token=${FB_APP_ACCESS_TOKEN}`;
 
-        const debugResponse = await fetch(debugUrl);
-        const debugData = await debugResponse.json();
+        const debugResponse = await axios.get(debugUrl);
+        const debugData = debugResponse.data;
 
         if (!debugData.data || !debugData.data.is_valid) {
             console.error("Facebook token is invalid:", debugData);

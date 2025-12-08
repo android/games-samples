@@ -46,6 +46,7 @@ public class AuthManager : MonoBehaviour
 #endif
 
     public string serverUrl;
+    public string webClientId;
     private string verify_and_link_google;
     private string exchange_authcode_and_link;
     private string verify_and_link_facebook;
@@ -56,7 +57,6 @@ public class AuthManager : MonoBehaviour
     {
 #if PGS_V1
         public string idToken;
-        public string playerID;
 #elif PGS_V2
         public string authCode;
 #endif
@@ -122,7 +122,7 @@ public class AuthManager : MonoBehaviour
         statusText.text = "Initializing Google Sign-In...";
         GoogleSignIn.Configuration = new GoogleSignInConfiguration
         {
-            WebClientId = "",
+            WebClientId = webClientId,
             ForceTokenRefresh = true,
             
             UseGameSignIn = false,
