@@ -11,6 +11,7 @@ cloud save
 * Play Integrity for receiving integrity signals about device integrity
 and Play license status
 * The Input SDK for Google Play Games for PC
+* Migration of In Game accounts from PGS v1 to v2 with OpenID 
 
 ## Pre-requisites
 
@@ -293,6 +294,19 @@ once per play session. The summary results string is displayed near the top of t
 Note that in a real game, you would not directly return the decrypted verdict information,
 but communicate the results in a way that makes sense for your game. For simplicity, this
 sample expects the raw verdict json.
+
+
+
+## PGS v1 to v2 Migration
+
+This sample implements the migration path from the legacy Google Play Games Services (PGS) v1 authentication flow to the secure, modern PGS v2 OAuth 2.0 flow. It provides a complete solution using a Node.js/Express backend (server.js) and a Unity C# client (AuthManager.cs).
+
+The backend securely verifies third-party tokens (Google Auth Code, Facebook Access Token) and issues a custom, time-limited JSON Web Token (JWT) for all subsequent authenticated API calls.
+
+For complete documentation, including the required server-side setup, please refer to the server's README file located in the project at
+* **[trivialkart/trivialkart-auth-server](/trivialkart/trivialkart-auth-server)**
+
+
 
 ## Building for Google Play Games
 
