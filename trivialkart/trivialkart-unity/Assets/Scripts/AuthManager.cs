@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using UnityEngine.Networking;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using TMPro;
 
@@ -14,7 +15,7 @@ using GooglePlayGames.BasicApi;
 #endif
 
 #if PGS_V2
-using Google; // From Google Sign-In plugin
+using Google;
 using System.Threading.Tasks;
 #endif
 
@@ -126,7 +127,7 @@ public class AuthManager : MonoBehaviour
         statusText.text = "Initializing Google Sign-In...";
         GoogleSignIn.Configuration = new GoogleSignInConfiguration
         {
-            WebClientId = "1044312393953-eq0gni71js6od3c4cqjjc2i167men5qq.apps.googleusercontent.com",
+            WebClientId = "",
             ForceTokenRefresh = true,
             
             UseGameSignIn = false,
@@ -524,7 +525,37 @@ public class AuthManager : MonoBehaviour
 #if PGS_V1
         PlayGamesPlatform.Instance.Authenticate(ProcessAuthenticationResult, false);
 #elif PGS_V2
-        // This is safe because OnGoogleSignInComplete now dispatches to Update()
+        Type signInType = typeof(GoogleSignIn);
+        var fields = signInType.GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+
+        foreach (var field in fields)
+        {
+            if (field.FieldType == signInType)
+            {
+                // Found it! This is the singleton instance. Destroy it.
+                field.SetValue(null, null);
+                Debug.Log($"[Fix] Successfully reset GoogleSignIn instance field: {field.Name}");
+            }
+        }
+
+        // --- 2. DEFINE NEW CONFIGURATION ---
+        GoogleSignIn.Configuration = new GoogleSignInConfiguration
+        {
+            WebClientId = "",
+            ForceTokenRefresh = true,
+            UseGameSignIn = false,
+            RequestEmail = true,
+            RequestAuthCode = true,
+        
+            // Triggers the "This app wants access to Play Games" consent screen
+            AdditionalScopes = new List<string>
+            {
+                "https://www.googleapis.com/auth/games_lite"
+            }
+        };
+
+        // --- 3. SIGN IN ---
+        // This will now successfully create a NEW instance with the NEW config
         GoogleSignIn.DefaultInstance.SignIn().ContinueWith(OnGoogleSignInComplete);
 #endif
     }
