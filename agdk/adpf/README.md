@@ -2,7 +2,7 @@
 
 This sample demonstrates use of the [Adaptive performance APIs](https://developer.android.com/games/optimize/adpf).
 
-Using these APIs, a game can:
+Using these APIs, a game can: 
 
 - Monitor the device's thermal throttling status and [dynamically change its workload in response
 - Give the OS performance hints about critical thead workloads to permit scheduling optimization
