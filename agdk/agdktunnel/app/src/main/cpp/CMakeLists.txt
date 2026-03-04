@@ -22,7 +22,7 @@ find_package(oboe REQUIRED CONFIG)
 find_package(game-activity REQUIRED CONFIG)
 find_package(games-controller REQUIRED CONFIG)
 find_package(games-frame-pacing REQUIRED CONFIG)
-find_package(com.google.android.gms.gni.c REQUIRED CONFIG)
+find_package(com.google.android.gms.games.v2.c REQUIRED CONFIG)
 
 # Set the base dir
 set(GAMESDK_BASE_DIR "../../../../..")
@@ -152,7 +152,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 # add lib dependencies
 target_link_libraries(${CMAKE_PROJECT_NAME}
-     PUBLIC com.google.android.gms.gni.c::gni_shared
+     PUBLIC com.google.android.gms.games.v2.c::games_static
      android
      atomic
      c++
@@ -178,3 +178,5 @@ else()
 
     target_link_libraries(${CMAKE_PROJECT_NAME} playcore)
 endif()
+
+target_link_options(${CMAKE_PROJECT_NAME} PRIVATE "-Wl,-z,max-page-size=16384")
