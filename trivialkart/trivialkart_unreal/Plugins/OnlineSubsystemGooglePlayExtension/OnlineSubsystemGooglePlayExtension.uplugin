@@ -1,0 +1,45 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "OnlineSubsystemGooglePlayExtension",
+	"Description": "Extension plugin to use Google Play Game Services",
+	"Category": "Online",
+	"CreatedBy": "Google",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"SupportedTargetPlatforms": [
+		"Android"
+	],
+	"Modules": [
+		{
+			"Name": "OnlineSubsystemGooglePlayExtension",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"PlatformAllowList" :
+			[
+				"Android"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "OnlineSubsystemGooglePlay",
+			"Enabled": true
+		},
+		{
+			"Name": "OnlineSubsystem",
+			"Enabled": true
+		},
+		{
+			"Name": "AndroidPermission",
+			"Enabled": true
+		}
+	]
+}

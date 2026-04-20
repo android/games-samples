@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root xmlns:android="http://schemas.android.com/apk/res/android">
+    <init>
+        <log text="GooglePlayExtension UPL Init"/>
+    </init>
+
+    <buildGradleAdditions>
+        <insert>
+            dependencies {
+            implementation "com.google.android.gms:play-services-tasks:18.0.2"
+            }
+        </insert>
+    </buildGradleAdditions>
+
+    <gameActivityImportAdditions>
+        <insert>
+            import com.google.android.gms.games.PlayGames;
+            import com.google.android.gms.games.SnapshotsClient;
+            import com.google.android.gms.games.snapshot.Snapshot;
+            import com.google.android.gms.games.snapshot.SnapshotMetadata;
+            import com.google.android.gms.games.snapshot.SnapshotMetadataChange;
+            import java.io.IOException;
+            import com.google.android.gms.games.PlayersClient;
+            import com.google.android.gms.games.Player;
+            import com.google.android.gms.games.PlayerBuffer;
+            import com.google.android.gms.games.FriendsResolutionRequiredException;
+            import android.app.PendingIntent;
+            import android.content.IntentSender;
+            import android.content.Intent;
+            import android.app.Activity;
+            import com.google.android.gms.games.PlayerStatsClient;
+            import com.google.android.gms.games.stats.PlayerStats;
+            import com.google.android.gms.games.EventsClient;
+            import android.graphics.Bitmap;
+            import android.graphics.BitmapFactory;
+            import com.google.android.gms.tasks.Task;
+            import com.google.android.gms.tasks.TaskCompletionSource;
+        </insert>
+    </gameActivityImportAdditions>
+
+    <gameActivityClassAdditions>
+        <insert>
+            // --- Google Play V2 Extension Start ---
+
+            public native void nativeOnSavedGamesUIClosed(boolean bSelected, String snapshotName);
+            public native void nativeOnGPGSaveComplete(long taskPtr, boolean success, String msg);
+            public native void nativeOnGPGLoadComplete(long taskPtr, boolean success, byte[] data, String msg);
+            public native void nativeOnRecallIdReceived(long taskPtr, boolean success, String sessionId, String errorMsg);
+            public native void nativeOnReadFriendsListComplete(long taskPtr, boolean success, String errorMsg, String[] friendIds, String[] friendNames, String[] friendAvatars);
+            public native void nativeOnProfileUIClosed(long taskPtr);
+            public native void nativeOnPlayerStatsReceived(long taskPtr, boolean bSuccess, String errorMsg, float avgSessionLength, int daysSinceLastPlayed, int numPurchases, int numSessions, float sessionPercentile, float spendPercentile);
+            
+            private byte[] gpgMetadataCoverImage = null;
+            private String gpgMetadataDescription = "";
+            private long gpgMetadataPlayedTime = -1;
+            private long gpgMetadataProgressValue = -1;
+            
+            private static final int RC_SAVED_GAMES = 9009;
+
+            public void AndroidThunkJava_ShowSavedGamesUI(String title, boolean allowAdd, boolean allowDelete, int maxSaves) {
+                PlayGames.getSnapshotsClient(this)
+                    .getSelectSnapshotIntent(title, allowAdd, allowDelete, maxSaves)
+                    .addOnSuccessListener(intent -&gt; {
+                        startActivityForResult(intent, RC_SAVED_GAMES);
+                    })
+                    .addOnFailureListener(e -&gt; {
+                        android.util.Log.e("UE", "Failed to show Saved Games UI: " + e.toString());
+                        nativeOnSavedGamesUIClosed(false, "");
+                    });
+            }
+
+            public void AndroidThunkJava_SetSnapshotMetadata(byte[] coverImage, String description, long playedTime, long progress) {
+                gpgMetadataCoverImage = coverImage;
+                gpgMetadataDescription = description;
+                gpgMetadataPlayedTime = playedTime;
+                gpgMetadataProgressValue = progress;
+            }
+
+            private static final int MAX_SNAPSHOT_RESOLVE_RETRIES = 10;
+
+            private Task&lt;Snapshot&gt; processSnapshotOpenResult(SnapshotsClient.DataOrConflict&lt;Snapshot&gt; result, final int retryCount) {
+                if (!result.isConflict()) {
+                    TaskCompletionSource&lt;Snapshot&gt; source = new TaskCompletionSource&lt;&gt;();
+                    source.setResult(result.getData());
+                    return source.getTask();
+                }
+
+                SnapshotsClient.SnapshotConflict conflict = result.getConflict();
+                Snapshot snapshot = conflict.getSnapshot();
+                Snapshot conflictSnapshot = conflict.getConflictingSnapshot();
+
+                Snapshot resolvedSnapshot = snapshot;
+                if (snapshot.getMetadata().getLastModifiedTimestamp() &lt; conflictSnapshot.getMetadata().getLastModifiedTimestamp()) {
+                    resolvedSnapshot = conflictSnapshot;
+                }
+
+                return PlayGames.getSnapshotsClient(this)
+                    .resolveConflict(conflict.getConflictId(), resolvedSnapshot)
+                    .continueWithTask(task -&gt; {
+                        if (retryCount &lt; MAX_SNAPSHOT_RESOLVE_RETRIES) {
+                            return processSnapshotOpenResult(task.getResult(), retryCount + 1);
+                        } else {
+                            throw new Exception("Could not resolve snapshot conflicts after max retries");
+                        }
+                    });
+            }
+
+            public void AndroidThunkJava_GPGSaveSnapshot(long taskPtr, String fileName, byte[] data) {
+                PlayGames.getSnapshotsClient(this)
+                    .open(fileName, true, SnapshotsClient.RESOLUTION_POLICY_MANUAL)
+                    .continueWithTask(task -&gt; processSnapshotOpenResult(task.getResult(), 0))
+                    .addOnSuccessListener(snapshot -&gt; {
+                        if (snapshot != null) {
+                            snapshot.getSnapshotContents().writeBytes(data);
+
+                            SnapshotMetadataChange.Builder builder = new SnapshotMetadataChange.Builder();
+                            if (!gpgMetadataDescription.isEmpty()) builder.setDescription(gpgMetadataDescription);
+                            if (gpgMetadataPlayedTime &gt;= 0) builder.setPlayedTimeMillis(gpgMetadataPlayedTime);
+                            if (gpgMetadataProgressValue &gt;= 0) builder.setProgressValue(gpgMetadataProgressValue);
+                            if (gpgMetadataCoverImage != null) {
+                                Bitmap bitmap = BitmapFactory.decodeByteArray(gpgMetadataCoverImage, 0, gpgMetadataCoverImage.length);
+                                builder.setCoverImage(bitmap);
+                            }
+
+                            SnapshotMetadataChange change = builder.build();
+                            PlayGames.getSnapshotsClient(this).commitAndClose(snapshot, change)
+                                .addOnSuccessListener(res -&gt; nativeOnGPGSaveComplete(taskPtr, true, "Saved"))
+                                .addOnFailureListener(e -&gt; nativeOnGPGSaveComplete(taskPtr, false, "Commit Failed: " + e.toString()));
+                        }
+                    })
+                    .addOnFailureListener(e -&gt; {
+                        android.util.Log.e("UE", "GPG Save Error: " + e.toString());
+                        nativeOnGPGSaveComplete(taskPtr, false, "Open/Resolve Failed: " + e.toString());
+                    });
+            }
+
+            public void AndroidThunkJava_GPGLoadSnapshot(long taskPtr, String fileName) {
+                PlayGames.getSnapshotsClient(this)
+                .open(fileName, false, SnapshotsClient.RESOLUTION_POLICY_MOST_RECENTLY_MODIFIED)
+                .addOnSuccessListener(dataOrConflict -&gt; {
+                Snapshot snapshot = dataOrConflict.isConflict() ? dataOrConflict.getConflict().getSnapshot() : dataOrConflict.getData();
+                if (snapshot != null) {
+                try {
+                byte[] data = snapshot.getSnapshotContents().readFully();
+                nativeOnGPGLoadComplete(taskPtr, true, data, "Loaded");
+                } catch (IOException e) {
+                nativeOnGPGLoadComplete(taskPtr, false, null, "Read Error");
+                }
+                }
+                })
+                .addOnFailureListener(e -&gt; nativeOnGPGLoadComplete(taskPtr, false, null, "Open Failed"));
+            }
+
+            public void AndroidThunkJava_GetRecallSessionId(long taskPtr) {
+                PlayGames.getRecallClient(this).requestRecallAccess()
+                .addOnSuccessListener(recallAccess -&gt; {
+                nativeOnRecallIdReceived(taskPtr, true, recallAccess.getSessionId(), "");
+                })
+                .addOnFailureListener(e -&gt; {
+                nativeOnRecallIdReceived(taskPtr, false, "", e.toString());
+                });
+            }
+
+            private long pendingFriendsTaskPtr = 0;
+            private static final int SHOW_SHARING_FRIENDS_CONSENT = 90001;
+            private int gpgFriendsPageSize = 100;
+            private boolean gpgFriendsForceReload = false;
+
+            public void AndroidThunkJava_SetFriendsConfig(int pageSize, boolean forceReload) {
+                gpgFriendsPageSize = pageSize;
+                gpgFriendsForceReload = forceReload;
+            }
+
+            public void AndroidThunkJava_ReadFriendsList(long taskPtr) {
+                pendingFriendsTaskPtr = taskPtr;
+                DoLoadFriends();
+            }
+
+            private void DoLoadFriends() {
+                PlayGames.getPlayersClient(this).loadFriends(gpgFriendsPageSize, gpgFriendsForceReload)
+                .addOnSuccessListener(annotatedData -&gt; {
+                PlayerBuffer buffer = annotatedData.get();
+                int count = (buffer != null) ? buffer.getCount() : 0;
+
+                String[] ids = new String[count];
+                String[] names = new String[count];
+                String[] avatars = new String[count];
+
+                if (buffer != null) {
+                for (int i = 0; i &lt; count; i++) {
+                Player player = buffer.get(i);
+                ids[i] = player.getPlayerId();
+                names[i] = player.getDisplayName();
+                avatars[i] = (player.hasIconImage() &amp;&amp; player.getIconImageUri() != null) ? player.getIconImageUri().toString() : "";
+                }
+                buffer.release();
+                }
+
+                if (pendingFriendsTaskPtr != 0) {
+                nativeOnReadFriendsListComplete(pendingFriendsTaskPtr, true, "", ids, names, avatars);
+                pendingFriendsTaskPtr = 0;
+                }
+                })
+                .addOnFailureListener(exception -&gt; {
+                if (exception instanceof FriendsResolutionRequiredException) {
+                try {
+                PendingIntent pendingIntent = ((FriendsResolutionRequiredException) exception).getResolution();
+                startIntentSenderForResult(
+                pendingIntent.getIntentSender(),
+                SHOW_SHARING_FRIENDS_CONSENT,
+                null, 0, 0, 0
+                );
+                } catch (IntentSender.SendIntentException e) {
+                if (pendingFriendsTaskPtr != 0) {
+                nativeOnReadFriendsListComplete(pendingFriendsTaskPtr, false, "IntentSender failed: " + e.toString(), null, null, null);
+                pendingFriendsTaskPtr = 0;
+                }
+                }
+                } else {
+                if (pendingFriendsTaskPtr != 0) {
+                nativeOnReadFriendsListComplete(pendingFriendsTaskPtr, false, exception.toString(), null, null, null);
+                pendingFriendsTaskPtr = 0;
+                }
+                }
+                });
+            }
+
+            private static final int RC_SHOW_PROFILE = 90002;
+            private long pendingProfileTaskPtr = 0;
+
+            public void AndroidThunkJava_ShowProfileUI(long taskPtr, String playerId, String currentPlayerName, String otherPlayerName) {
+                pendingProfileTaskPtr = taskPtr;
+                PlayGames.getPlayersClient(this)
+                .getCompareProfileIntentWithAlternativeNameHints(playerId, otherPlayerName, currentPlayerName)
+                .addOnSuccessListener(intent -&gt; {
+                startActivityForResult(intent, RC_SHOW_PROFILE);
+                })
+                .addOnFailureListener(e -&gt; {
+                android.util.Log.e("UE", "Failed to get profile intent: " + e.toString());
+                if (pendingProfileTaskPtr != 0) {
+                nativeOnProfileUIClosed(pendingProfileTaskPtr);
+                pendingProfileTaskPtr = 0;
+                }
+                });
+            }
+
+            public void AndroidThunkJava_GetPlayerStats(long taskPtr, boolean forceReload) {
+                PlayGames.getPlayerStatsClient(this).loadPlayerStats(forceReload)
+                .addOnSuccessListener(annotatedData -&gt; {
+                PlayerStats stats = annotatedData.get();
+                if (stats != null) {
+                nativeOnPlayerStatsReceived(taskPtr, true, "",
+                stats.getAverageSessionLength(),
+                stats.getDaysSinceLastPlayed(),
+                stats.getNumberOfPurchases(),
+                stats.getNumberOfSessions(),
+                stats.getSessionPercentile(),
+                stats.getSpendPercentile()
+                );
+                } else {
+                nativeOnPlayerStatsReceived(taskPtr, false, "Stats buffer was null", -1,-1,-1,-1,-1,-1);
+                }
+                })
+                .addOnFailureListener(e -&gt; {
+                nativeOnPlayerStatsReceived(taskPtr, false, e.toString(), -1,-1,-1,-1,-1,-1);
+                });
+            }
+
+            public void AndroidThunkJava_IncrementEvent(String eventId, int incrementAmount) {
+                PlayGames.getEventsClient(this).increment(eventId, incrementAmount);
+            }
+            // --- Google Play V2 Extension End ---
+        </insert>
+    </gameActivityClassAdditions>
+    <gameActivityOnActivityResultAdditions>
+        <insert>
+            if (requestCode == RC_SAVED_GAMES) {
+                if (resultCode == Activity.RESULT_OK &amp;&amp; data != null) {
+                    if (data.hasExtra(SnapshotsClient.EXTRA_SNAPSHOT_METADATA)) {
+                        SnapshotMetadata metadata = data.getParcelableExtra(SnapshotsClient.EXTRA_SNAPSHOT_METADATA);
+                        nativeOnSavedGamesUIClosed(true, metadata.getUniqueName());
+                    } else if (data.hasExtra(SnapshotsClient.EXTRA_SNAPSHOT_NEW)) {
+                        nativeOnSavedGamesUIClosed(true, "NEW_SNAPSHOT");
+                    }
+                } else {
+                    nativeOnSavedGamesUIClosed(false, "");
+                }
+            }
+            
+            if (requestCode == SHOW_SHARING_FRIENDS_CONSENT) {
+                if (resultCode == Activity.RESULT_OK) {
+                DoLoadFriends();
+                } else {
+                if (pendingFriendsTaskPtr != 0) {
+                nativeOnReadFriendsListComplete(pendingFriendsTaskPtr, false, "User denied friends list consent.", null, null, null);
+                pendingFriendsTaskPtr = 0;
+                }
+                }
+            }
+
+            if (requestCode == RC_SHOW_PROFILE) {
+                if (pendingProfileTaskPtr != 0) {
+                nativeOnProfileUIClosed(pendingProfileTaskPtr);
+                pendingProfileTaskPtr = 0;
+                }
+            }
+        </insert>
+    </gameActivityOnActivityResultAdditions>
+</root>
