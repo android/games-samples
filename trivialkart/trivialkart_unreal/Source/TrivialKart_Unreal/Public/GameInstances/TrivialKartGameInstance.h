@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Copyright 2026 The Android Open Source Project
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
@@ -57,6 +57,9 @@ public:
 	
 	UTrivialKartSaveGame* LoadGame();
 	void SaveGame(UTrivialKartSaveGame* SaveData);
+
+	// Check unacknowledged purchases on start or foreground
+	void CheckPendingPurchases();
 	
 protected:
 	UPROPERTY(EditAnywhere)

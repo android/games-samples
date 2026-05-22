@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Copyright 2026 The Android Open Source Project
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,6 +51,10 @@ void UTrivialKartGameInstance::Init()
 			FOnReadUserFileCompleteDelegate::CreateUObject(this, &UTrivialKartGameInstance::OnCloudWriteComplete));
 	}
 	InitiateAutoLogin();
+
+	// Check unacknowledged purchases on start or foreground
+	CheckPendingPurchases();
+	FCoreDelegates::ApplicationHasEnteredForegroundDelegate.AddUObject(this, &UTrivialKartGameInstance::CheckPendingPurchases);
 }
 
 void UTrivialKartGameInstance::Shutdown()
@@ -67,6 +71,10 @@ void UTrivialKartGameInstance::Shutdown()
 		CloudInterface->ClearOnReadUserFileCompleteDelegate_Handle(ReadSaveHandle);
 		CloudInterface->ClearOnWriteUserFileCompleteDelegate_Handle(WriteSaveHandle);
 	}
+	// Purchases
+	FCoreDelegates::ApplicationHasEnteredForegroundDelegate.RemoveAll(this);
+
+	Super::Shutdown();
 }
 
 void UTrivialKartGameInstance::InitiateAutoLogin()
@@ -169,6 +177,45 @@ void UTrivialKartGameInstance::StartPurchasing(const FUniqueOfferId& OfferID, co
 	}
 }
 
+void UTrivialKartGameInstance::CheckPendingPurchases()
+{
+	if (const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld()))
+	{
+		if (const IOnlineIdentityPtr IdentityInterface = Online::GetIdentityInterface(GetWorld()))
+		{
+			if (const TSharedPtr<const FUniqueNetId> UserId = IdentityInterface->GetUniquePlayerId(0); UserId.IsValid())
+			{
+				if (const IOnlinePurchasePtr PurchaseInterface = Online::GetPurchaseInterface(GetWorld()); PurchaseInterface.IsValid())
+				{
+					PurchaseInterface->QueryReceipts(*UserId, true,
+						FOnQueryReceiptsComplete::CreateWeakLambda(this,
+							[this, PurchaseInterface, UserId](const FOnlineError& OnlineError)
+							{
+								if (!OnlineError.WasSuccessful())
+									return;
+
+								TArray<FPurchaseReceipt> Receipts;
+								PurchaseInterface->GetReceipts(*UserId, Receipts);
+
+								for (const FPurchaseReceipt& Receipt : Receipts)
+								{
+									for (const FPurchaseReceipt::FReceiptOfferEntry& Offer : Receipt.ReceiptOffers)
+									{
+										if (OnPurchaseReceived.IsBound())
+										{
+											OnPurchaseReceived.Broadcast(Offer.OfferId, 1);
+											FPlatformMisc::LowLevelOutputDebugStringf(TEXT(" Pending purchase restored - Offer ID:: %s"), *Offer.OfferId);
+										}
+										// The Purchase Token is passed as the ReceiptId to tell the platform which purchase to finalize (consume/acknowledge).
+										PurchaseInterface->FinalizePurchase(*UserId, Receipt.TransactionId);
+									}
+								}
+							}));
+				}
+			}
+		}
+	}
+}
 UTrivialKartSaveGame* UTrivialKartGameInstance::LoadGame()
 {
 #if WITH_EDITOR
