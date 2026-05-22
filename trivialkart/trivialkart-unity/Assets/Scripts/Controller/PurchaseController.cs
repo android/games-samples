@@ -154,11 +154,19 @@ public class PurchaseController : MonoBehaviour
     private static void OnPurchasePending(PendingOrder obj)
     {
         Debug.Log("Purchase pending " + obj.Info);
-        foreach (var product in obj.CartOrdered.Items())
+
+        if (obj.CartOrdered != null)
         {
-            GameDataController.UnlockInGameContent(product.Product.definition.id);
+            foreach (var product in obj.CartOrdered.Items())
+            {
+                GameDataController.UnlockInGameContent(product.Product.definition.id);
+            }
+            _storeController.ConfirmPurchase(obj);
         }
-        _storeController.ConfirmPurchase(obj);
+        else
+        {
+            Debug.LogWarning("PurchaseController: OnPurchasePending received an order with a null CartOrdered object.");
+        }
     }
 
     private static void FetchProducts()
