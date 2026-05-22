@@ -322,17 +322,21 @@ You should also disable any lines requesting permissions in your Unity code. See
 appropriate scripting defines.
 5. Create a build using the normal Unity build process.
 
-## Support
+## Troubleshooting
 
 If you've found any errors or bugs in this sample game, please
 [file an issue](https://github.com/android/games-samples/issues).
 
-This is not an officially supported Google product.
+**Note:** This is not an officially supported Google product.
 
 ### Build version workarounds
 
 If you forget to select the version you want to build before closing Unity, you may be unable to see the `TrivialKart > BuildOptions` menu.
 To fix it, delete the directives under `Edit > Project Settings > Player > Other Settings > Script Compilation` and restart Unity.
+
+### If dependency-related errors occur
+
+If you encounter issues such as dependency-related errors, try `Assets > Reimport All` from the menu bar.
 
 ## Further reading
 
@@ -341,7 +345,7 @@ To fix it, delete the directives under `Edit > Project Settings > Player > Other
 
 ## CHANGELOG
 
-2026-05-21: 1.1.2 - Upgraded to Unity 6.3 LTS and com.unity.purchasing 5.3.0.
+2026-05-22: 1.1.2 - Upgraded to Unity 6.3 LTS and com.unity.purchasing 5.3.0 and changed the Support section to Troubleshooting and added content.
 
 2025-09-20: 1.1.1 - Upgraded to Unity 6.0 LTS and PGS v2.
 
