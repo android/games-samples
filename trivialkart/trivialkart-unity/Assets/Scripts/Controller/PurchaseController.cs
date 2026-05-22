@@ -154,6 +154,11 @@ public class PurchaseController : MonoBehaviour
     private static void OnPurchasePending(PendingOrder obj)
     {
         Debug.Log("Purchase pending " + obj.Info);
+        foreach (var product in obj.CartOrdered.Items())
+        {
+            GameDataController.UnlockInGameContent(product.Product.definition.id);
+        }
+        _storeController.ConfirmPurchase(obj);
     }
 
     private static void FetchProducts()
