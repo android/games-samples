@@ -51,12 +51,10 @@ public class AuthManager : MonoBehaviour
     private string customJwtToken;
 
 #if PGS_V2
-    private GoogleSignInUser googleUser;
-    
-    // --- NEW VARIABLES for main-thread dispatching ---
+    // V2 (CredMan) Specific Variables
     private volatile bool googleTaskComplete = false;
-    private Exception googleSignInException = null;
     private string authCodeToExchange = null;
+    private string credManError = null;
 #endif
 
     public string serverUrl;
@@ -132,18 +130,8 @@ public class AuthManager : MonoBehaviour
         PlayGamesPlatform.DebugLogEnabled = true;
         PlayGamesPlatform.Activate();
 #elif PGS_V2
-        // --- V2 INITIALIZATION ---
-        statusText.text = "Initializing Google Sign-In...";
-        GoogleSignIn.Configuration = new GoogleSignInConfiguration
-        {
-            WebClientId = webClientId,
-            ForceTokenRefresh = true,
-            
-            UseGameSignIn = false,
-            RequestEmail = true,
-            RequestAuthCode = true,
-        };
-
+        // V2 Initialization
+        statusText.text = "Initializing...";
         PlayGamesPlatform.DebugLogEnabled = true;
 #endif
 
@@ -171,57 +159,44 @@ public class AuthManager : MonoBehaviour
 #if PGS_V1
         PlayGamesPlatform.Instance.Authenticate(OnSilentSignInFinished, true);
 #elif PGS_V2
-        GoogleSignIn.DefaultInstance.SignInSilently().ContinueWith(OnGoogleSignInComplete);
+        if (TryLoadSession())
+        {
+            Debug.Log("Valid session found. Skipping CredMan.");
+            ShowGamePanel();
+            SignInToPlayGamesServices(); // Achievements only
+        }
+        else if (PlayerPrefs.GetInt("UserSignedOut", 0) == 0)
+        {
+            Debug.Log("Attempting CredMan Silent Sign-In...");
+            StartSignIn(false); // Silent Mode
+        }
+        else
+        {
+            ShowStartPanel();
+        }
 #endif
     }
     
     private void Update()
     {
 #if PGS_V2
+        // V2 Main Thread Dispatcher
         if (googleTaskComplete)
         {
-            googleTaskComplete = false; // Reset flag
-
-            if (authCodeToExchange != null && googleSignInException == null)
+            googleTaskComplete = false;
+            if (!string.IsNullOrEmpty(credManError))
             {
-                // --- Success case ---
-                Debug.Log($"Google Sign-In successful for: {this.googleUser.Email}");
-                Debug.Log($"Retrieved Server Auth Code. Sending to backend...");
-                statusText.text = "Connecting to game server...";
-                StartCoroutine(ExchangeAuthcodeAndLink(authCodeToExchange));
-            }
-            else
-            {
-                if (googleSignInException != null)
-                {
-                    var e = googleSignInException.GetBaseException(); 
-                    
-                    if (e is GoogleSignIn.SignInException signInException) 
-                    {
-                        Debug.Log($"Google Sign-In Error: {signInException.Status}"); 
-                        if (signInException.Status == GoogleSignInStatusCode.Canceled)
-                        {
-                            statusText.text = "Sign-in cancelled.";
-                        }
-                    }
-                    else
-                    {
-                        Debug.Log($"Google Sign-In Task Error: {e.Message}"); 
-                        if (e.Message.Contains("Canceled"))
-                        {
-                             statusText.text = "Sign-in cancelled.";
-                        }
-                        else
-                        {
-                            statusText.text = "Sign-in failed. Please try again.";
-                        }
-                    }
-                }
-                
+                Debug.LogError("CredMan Error: " + credManError);
+                statusText.text = "Sign-in Failed.";
                 ShowStartPanel();
             }
-            
-            googleSignInException = null;
+            else if (!string.IsNullOrEmpty(authCodeToExchange))
+            {
+                Debug.Log("Got Auth Code. Exchanging...");
+                statusText.text = "Connecting to server...";
+                StartCoroutine(ExchangeAuthcodeAndLink(authCodeToExchange));
+            }
+            credManError = null;
             authCodeToExchange = null;
         }
 #endif
@@ -376,30 +351,58 @@ public class AuthManager : MonoBehaviour
 #endif
 
 #if PGS_V2
-    private void OnGoogleSignInComplete(Task<GoogleSignInUser> task)
+    private bool TryLoadSession()
     {
-        try
-        {
-            if (task.IsFaulted)
-            {
-                googleSignInException = task.Exception;
-            }
-            else if (task.IsCanceled)
-            {
-                googleSignInException = new System.Exception("Google Sign-In Canceled.");
-            }
-            else
-            {
-                this.googleUser = task.Result;
-                this.authCodeToExchange = this.googleUser.AuthCode;
-            }
-        }
-        catch (System.Exception ex)
-        {
-            googleSignInException = ex;
-        }
+        string token = PlayerPrefs.GetString("Cached_JWT", null);
+        if (string.IsNullOrEmpty(token)) return false;
+
+        this.customJwtToken = token;
+        string email = PlayerPrefs.GetString("Cached_Email", "");
+        int count = PlayerPrefs.GetInt("Cached_Count", 0);
+
+        statusText.text = $"Signed in as: {email}";
+        incText.text = count.ToString("000");
+        return true;
+    }
+
+    private void SaveSession(LinkResponse data)
+    {
+        PlayerPrefs.SetString("Cached_JWT", data.jwtToken);
+        PlayerPrefs.SetString("Cached_Email", data.email);
+        PlayerPrefs.SetString("Cached_ID", data.inGameAccountID);
+        PlayerPrefs.SetInt("Cached_Count", data.inGameCount);
+        PlayerPrefs.SetInt("UserSignedOut", 0);
+        PlayerPrefs.Save();
+        this.customJwtToken = data.jwtToken;
+    }
+
+    private void ClearSession()
+    {
+        PlayerPrefs.DeleteKey("Cached_JWT");
+        PlayerPrefs.DeleteKey("Cached_Email");
+        PlayerPrefs.DeleteKey("Cached_ID");
+        PlayerPrefs.DeleteKey("Cached_Count");
+        PlayerPrefs.SetInt("UserSignedOut", 1);
+        PlayerPrefs.Save();
+        this.customJwtToken = null;
+    }
+
+    public void StartSignIn(bool interactive)
+    {
+        string webClientId = "";
+        AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+        AndroidJavaObject currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+        AndroidJavaClass bridge = new AndroidJavaClass("com.gamesamples.trivialkartunity.CredManBridge");
         
-        googleTaskComplete = true;
+        string methodName = interactive ? "signInInteractive" : "signInSilent";
+        bridge.CallStatic(methodName, currentActivity, webClientId);
+    }
+    
+    public void OnSignInSuccess(string token) { authCodeToExchange = token; googleTaskComplete = true; }
+    public void OnSignInError(string error) 
+    { 
+        if (error == "SilentFailed") { Debug.Log("Silent failed. Idle."); return; }
+        credManError = error; googleTaskComplete = true; 
     }
     
     private IEnumerator ExchangeAuthcodeAndLink(string serverAuthCode)
@@ -422,8 +425,6 @@ public class AuthManager : MonoBehaviour
             Debug.LogError($"Backend Error: {request.error}");
             Debug.LogError($"Response: {request.downloadHandler.text}");
             statusText.text = "Failed to link account. Server error.";
-            
-            GoogleSignIn.DefaultInstance.SignOut(); 
             ShowStartPanel();
         }
         else
@@ -443,28 +444,9 @@ public class AuthManager : MonoBehaviour
         }
     }
     
-    // This is called from ExchangeAuthcodeAndLink (main thread), so it's safe.
     private void SignInToPlayGamesServices()
     {
-        Debug.Log("Attempting silent sign-in to Play Games Services...");
-        statusText.text = "Loading game services...";
-        
-        PlayGamesPlatform.Instance.Authenticate((SignInStatus status) =>
-        {
-            if (status == SignInStatus.Success)
-            {
-                Debug.Log("Play Games Services silent sign-in successful!");
-                if (this.googleUser != null)
-                {
-                    statusText.text = $"Signed in as: {this.googleUser.Email}";
-                }
-            }
-            else
-            {
-                Debug.LogWarning("Play Games Services silent sign-in failed: " + status);
-                statusText.text = "Game services (achievements) failed to load.";
-            }
-        });
+        PlayGamesPlatform.Instance.Authenticate((SignInStatus status) => { Debug.Log("PGS Auth: " + status); });
     }
 #endif
 
@@ -528,8 +510,7 @@ public class AuthManager : MonoBehaviour
 #if PGS_V1
         PlayGamesPlatform.Instance.Authenticate(ProcessAuthenticationResult, false);
 #elif PGS_V2
-        // This is safe because OnGoogleSignInComplete now dispatches to Update()
-        GoogleSignIn.DefaultInstance.SignIn().ContinueWith(OnGoogleSignInComplete);
+        StartSignIn(true);
 #endif
     }
 
@@ -540,8 +521,7 @@ public class AuthManager : MonoBehaviour
 #if PGS_V1
         PlayGamesPlatform.Instance.Authenticate(ProcessAuthenticationResult, false);
 #elif PGS_V2
-        // This is safe because OnGoogleSignInComplete now dispatches to Update()
-        GoogleSignIn.DefaultInstance.SignIn().ContinueWith(OnGoogleSignInComplete);
+        StartSignIn(true);
 #endif
     }
 
@@ -642,8 +622,7 @@ public class AuthManager : MonoBehaviour
             PlayGamesPlatform.Instance.SignOut();
         }
 #elif PGS_V2
-        GoogleSignIn.DefaultInstance.SignOut();
-        googleUser = null; 
+        ClearSession();
 #endif
 
         if (FB.IsLoggedIn)

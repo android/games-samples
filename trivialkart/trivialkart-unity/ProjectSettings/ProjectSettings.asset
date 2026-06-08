@@ -166,7 +166,7 @@ PlayerSettings:
   androidMaxAspectRatio: 2.1
   androidMinAspectRatio: 1
   applicationIdentifier:
-    Android: com.GoogleLLC.TrivialKart
+    Android: com.gamesamples.trivialkartunity
     Standalone: com.Google-LLC.TrivialKart
   buildNumber:
     Standalone: 0
@@ -933,7 +933,7 @@ PlayerSettings:
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
   projectName: TrivialKart
-  organizationId: wickedcube_unity
+  organizationId: gamesamples_unity
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}
