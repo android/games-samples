@@ -186,8 +186,16 @@ public class AuthManager : MonoBehaviour
             googleTaskComplete = false;
             if (!string.IsNullOrEmpty(credManError))
             {
-                Debug.LogError("CredMan Error: " + credManError);
-                statusText.text = "Sign-in Failed.";
+                if (credManError == "SilentFailed")
+                {
+                    Debug.Log("CredMan Silent Sign-In failed.");
+                    statusText.text = "Please sign in.";
+                }
+                else
+                {
+                    Debug.LogError("CredMan Error: " + credManError);
+                    statusText.text = "Sign-in Failed.";
+                }
                 ShowStartPanel();
             }
             else if (!string.IsNullOrEmpty(authCodeToExchange))
@@ -389,20 +397,19 @@ public class AuthManager : MonoBehaviour
 
     public void StartSignIn(bool interactive)
     {
-        string webClientId = "";
         AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
         AndroidJavaObject currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
         AndroidJavaClass bridge = new AndroidJavaClass("com.gamesamples.trivialkartunity.CredManBridge");
         
         string methodName = interactive ? "signInInteractive" : "signInSilent";
-        bridge.CallStatic(methodName, currentActivity, webClientId);
+        bridge.CallStatic(methodName, currentActivity, this.webClientId);
     }
     
     public void OnSignInSuccess(string token) { authCodeToExchange = token; googleTaskComplete = true; }
     public void OnSignInError(string error) 
     { 
-        if (error == "SilentFailed") { Debug.Log("Silent failed. Idle."); return; }
-        credManError = error; googleTaskComplete = true; 
+        credManError = error; 
+        googleTaskComplete = true; 
     }
     
     private IEnumerator ExchangeAuthcodeAndLink(string serverAuthCode)

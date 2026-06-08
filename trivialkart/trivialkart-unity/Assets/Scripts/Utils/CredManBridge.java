@@ -33,12 +33,13 @@ import java.util.concurrent.Executors;
 
 public class CredManBridge {
 
+    private static final Executor executor = Executors.newSingleThreadExecutor();
+
     // --- MODE 1: SILENT SIGN-IN (Called on Awake) ---
     // Tries to auto-select an authorized account. If it fails, it does NOT show UI.
     public static void signInSilent(Context context, String webClientId) {
         CredentialManager credentialManager = CredentialManager.create(context);
         CancellationSignal cancellationSignal = new CancellationSignal();
-        Executor executor = Executors.newSingleThreadExecutor();
 
         Log.d("CredMan", "Attempting Silent Sign-In...");
 
@@ -79,7 +80,6 @@ public class CredManBridge {
     public static void signInInteractive(Context context, String webClientId) {
         CredentialManager credentialManager = CredentialManager.create(context);
         CancellationSignal cancellationSignal = new CancellationSignal();
-        Executor executor = Executors.newSingleThreadExecutor();
 
         Log.d("CredMan", "Starting Interactive Sign-In...");
 
