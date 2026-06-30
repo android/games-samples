@@ -42,7 +42,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 
-# [START google_signin_credman_example]
+// [START google_signin_credman_example]
 
 public class CredManBridge {
 
@@ -182,4 +182,4 @@ public class CredManBridge {
         }
     }
 }
-# [END google_signin_credman_example]
+// [END google_signin_credman_example]

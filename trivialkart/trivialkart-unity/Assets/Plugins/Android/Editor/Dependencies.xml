@@ -1,0 +1,8 @@
+<dependencies>
+    <androidPackages>
+        <androidPackage spec="androidx.credentials:credentials:1.6.0" />
+        <androidPackage spec="androidx.credentials:credentials-play-services-auth:1.6.0" />
+        <androidPackage spec="com.google.android.libraries.identity.googleid:googleid:1.2.0" />
+        <androidPackage spec="com.google.android.gms:play-services-auth:21.6.0" />
+    </androidPackages>
+</dependencies>
