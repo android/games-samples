@@ -45,6 +45,9 @@ import java.util.concurrent.ExecutorService;
 
 public class CredManBridge {
 
+    private static final List<Scope> REQUESTED_SCOPES =
+        Collections.singletonList(new Scope("https://www.googleapis.com/auth/games_lite"));
+
     // --- MODE 1: SILENT SIGN-IN (Called on Awake) ---
     // Tries to auto-select an authorized account. If it fails, it does NOT show UI.
     public static void signInSilent(Context context, String webClientId) {
@@ -176,10 +179,8 @@ public class CredManBridge {
 
             Account account = new Account(email, "com.google");
             // Requesting GAMES_LITE scope to check for pre-existing V1 grants
-            List<Scope> requestedScopes = Collections.singletonList(new Scope("https://www.googleapis.com/auth/games_lite"));
-            
             AuthorizationRequest authRequest = new AuthorizationRequest.Builder()
-                .setRequestedScopes(requestedScopes)
+                .setRequestedScopes(REQUESTED_SCOPES)
                 .setAccount(account)
                 .requestOfflineAccess(webClientId)
                 .build();
