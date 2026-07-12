@@ -19,10 +19,10 @@ import android.util.Log;
 import android.os.CancellationSignal;
 
 import androidx.credentials.CredentialManager;
+import androidx.credentials.CredentialManagerCallback;
 import androidx.credentials.GetCredentialRequest;
 import androidx.credentials.GetCredentialResponse;
 import androidx.credentials.exceptions.GetCredentialException;
-import androidx.credentials.exceptions.NoCredentialException;
 
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
@@ -30,7 +30,6 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 import com.google.android.gms.auth.api.identity.AuthorizationClient;
 import com.google.android.gms.auth.api.identity.AuthorizationRequest;
 import com.google.android.gms.auth.api.identity.AuthorizationResult;
-import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.auth.api.identity.Identity;
 import com.google.android.gms.common.api.Scope;
 
@@ -38,93 +37,129 @@ import com.unity3d.player.UnityPlayer;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 
 // [START google_signin_credman_example]
 
 public class CredManBridge {
 
-    private static final Executor executor = Executors.newSingleThreadExecutor();
-
     // --- MODE 1: SILENT SIGN-IN (Called on Awake) ---
     // Tries to auto-select an authorized account. If it fails, it does NOT show UI.
     public static void signInSilent(Context context, String webClientId) {
-        CredentialManager credentialManager = CredentialManager.create(context);
-        CancellationSignal cancellationSignal = new CancellationSignal();
+        ExecutorService executor = null;
+        try {
+            CredentialManager credentialManager = CredentialManager.create(context);
+            CancellationSignal cancellationSignal = new CancellationSignal();
 
-        Log.d("CredMan", "Attempting Silent Sign-In...");
+            Log.d("CredMan", "Attempting Silent Sign-In...");
 
-        GetGoogleIdOption silentOption = new GetGoogleIdOption.Builder()
-            .setFilterByAuthorizedAccounts(true) // Strict: Only authorized accounts
-            .setServerClientId(webClientId)
-            .setAutoSelectEnabled(true)          // Auto-select if possible
-            .build();
+            GetGoogleIdOption silentOption = new GetGoogleIdOption.Builder()
+                .setFilterByAuthorizedAccounts(true) // Strict: Only authorized accounts
+                .setServerClientId(webClientId)
+                .setAutoSelectEnabled(true)          // Auto-select if possible
+                .build();
 
-        GetCredentialRequest silentRequest = new GetCredentialRequest.Builder()
-            .addCredentialOption(silentOption)
-            .build();
+            GetCredentialRequest silentRequest = new GetCredentialRequest.Builder()
+                .addCredentialOption(silentOption)
+                .build();
 
-        credentialManager.getCredentialAsync(
-            context,
-            silentRequest,
-            cancellationSignal,
-            executor,
-            new androidx.credentials.CredentialManagerCallback<GetCredentialResponse, GetCredentialException>() {
-                @Override
-                public void onResult(GetCredentialResponse result) {
-                    Log.d("CredMan", "Silent Sign-In Successful!");
-                    handleSignInResult(context, result, webClientId);
+            executor = Executors.newSingleThreadExecutor();
+            final ExecutorService finalExecutor = executor;
+            credentialManager.getCredentialAsync(
+                context,
+                silentRequest,
+                cancellationSignal,
+                finalExecutor,
+                new CredentialManagerCallback<GetCredentialResponse, GetCredentialException>() {
+                    @Override
+                    public void onResult(GetCredentialResponse result) {
+                        try {
+                            Log.d("CredMan", "Silent Sign-In Successful!");
+                            handleSignInResult(context, result, webClientId);
+                        } finally {
+                            finalExecutor.shutdown();
+                        }
+                    }
+
+                    @Override
+                    public void onError(GetCredentialException e) {
+                        try {
+                            // Send a specific error code so Unity knows to just stay on the Start Screen
+                            Log.d("CredMan", "Silent sign-in failed. Keeping UI hidden.");
+                            UnityPlayer.UnitySendMessage("AuthManager", "OnSignInError", "SilentFailed");
+                        } finally {
+                            finalExecutor.shutdown();
+                        }
+                    }
                 }
-
-                @Override
-                public void onError(GetCredentialException e) {
-                    // Send a specific error code so Unity knows to just stay on the Start Screen
-                    Log.d("CredMan", "Silent sign-in failed. Keeping UI hidden.");
-                    UnityPlayer.UnitySendMessage("AuthManager", "OnSignInError", "SilentFailed");
-                }
+            );
+        } catch (Exception e) {
+            if (executor != null) {
+                executor.shutdown();
             }
-        );
+            Log.e("CredMan", "Silent Sign-In invocation failed", e);
+            UnityPlayer.UnitySendMessage("AuthManager", "OnSignInError", "SilentFailed");
+        }
     }
 
     // --- MODE 2: INTERACTIVE SIGN-IN (Called on Button Click) ---
     // Forces the Account Selection / "Add Account" sheet to appear.
     public static void signInInteractive(Context context, String webClientId) {
-        CredentialManager credentialManager = CredentialManager.create(context);
-        CancellationSignal cancellationSignal = new CancellationSignal();
+        ExecutorService executor = null;
+        try {
+            CredentialManager credentialManager = CredentialManager.create(context);
+            CancellationSignal cancellationSignal = new CancellationSignal();
 
-        Log.d("CredMan", "Starting Interactive Sign-In...");
+            Log.d("CredMan", "Starting Interactive Sign-In...");
 
-        GetGoogleIdOption interactiveOption = new GetGoogleIdOption.Builder()
-            .setFilterByAuthorizedAccounts(false) // Show ALL accounts (and "Add Account")
-            .setServerClientId(webClientId)
-            .setAutoSelectEnabled(false)          // Force the UI to show
-            .build();
+            GetGoogleIdOption interactiveOption = new GetGoogleIdOption.Builder()
+                .setFilterByAuthorizedAccounts(false) // Show ALL accounts (and "Add Account")
+                .setServerClientId(webClientId)
+                .setAutoSelectEnabled(false)          // Force the UI to show
+                .build();
 
-        GetCredentialRequest interactiveRequest = new GetCredentialRequest.Builder()
-            .addCredentialOption(interactiveOption)
-            .build();
+            GetCredentialRequest interactiveRequest = new GetCredentialRequest.Builder()
+                .addCredentialOption(interactiveOption)
+                .build();
 
-        credentialManager.getCredentialAsync(
-            context,
-            interactiveRequest,
-            cancellationSignal,
-            executor,
-            new androidx.credentials.CredentialManagerCallback<GetCredentialResponse, GetCredentialException>() {
-                @Override
-                public void onResult(GetCredentialResponse result) {
-                    Log.d("CredMan", "Interactive Sign-In Successful!");
-                    handleSignInResult(context, result, webClientId);
+            executor = Executors.newSingleThreadExecutor();
+            final ExecutorService finalExecutor = executor;
+            credentialManager.getCredentialAsync(
+                context,
+                interactiveRequest,
+                cancellationSignal,
+                finalExecutor,
+                new CredentialManagerCallback<GetCredentialResponse, GetCredentialException>() {
+                    @Override
+                    public void onResult(GetCredentialResponse result) {
+                        try {
+                            Log.d("CredMan", "Interactive Sign-In Successful!");
+                            handleSignInResult(context, result, webClientId);
+                        } finally {
+                            finalExecutor.shutdown();
+                        }
+                    }
+
+                    @Override
+                    public void onError(GetCredentialException e) {
+                        try {
+                            Log.e("CredMan", "Interactive Sign-In Canceled or Failed", e);
+                            UnityPlayer.UnitySendMessage("AuthManager", "OnSignInError", "Canceled");
+                        } finally {
+                            finalExecutor.shutdown();
+                        }
+                    }
                 }
-
-                @Override
-                public void onError(GetCredentialException e) {
-                    Log.e("CredMan", "Interactive Sign-In Canceled or Failed", e);
-                    UnityPlayer.UnitySendMessage("AuthManager", "OnSignInError", "Canceled");
-                }
+            );
+        } catch (Exception e) {
+            if (executor != null) {
+                executor.shutdown();
             }
-        );
+            Log.e("CredMan", "Interactive Sign-In invocation failed", e);
+            UnityPlayer.UnitySendMessage("AuthManager", "OnSignInError", "Canceled");
+        }
     }
 
     
@@ -133,6 +168,12 @@ public class CredManBridge {
             GoogleIdTokenCredential credential = GoogleIdTokenCredential.createFrom(result.getCredential().getData());
             String email = credential.getId();
             
+            if (email == null || email.trim().isEmpty()) {
+                Log.e("CredMan", "Invalid email/ID from credential");
+                UnityPlayer.UnitySendMessage("AuthManager", "OnSignInError", "Invalid email/ID from credential");
+                return;
+            }
+
             Account account = new Account(email, "com.google");
             // Requesting GAMES_LITE scope to check for pre-existing V1 grants
             List<Scope> requestedScopes = Collections.singletonList(new Scope("https://www.googleapis.com/auth/games_lite"));
@@ -174,11 +215,13 @@ public class CredManBridge {
                 .addOnFailureListener(e -> {
                     // CASE 3: GENERIC FAILURE
                     Log.e("CredMan", "PGS v1: Authorization failed completely.", e);
-                    UnityPlayer.UnitySendMessage("AuthManager", "OnSignInError", "Authorization Failed: " + e.getMessage());
+                    String errorMessage = e.getMessage() != null ? e.getMessage() : e.toString();
+                    UnityPlayer.UnitySendMessage("AuthManager", "OnSignInError", "Authorization Failed: " + errorMessage);
                 });
     
         } catch (Exception e) {
-            UnityPlayer.UnitySendMessage("AuthManager", "OnSignInError", "Parsing Error: " + e.getMessage());
+            String errorMessage = e.getMessage() != null ? e.getMessage() : e.toString();
+            UnityPlayer.UnitySendMessage("AuthManager", "OnSignInError", "Parsing Error: " + errorMessage);
         }
     }
 }
