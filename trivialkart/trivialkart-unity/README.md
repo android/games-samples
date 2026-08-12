@@ -8,6 +8,7 @@ This verson of TrivialKart demonstrates:
 * In-app purchases through Google Play using the Unity IAP system
 * Play Games Services, for signin, achievements, leaderboards, friends and
 cloud save
+* Play Games Services Game Stats (Player Game Events) for tracking gameplay statistics and progression
 * Play Integrity for receiving integrity signals about device integrity
 and Play license status
 * The Input SDK for Google Play Games for PC
@@ -297,6 +298,48 @@ sample expects the raw verdict json.
 
 
 
+## Play Games Services Game Stats
+
+This sample demonstrates how to record player gameplay statistics using Google Play Games Services (PGS) Game Stats and `PlayerGameEvent`. Game Stats enables games to track gameplay events and progression to compute repetitive and progression statistics server-side.
+
+### GameStats Scene
+
+The project includes a dedicated `GameStats` scene (`Assets/Scenes/GameStats.unity`) providing an interactive UI to configure parameters and dispatch events.
+
+To test Game Stats in the Unity Editor or on a device:
+1. Open `Assets/Scenes/GameStats.unity`.
+2. Ensure the `PLAY_GAMES_SERVICES` scripting define is active and PGS is authenticated.
+3. Configure event parameters using the UI dropdowns.
+4. Click the corresponding button to record events or trigger an immediate event upload.
+
+### Supported Events and Properties
+
+The sample implements event handling in `GameStatsController.cs` (`Assets/Scripts/Controller/PGS/GameStatsController.cs`):
+
+* **Race Completed (`raceCompleted`)**:
+  * `carUsed` (String): The identifier of the car used (e.g., `mustang`).
+  * `rank` (Long): The finishing position (e.g., `1`, `2`, `3`).
+  * `usedNOS` (Boolean): Whether nitrous was used during the race.
+  * `raceTime` (Double): Total completion time in seconds (parsed from `hh:mm:ss` or raw seconds).
+* **Car Upgraded (`carUpgraded`)**:
+  * `carCharacteristic` (String): The upgraded characteristic (e.g., speed, acceleration, handling).
+  * `oldValue` (Long): Previous characteristic level/value.
+  * `newValue` (Long): New characteristic level/value.
+  * `garageLevel` (Long): Current garage level.
+* **Progression Stats**:
+  * Generic progression events (e.g., player Level / XP progression) via `SendProgressionStatEvent`.
+
+### Event Recording and Flush APIs
+
+* **Record Event**: Construct a `PlayerGameEvent` using `PlayerGameEvent.Builder` and submit it via `PlayGamesPlatform.Instance.RecordEvent(event)`.
+* **Immediate Upload**: Flush pending events immediately using `PlayGamesPlatform.Instance.RequestEventsUpload()`.
+
+### Configuration Resources
+
+Game stats definitions are located in `Assets/Resources/gamestats/`:
+* `RepetitiveStatsConfig.csv`: Configures repetitive stats (such as races won, fastest race, races completed with a specific car, car upgrades) including aggregation types (`COUNT`, `MIN`), filter operators, and display metadata.
+* `ProgressionStatConfig.csv`: Configures progression-based stats (such as player level).
+
 ## PGS v1 to v2 Migration
 
 This sample implements the migration path from the legacy Google Play Games Services (PGS) v1 authentication flow to the secure, modern PGS v2 OAuth 2.0 flow. It provides a complete solution using a Node.js/Express backend (server.js) and a Unity C# client (AuthManager.cs).
@@ -344,6 +387,8 @@ If you encounter issues such as dependency-related errors, try `Assets > Reimpor
 * [Unity IAP](https://docs.unity.com/ugs/en-us/manual/iap/manual/get-started)
 
 ## CHANGELOG
+
+2026-08-12: 1.2.0 - Added Play Games Services (PGS) Game Stats support with PlayerGameEvent recording, GameStats demo scene, and configuration resources.
 
 2026-05-22: 1.1.2 - Upgraded to Unity 6.3 LTS and com.unity.purchasing 5.3.0 and changed the Support section to Troubleshooting and added content.
 

@@ -1,0 +1,5 @@
+Stat Id,Event Name,Event Property Name,Aggregation Type,Stat Display Name,Stat Description,Filter Property,Filter Operator,Filter Value,Is Competitive,Min limit,Max limit,Icon File Name,Good value direction,Unit
+1,raceCompleted,rank,COUNT,Races won,The total number of races the player has won,rank,=,1,TRUE,0,50,stat1.png,INCREASING,
+2,raceCompleted,raceTime,MIN,Fastest race,The player's shortest completion time for a single race.,,,,TRUE,0,50,stat3.png,DECREASING,
+3,raceCompleted,carUsed,COUNT,Races finished with Mustang,The total count of races the player has completed while driving the Mustang.,carUsed,=,"""mustang""",FALSE,,,stat4.png,INCREASING,
+4,carUpgraded,carCharacteristic,COUNT,Car upgrades,The total count of races the player has completed while driving the Mustang.,,,,FALSE,,,stat2.png,INCREASING,
