@@ -44,6 +44,10 @@ public class GameStatsController : MonoBehaviour
     [SerializeField] private TMP_Dropdown garageLevelDropdown;
     [SerializeField] private Button carUpgradedButton;
 
+    [Header("Progression & Upload UI")]
+    [SerializeField] private Button sendProgressionButton;
+    [SerializeField] private Button requestEventsUploadButton;
+
     private void Awake()
     {
         BindUIElementsIfNull();
@@ -89,6 +93,12 @@ public class GameStatsController : MonoBehaviour
 
         if (carUpgradedButton == null)
             carUpgradedButton = FindButtonByName("carUpgradedButton");
+
+        if (sendProgressionButton == null)
+            sendProgressionButton = FindButtonByName("SendProgressionButton");
+
+        if (requestEventsUploadButton == null)
+            requestEventsUploadButton = FindButtonByName("RequestEventsUploadButton");
     }
 
     private TMP_Dropdown FindDropdownByName(string name)
@@ -135,6 +145,26 @@ public class GameStatsController : MonoBehaviour
         {
             Debug.LogWarning("[GameStatsController] carUpgradedButton is not assigned!");
         }
+
+        if (sendProgressionButton != null)
+        {
+            sendProgressionButton.onClick.RemoveListener(OnSendProgressionButtonClicked);
+            sendProgressionButton.onClick.AddListener(OnSendProgressionButtonClicked);
+        }
+        else
+        {
+            Debug.LogWarning("[GameStatsController] SendProgressionButton is not assigned!");
+        }
+
+        if (requestEventsUploadButton != null)
+        {
+            requestEventsUploadButton.onClick.RemoveListener(OnRequestEventsUploadButtonClicked);
+            requestEventsUploadButton.onClick.AddListener(OnRequestEventsUploadButtonClicked);
+        }
+        else
+        {
+            Debug.LogWarning("[GameStatsController] RequestEventsUploadButton is not assigned!");
+        }
     }
 
     /// <summary>
@@ -170,22 +200,22 @@ public class GameStatsController : MonoBehaviour
     {
         string carUsed = GetDropdownText(carUsedDropdown);
         string rankStr = GetDropdownText(rankDropdown);
-        string usedNOSStr = GetDropdownText(usedNOSDropdown);
+        string usedNosStr = GetDropdownText(usedNOSDropdown);
         string raceTimeStr = GetDropdownText(raceTimeDropdown);
 
         long rank = ParseLong(rankStr, 1);
-        bool usedNOS = usedNOSStr.Equals("Yes", StringComparison.OrdinalIgnoreCase);
+        bool usedNos = usedNosStr.Equals("Yes", StringComparison.OrdinalIgnoreCase);
         double raceTime = ParseTimeToSeconds(raceTimeStr);
 
-        SendRaceCompletedEvent(carUsed, rank, usedNOS, raceTime);
+        SendRaceCompletedEvent(carUsed, rank, usedNos, raceTime);
     }
 
     /// <summary>
     /// Constructs and records the 'raceCompleted' PlayerGameEvent.
     /// </summary>
-    public void SendRaceCompletedEvent(string carUsed, long rank, bool usedNOS, double raceTime)
+    public void SendRaceCompletedEvent(string carUsed, long rank, bool usedNos, double raceTime)
     {
-        Debug.Log($"[GameStatsController] Sending 'raceCompleted' event: carUsed='{carUsed}', rank={rank}, usedNOS={usedNOS}, raceTime={raceTime}s");
+        Debug.Log($"[GameStatsController] Sending 'raceCompleted' event: carUsed='{carUsed}', rank={rank}, usedNos={usedNos}, raceTime={raceTime}s");
 
 #if PLAY_GAMES_SERVICES
         try
@@ -196,7 +226,7 @@ public class GameStatsController : MonoBehaviour
             PlayerGameEvent raceCompletedEvent = new PlayerGameEvent.Builder("raceCompleted")
                 .AddProperty("carUsed", carUsedValue)
                 .AddProperty("rank", rank)
-                .AddProperty("usedNOS", usedNOS)
+                .AddProperty("usedNos", usedNos)
                 .AddProperty("raceTime", raceTime)
                 .Build();
 
@@ -219,12 +249,10 @@ public class GameStatsController : MonoBehaviour
     public void OnCarUpgradedButtonClicked()
     {
         string carCharacteristic = GetDropdownText(carCharacteristicDropdown);
-        string oldValueStr = GetDropdownText(oldValueDropdown);
-        string newValueStr = GetDropdownText(newValueDropdown);
+        string oldValue = GetDropdownText(oldValueDropdown);
+        string newValue = GetDropdownText(newValueDropdown);
         string garageLevelStr = GetDropdownText(garageLevelDropdown);
 
-        long oldValue = ParseLong(oldValueStr, 1);
-        long newValue = ParseLong(newValueStr, 2);
         long garageLevel = ParseLong(garageLevelStr, 1);
 
         SendCarUpgradedEvent(carCharacteristic, oldValue, newValue, garageLevel);
@@ -233,9 +261,9 @@ public class GameStatsController : MonoBehaviour
     /// <summary>
     /// Constructs and records the 'carUpgraded' PlayerGameEvent.
     /// </summary>
-    public void SendCarUpgradedEvent(string carCharacteristic, long oldValue, long newValue, long garageLevel)
+    public void SendCarUpgradedEvent(string carCharacteristic, string oldValue, string newValue, long garageLevel)
     {
-        Debug.Log($"[GameStatsController] Sending 'carUpgraded' event: carCharacteristic='{carCharacteristic}', oldValue={oldValue}, newValue={newValue}, garageLevel={garageLevel}");
+        Debug.Log($"[GameStatsController] Sending 'carUpgraded' event: carCharacteristic='{carCharacteristic}', oldValue='{oldValue}', newValue='{newValue}', garageLevel={garageLevel}");
 
 #if PLAY_GAMES_SERVICES
         try
@@ -257,6 +285,24 @@ public class GameStatsController : MonoBehaviour
 #else
         Debug.Log("[GameStatsController] (PLAY_GAMES_SERVICES not enabled) 'carUpgraded' event simulated.");
 #endif
+    }
+
+    /// <summary>
+    /// Called when SendProgressionButton is clicked.
+    /// Records a progression stat event for currentProgress (Stat ID 5: Level / KILOMETER).
+    /// </summary>
+    public void OnSendProgressionButtonClicked()
+    {
+        SendProgressionStatEvent("progressUpdate", "currentProgress", 1);
+    }
+
+    /// <summary>
+    /// Called when RequestEventsUploadButton is clicked.
+    /// Requests an immediate events upload to Google Play Games Services.
+    /// </summary>
+    public void OnRequestEventsUploadButtonClicked()
+    {
+        RequestEventsUpload();
     }
 
     /// <summary>
