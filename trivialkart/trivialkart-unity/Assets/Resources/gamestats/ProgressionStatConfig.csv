@@ -1,0 +1,2 @@
+Stat Id,Event Property Name,Stat Display Name,Stat Description,Icon File Name,Good value direction,Unit
+5,currentProgress,Level,Players accumulate xp by playing matches and level up.,Level.png,increasing,KILOMETER
