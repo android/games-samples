@@ -21,6 +21,16 @@
 #include <cstdint>
 #include <string>
 
+// Enables compiler printf-style format string checking (-Wformat) on logging functions.
+// format_index and args_index are 1-based parameter positions; pass 0 for args_index
+// on functions taking a va_list.
+#if defined(__GNUC__) || defined(__clang__)
+#define BGF_PRINTF_FORMAT(format_index, args_index) \
+  __attribute__((format(printf, format_index, args_index)))
+#else
+#define BGF_PRINTF_FORMAT(format_index, args_index)
+#endif
+
 namespace base_game_framework {
 
 /**
@@ -130,7 +140,7 @@ namespace base_game_framework {
            const DebugLogLevel log_level,
            const char* tag,
            const char* format,
-           ...);
+           ...) BGF_PRINTF_FORMAT(4, 5);
 
 /**
  * @brief Log a debug message with variable parameters
@@ -145,7 +155,7 @@ namespace base_game_framework {
            const DebugLogLevel log_level,
            const char* tag,
            const char* format,
-           va_list specifiers);
+           va_list specifiers) BGF_PRINTF_FORMAT(4, 0);
 
 /**
  * @brief Log a debug message with a string constant

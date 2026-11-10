@@ -25,7 +25,9 @@ enum EventKeyCode : int32_t {
   kKeyCode_Unknown = AKEYCODE_UNKNOWN,
   kKeyCode_Soft_Left = AKEYCODE_SOFT_LEFT,
   kKeyCode_Soft_Right = AKEYCODE_SOFT_RIGHT,
-  kKeyCode_Gome = AKEYCODE_HOME,
+  kKeyCode_Home = AKEYCODE_HOME,
+  // Misspelled alias retained for source compatibility.
+  kKeyCode_Gome [[deprecated("Use kKeyCode_Home instead")]] = kKeyCode_Home,
   kKeyCode_Back = AKEYCODE_BACK,
   kKeyCode_Call = AKEYCODE_CALL,
   kKeyCode_Endcall = AKEYCODE_ENDCALL,

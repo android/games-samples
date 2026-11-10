@@ -31,7 +31,7 @@ class PlatformUtilLog {
   static void Log(const DebugManager::DebugLogLevel log_level,
                   const char* tag,
                   const char* format,
-                  va_list specifiers);
+                  va_list specifiers) BGF_PRINTF_FORMAT(3, 0);
 };
 
 } // namespace base_game_framework

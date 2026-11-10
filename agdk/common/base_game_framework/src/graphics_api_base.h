@@ -29,6 +29,8 @@ namespace base_game_framework {
 
 class GraphicsAPIBase {
  public:
+  virtual ~GraphicsAPIBase() = default;
+
   virtual DisplayManager::GraphicsAPI GetAPI() const = 0;
   virtual GraphicsAPIStatus GetAPIStatus() const { return kGraphicsAPI_Uninitialized; }
   virtual const GraphicsAPIFeatures& GetAPIFeatures() const = 0;
