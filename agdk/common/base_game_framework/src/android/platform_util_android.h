@@ -19,6 +19,7 @@
 
 #include <android/native_window.h>
 #include <jni.h>
+#include <string>
 #include <thread>
 #include "game-activity/native_app_glue/android_native_app_glue.h"
 
@@ -46,12 +47,26 @@ class PlatformUtilAndroid {
     activity_class_object_ = activity_class_object;
   }
 
-  static jclass GetUtilClass() { return util_class_; }
-  static void SetUtilClass(jclass clazz) { util_class_ = clazz; }
-  static jobject GetUtilClassObject() { return util_class_object_; }
-  static void SetUtilClassObject(jobject util_class_object) {
-    util_class_object_ = util_class_object;
-  }
+  // Returns a new local ref to the registered Java BaseGameFrameworkUtils object, or
+  // nullptr if none is registered. The caller must DeleteLocalRef() the result. Holding
+  // the local ref keeps the object valid even if a newer Activity registers concurrently.
+  static jobject NewUtilObjectLocalRef(JNIEnv *env);
+
+  // Stores a global ref to the Java BaseGameFrameworkUtils object, owned by `activity`,
+  // replacing (and deleting) any previous registration.
+  // Called from BaseGameFrameworkUtils.registerUtilObject() on the Java UI thread.
+  static void RegisterUtilObject(JNIEnv *env, jobject util_object, jobject activity);
+
+  // Deletes the registered refs if they belong to `activity`. A registration made by a
+  // newer Activity is left untouched. Called from BaseGameFramework_Destroy().
+  static void ReleaseUtilObject(JNIEnv *env, jobject activity);
+
+  // Converts a Java string to a std::string, releasing the JNI UTF chars.
+  // Returns an empty string if `jstr` is null. Does not delete the `jstr` local ref.
+  static std::string JStringToString(JNIEnv *env, jstring jstr);
+
+  // If a Java exception is pending, logs and clears it and returns true.
+  static bool ClearPendingException(JNIEnv *env);
 
   static ANativeWindow* GetNativeWindow() { return native_window_; }
   static void SetNativeWindow(ANativeWindow* native_window) { native_window_ = native_window; }
@@ -63,17 +78,11 @@ class PlatformUtilAndroid {
   static std::thread::id GetMainThreadID() { return main_thread_id_; }
   static bool RunningOnMainThread() { return std::this_thread::get_id() == main_thread_id_; }
 
-  static void InitMethods(JNIEnv *env);
-
  private:
   static android_app* android_app_;
   static JNIEnv* jni_env_;
   static jclass activity_class_;
   static jobject activity_class_object_;
-  static jclass util_class_;
-  static jobject util_class_object_;
-  static jmethodID get_android_feature_method_;
-  static jmethodID get_display_dpi_method_;
   static ANativeWindow *native_window_;
   static std::thread::id main_thread_id_;
   static bool has_focus_;

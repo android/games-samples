@@ -30,10 +30,7 @@ const std::string &SystemInfoUtils::GetApplicationPackageName() {
                                                          "()Ljava/lang/String;");
       jstring package_name_jstring = static_cast<jstring>(
           env->CallObjectMethod(activity_object, method_getpackagename));
-      const char *package_name = env->GetStringUTFChars(package_name_jstring, NULL);
-      if (package_name != NULL) {
-        application_package_name_ = package_name;
-      }
+      application_package_name_ = PlatformUtilAndroid::JStringToString(env, package_name_jstring);
       env->DeleteLocalRef(activity_class);
       env->DeleteLocalRef(package_name_jstring);
     }

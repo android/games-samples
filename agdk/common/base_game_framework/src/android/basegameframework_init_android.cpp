@@ -60,7 +60,19 @@ void BaseGameFramework_Destroy() {
   FilesystemManager::ShutdownInstance();
   DebugManager::ShutdownInstance();
   android_app *app = PlatformUtilAndroid::GetAndroidApp();
+  PlatformUtilAndroid::ReleaseUtilObject(PlatformUtilAndroid::GetMainThreadJNIEnv(),
+                                         app->activity->javaGameActivity);
   app->activity->vm->DetachCurrentThread();
+
+  // Don't leave dangling pointers to the detached JNIEnv / destroyed android_app
+  // between this shutdown and the next BaseGameFramework_Init(). Skip if a newer
+  // instance has already re-initialized these process-wide values.
+  if (PlatformUtilAndroid::GetAndroidApp() == app) {
+    PlatformUtilAndroid::SetMainThreadJniEnv(nullptr);
+    PlatformUtilAndroid::SetActivityClassObject(nullptr);
+    PlatformUtilAndroid::SetNativeWindow(nullptr);
+    PlatformUtilAndroid::SetAndroidApp(nullptr);
+  }
 }
 
 } // namespace basegameframework

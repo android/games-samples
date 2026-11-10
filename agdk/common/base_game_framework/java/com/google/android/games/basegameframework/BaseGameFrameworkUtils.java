@@ -27,6 +27,7 @@ import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
@@ -58,8 +59,11 @@ public class BaseGameFrameworkUtils {
 
     public static final int CONTEXT_GET_DISPLAY_MIN_API = Build.VERSION_CODES.R;
 
+    private static final String TAG = "BaseGameFrameworkUtils";
+
     private Activity mGameActivity;
-    private FreeSpace mFreeSpace;
+    // Final so readers and the background retrieval thread always lock the same object.
+    private final FreeSpace mFreeSpace = new FreeSpace();
 
     public BaseGameFrameworkUtils(Activity activity) {
         mGameActivity = activity;
@@ -75,10 +79,12 @@ public class BaseGameFrameworkUtils {
     }
 
     public int GetExternalStorageEmulated() {
-        if (Environment.isExternalStorageEmulated(mGameActivity.getExternalFilesDir(null))) {
-            return 1;
-        }
-        return 0;
+        // Null if shared storage is currently unavailable; fall back to the primary volume.
+        File externalDir = mGameActivity.getExternalFilesDir(null);
+        boolean emulated = (externalDir != null)
+                ? Environment.isExternalStorageEmulated(externalDir)
+                : Environment.isExternalStorageEmulated();
+        return emulated ? 1 : 0;
     }
 
     public int GetDisplayDPI() {
@@ -96,7 +102,11 @@ public class BaseGameFrameworkUtils {
                 returnPath = mGameActivity.getFilesDir().getAbsolutePath();
                 break;
             case kRootPathExternalStorage:
-                returnPath = mGameActivity.getExternalFilesDir(null).getAbsolutePath();
+                // Null if shared storage is currently unavailable.
+                File externalDir = mGameActivity.getExternalFilesDir(null);
+                if (externalDir != null) {
+                    returnPath = externalDir.getAbsolutePath();
+                }
                 break;
             case kRootPathCacheStorage:
                 returnPath = mGameActivity.getCacheDir().getAbsolutePath();
@@ -129,44 +139,54 @@ public class BaseGameFrameworkUtils {
 
     public void Initialize() {
         retrieveFreeSpace();
-        registerUtilObject();
+        registerUtilObject(mGameActivity);
     }
 
     private void retrieveFreeSpace() {
-        mFreeSpace = new FreeSpace();
         if (Build.VERSION.SDK_INT >= FREE_SPACE_MIN_API) {
-            synchronized (mFreeSpace) {
-                new Thread(new Runnable() {
-                    public void run() {
-                        try {
-                            StorageManager storageManager = (StorageManager)
-                                    mGameActivity.getSystemService(Context.STORAGE_SERVICE);
+            new Thread(new Runnable() {
+                public void run() {
+                    // Query into locals, then publish all values under the lock so
+                    // GetEstimatedFreeSpace() never observes a partially updated FreeSpace.
+                    long cacheSpace = 0;
+                    long internalSpace = 0;
+                    long externalSpace = 0;
+                    try {
+                        StorageManager storageManager = (StorageManager)
+                                mGameActivity.getSystemService(Context.STORAGE_SERVICE);
 
-                            UUID cacheUUID = storageManager.getUuidForPath(
-                                    mGameActivity.getCacheDir());
-                            long quota = storageManager.getCacheQuotaBytes(cacheUUID);
-                            mFreeSpace.cacheSpace = quota;
+                        UUID cacheUUID = storageManager.getUuidForPath(
+                                mGameActivity.getCacheDir());
+                        cacheSpace = storageManager.getCacheQuotaBytes(cacheUUID);
 
-                            UUID internalUUID = storageManager.getUuidForPath(
-                                    mGameActivity.getFilesDir());
-                            mFreeSpace.internalSpace =
-                                    storageManager.getAllocatableBytes(internalUUID);
+                        UUID internalUUID = storageManager.getUuidForPath(
+                                mGameActivity.getFilesDir());
+                        internalSpace = storageManager.getAllocatableBytes(internalUUID);
 
-                            UUID externalUUID = storageManager.getUuidForPath(
-                                    mGameActivity.getExternalFilesDir(null));
-                            mFreeSpace.externalSpace = storageManager.getAllocatableBytes(
-                                    externalUUID);
+                        // Null if shared storage is currently unavailable.
+                        File externalDir = mGameActivity.getExternalFilesDir(null);
+                        if (externalDir != null) {
+                            UUID externalUUID = storageManager.getUuidForPath(externalDir);
+                            externalSpace = storageManager.getAllocatableBytes(externalUUID);
+                        }
+                    } catch (IOException | RuntimeException e) {
+                        // getUuidForPath() can also throw IllegalArgumentException.
+                        Log.w(TAG, "Failed to retrieve free space", e);
+                    } finally {
+                        synchronized (mFreeSpace) {
+                            mFreeSpace.cacheSpace = cacheSpace;
+                            mFreeSpace.internalSpace = internalSpace;
+                            mFreeSpace.externalSpace = externalSpace;
                             mFreeSpace.retrieved = true;
-                        } catch (IOException e) {
-                            mFreeSpace.retrieved = true;
-                            e.printStackTrace();
                         }
                     }
-                }).start();
-            }
+                }
+            }).start();
         } else {
             // If no API support, set retrieved, but all sizes are 0
-            mFreeSpace.retrieved = true;
+            synchronized (mFreeSpace) {
+                mFreeSpace.retrieved = true;
+            }
         }
     }
 
@@ -184,5 +204,7 @@ public class BaseGameFrameworkUtils {
         }
         return rotation;
     }
-    public native void registerUtilObject();
+    // `activity` identifies the owner so native code only releases this registration
+    // when that Activity's native thread shuts down.
+    private native void registerUtilObject(Activity activity);
 }

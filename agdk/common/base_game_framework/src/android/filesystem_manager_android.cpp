@@ -35,32 +35,32 @@ void FilesystemManager::ShutdownInstance() {
 
 FilesystemManager::FilesystemManager() {
   JNIEnv *env = PlatformUtilAndroid::GetMainThreadJNIEnv();
-  jclass util_class = PlatformUtilAndroid::GetUtilClass();
-  jobject util_object = PlatformUtilAndroid::GetUtilClassObject();
-  if (env != nullptr && util_object != nullptr) {
+  jobject util_object = PlatformUtilAndroid::NewUtilObjectLocalRef(env);
+  if (util_object != nullptr) {
+    jclass util_class = env->GetObjectClass(util_object);
     jmethodID method_getrootpath = env->GetMethodID(util_class, "GetRootPath",
                                                     "(I)Ljava/lang/String;");
-    jstring ipath_jstring = static_cast<jstring>(
-        env->CallObjectMethod(util_object, method_getrootpath,
-                              static_cast<jint>(kRootPathInternalStorage)));
-    const char *ipath = env->GetStringUTFChars(ipath_jstring, NULL);
-    root_path_internal_ = ipath;
-    env->DeleteLocalRef(ipath_jstring);
-
-    jstring epath_jstring = static_cast<jstring>(
-        env->CallObjectMethod(util_object, method_getrootpath,
-                              static_cast<jint>(kRootPathExternalStorage)));
-    const char *epath = env->GetStringUTFChars(epath_jstring, NULL);
-    root_path_external_ = epath;
-    env->DeleteLocalRef(epath_jstring);
-
-    jstring cpath_jstring = static_cast<jstring>(
-        env->CallObjectMethod(util_object, method_getrootpath,
-                              static_cast<jint>(kRootPathCache)));
-    const char *cpath = env->GetStringUTFChars(cpath_jstring, NULL);
-    root_path_cache_ = cpath;
-    env->DeleteLocalRef(cpath_jstring);
-  } else if (util_object == nullptr) {
+    auto get_root_path = [env, util_object, method_getrootpath](RootPathType path_type) {
+      jstring path_jstring = static_cast<jstring>(
+          env->CallObjectMethod(util_object, method_getrootpath,
+                                static_cast<jint>(path_type)));
+      std::string path;
+      if (!PlatformUtilAndroid::ClearPendingException(env)) {
+        path = PlatformUtilAndroid::JStringToString(env, path_jstring);
+      }
+      env->DeleteLocalRef(path_jstring);
+      return path;
+    };
+    if (method_getrootpath != nullptr) {
+      root_path_internal_ = get_root_path(kRootPathInternalStorage);
+      root_path_external_ = get_root_path(kRootPathExternalStorage);
+      root_path_cache_ = get_root_path(kRootPathCache);
+    } else {
+      PlatformUtilAndroid::ClearPendingException(env);
+    }
+    env->DeleteLocalRef(util_class);
+    env->DeleteLocalRef(util_object);
+  } else if (env != nullptr) {
     DebugManager::Log(DebugManager::kLog_Channel_Default,
                       DebugManager::kLog_Level_Error,
                       "FilesystemManager",
@@ -71,13 +71,21 @@ FilesystemManager::FilesystemManager() {
 bool FilesystemManager::GetExternalStorageEmulated() const {
   bool emulated = true;
   JNIEnv *env = PlatformUtilAndroid::GetMainThreadJNIEnv();
-  jclass util_class = PlatformUtilAndroid::GetUtilClass();
-  jobject util_object = PlatformUtilAndroid::GetUtilClassObject();
-  if (env != nullptr && util_object != nullptr) {
+  jobject util_object = PlatformUtilAndroid::NewUtilObjectLocalRef(env);
+  if (util_object != nullptr) {
+    jclass util_class = env->GetObjectClass(util_object);
     jmethodID method_getemulated = env->GetMethodID(util_class, "GetExternalStorageEmulated",
                                                     "()I");
-    jint jemulated = env->CallIntMethod(util_object, method_getemulated);
-    emulated = jemulated == 1 ? true : false;
+    if (method_getemulated != nullptr) {
+      const jint jemulated = env->CallIntMethod(util_object, method_getemulated);
+      if (!PlatformUtilAndroid::ClearPendingException(env)) {
+        emulated = (jemulated == 1);
+      }
+    } else {
+      PlatformUtilAndroid::ClearPendingException(env);
+    }
+    env->DeleteLocalRef(util_class);
+    env->DeleteLocalRef(util_object);
   }
   return emulated;
 }
@@ -95,14 +103,22 @@ int64_t FilesystemManager::GetFreeSpace(const RootPathType path_type) const {
   int64_t free_space = -1;
 
   JNIEnv *env = PlatformUtilAndroid::GetMainThreadJNIEnv();
-  jclass util_class = PlatformUtilAndroid::GetUtilClass();
-  jobject util_object = PlatformUtilAndroid::GetUtilClassObject();
-  if (env != nullptr && util_object != nullptr) {
+  jobject util_object = PlatformUtilAndroid::NewUtilObjectLocalRef(env);
+  if (util_object != nullptr) {
+    jclass util_class = env->GetObjectClass(util_object);
     jmethodID method_getfreespace = env->GetMethodID(util_class, "GetEstimatedFreeSpace",
                                                      "(I)J");
-    jlong jfree_space = env->CallLongMethod(util_object, method_getfreespace,
-                                            static_cast<jint>(path_type));
-    free_space = static_cast<int64_t>(jfree_space);
+    if (method_getfreespace != nullptr) {
+      const jlong jfree_space = env->CallLongMethod(util_object, method_getfreespace,
+                                                    static_cast<jint>(path_type));
+      if (!PlatformUtilAndroid::ClearPendingException(env)) {
+        free_space = static_cast<int64_t>(jfree_space);
+      }
+    } else {
+      PlatformUtilAndroid::ClearPendingException(env);
+    }
+    env->DeleteLocalRef(util_class);
+    env->DeleteLocalRef(util_object);
   }
   return free_space;
 }
