@@ -50,8 +50,8 @@ bool VulkanAPIUtils::CheckVkResult(const VkResult result, const char *message) {
     DebugManager::Log(DebugManager::kLog_Channel_Default,
                       DebugManager::kLog_Level_Error,
                       "VulkanAPIUtils",
-                      "CheckVkResult failed: %d (%s)", result);
-
+                      "CheckVkResult failed: %d (%s)", result,
+                      (message != nullptr) ? message : "");
   }
   return (result == VK_SUCCESS);
 }

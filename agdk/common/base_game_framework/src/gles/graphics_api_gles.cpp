@@ -234,7 +234,8 @@ void GraphicsAPIGLES::ParseEGLConfigs() {
     DebugManager::Log(DebugManager::kLog_Channel_Default,
                       DebugManager::kLog_Level_Info,
                       BGM_CLASS_TAG,
-                      "EGL config count: %d Feature flags: 0x%x", config_count);
+                      "EGL config count: %d Feature flags: 0x%x", config_count,
+                      static_cast<unsigned int>(feature_flags_));
 
     for (EGLint i = 0; i < config_count; ++i) {
       EGLConfig config = configs[i];
