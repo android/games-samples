@@ -13,15 +13,22 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
+
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Controllers/TrivialKartPlayerController.h"
+#include "InputCoreTypes.h"
+#include "Styling/SlateTypes.h"
 #include "StoreWidget.generated.h"
 
+class UBorder;
+class UButton;
 class UWidgetSwitcher;
 class UCheckBox;
-class UButton;
+class USelectableItem;
+
 /**
  * 
  */
@@ -51,14 +58,45 @@ class TRIVIALKART_UNREAL_API UStoreWidget : public UUserWidget
 protected:
 	UPROPERTY()
 	TArray<UCheckBox*> CheckBoxes;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UBorder>> TabHighlightBorders;
+
+	TWeakObjectPtr<USelectableItem> GamepadPressedItem;
+	TWeakObjectPtr<USelectableItem> HoveredItem;
+
+	int32 ActiveTabIndex = 0;
+	int32 FocusedItemIndex = 0;
+	FButtonStyle OriginalBackButtonStyle;
+	FLinearColor OriginalBackButtonBgColor = FLinearColor::White;
+	bool bBackStyleCached = false;
+	bool bBackButtonPressed = false;
+
 public:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+
+	bool HandleGamepadKey(const FKey& Key, bool bIsPressed = true);
+	void RefreshGamepadFocus(bool bScrollIntoView = true);
+	void RefreshOwnershipAndFocus(bool bScrollIntoView = false);
+	void CancelPendingPress();
 	
 private:
 	UFUNCTION()
 	void OnBackButtonClicked();
+	UFUNCTION()
+	void OnBackButtonReleased();
 	void SetCheckBoxState(bool bIsChecked, UCheckBox* CheckBox, int ActiveWidgetIndex);
+	void SelectTabByIndex(int32 NewTabIndex);
+	void RefreshAllItemsOwnership() const;
+	void GatherSelectableItems(UWidget* RootWidget, TArray<USelectableItem*>& OutItems, bool bOnlySelectable) const;
+	void OnSelectableItemInteracted(USelectableItem* InteractedItem);
+	void OnSelectableItemUnhovered(USelectableItem* UnhoveredItem);
+	void OnSelectableItemClicked(USelectableItem* ClickedItem);
+	void OnInputModeChanged(ETrivialKartInputMode NewInputMode);
+	bool IsNavigationVisualActive() const;
+	void RestoreViewportFocus() const;
+
 	UFUNCTION()
 	void OnFuelBoxStateChanged(bool bIsChecked);
 	UFUNCTION()

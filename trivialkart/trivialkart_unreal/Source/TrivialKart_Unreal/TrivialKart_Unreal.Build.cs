@@ -27,6 +27,7 @@ public class TrivialKart_Unreal : ModuleRules
 			"Core", 
 			"CoreUObject", 
 			"Engine", 
+			"ApplicationCore",
 			"InputCore", 
 			"EnhancedInput", 
 			"Paper2D",
