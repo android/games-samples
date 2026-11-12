@@ -13,16 +13,20 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
+
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Components/TextBlock.h"
+#include "Controllers/TrivialKartPlayerController.h"
+#include "InputCoreTypes.h"
+#include "Styling/SlateTypes.h"
 #include "PGSWidget.generated.h"
 
-class UVerticalBox;
+class UBorder;
 class UPGSLayoutText;
 class UScrollBox;
+class UVerticalBox;
 class UWidgetSwitcher;
 class UCheckBox;
 class UButton;
@@ -64,14 +68,36 @@ class TRIVIALKART_UNREAL_API UPGSWidget : public UUserWidget
 protected:
 	UPROPERTY()
 	TArray<UCheckBox*> CheckBoxes;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UBorder>> TabHighlightBorders;
+
+	int32 ActiveTabIndex = 0;
+	bool bBackButtonFocused = false;
+	bool bBackButtonPressed = false;
+	FButtonStyle OriginalBackButtonStyle;
+	FLinearColor OriginalBackButtonBgColor = FLinearColor::White;
+	bool bBackStyleCached = false;
+
 public:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+
+	bool HandleGamepadKey(const FKey& Key, bool bIsPressed = true);
+	void CancelPendingPress();
 	
 private:
 	UFUNCTION()
 	void OnBackButtonClicked();
+	UFUNCTION()
+	void OnBackButtonReleased();
 	void SetCheckBoxState(bool bIsChecked, UCheckBox* CheckBox, int ActiveWidgetIndex);
+	void SelectTabByIndex(int32 NewTabIndex);
+	void UpdateTabFocusVisuals();
+	void OnInputModeChanged(ETrivialKartInputMode NewInputMode);
+	bool IsNavigationVisualActive() const;
+	void RestoreViewportFocus() const;
+
 	UFUNCTION()
 	void OnAuthCheckBoxStateChanged(bool bIsChecked);
 	UFUNCTION()

@@ -6,12 +6,13 @@ This version of TrivialKart demonstrates:
 
 * **Play Games Services (v2)**: For sign-in, achievements, and cloud save (using Online Subsystem GooglePlay Extension).
 * **In-App Purchases (IAP)**.
+* **Controller & Multi-Input Support**: Seamless runtime switching across Touch, Gamepad (Bluetooth / USB controllers), and Keyboard/Mouse with full UI navigation and visual focus indicators.
 
 ---
 
 ## Pre-requisites
 
-* **Unreal Engine**: Version 5.4 or higher (Recommended).
+* **Unreal Engine**: Version 5.7 or higher (Recommended).
 * **Android Studio**: Properly configured for the specific version of Unreal Engine being used.
 * **Google Play Games Unreal Plugin**: Ensure the official plugin is enabled.
 
@@ -24,7 +25,7 @@ This version of TrivialKart demonstrates:
 ## Getting started
 
 1.  Clone the repository and navigate to `trivialkart/trivialkart_unreal`.
-2.  Right-click `TrivialKart.uproject` and select **Generate Visual Studio project files**.
+2.  Right-click `TrivialKart_Unreal.uproject` and select **Generate Visual Studio project files**.
 3.  Open the `.sln` file in Visual Studio (or the `.uproject` in Unreal Editor).
 4.  Open the `L_TrivialKart` found in `Content/Maps`.
 
@@ -34,7 +35,8 @@ By default, Google Play features are simulated or disabled unless the Google Pla
 
 ## Overview
 
-In TrivialKart, the player has a vehicle which they can drive by tapping on it.
+In TrivialKart, the player has a vehicle which they can drive by touching and holding on screen, holding a gamepad trigger / `A` / D-Pad Right / Left Stick Right, or holding `Spacebar` / clicking.
+Navigate menus (`Garage`, `Play Games Services`, `Store`) using D-Pad or Left Stick, switch tabs with `LB` / `RB` (or `Tab` / `Shift+Tab`), confirm with `A` (`Enter`), and go back with `B` (`Esc` or Android Back).
 Driving the car uses gas. When the car runs out of gas, to continue driving,
 more must be purchased using in-game currency. If the player runs out of
 in-game currency, they may buy more via in-app purchases.
