@@ -26,32 +26,41 @@
 
 namespace base_game_framework {
 
-// enums from NativeAppGlueAppCmd in android_native_app_glue.h
-constexpr const char *kGlueCommandStrings[] = {
-    "UNUSED_APP_CMD_INPUT_CHANGED",
-    "APP_CMD_INIT_WINDOW",
-    "APP_CMD_TERM_WINDOW",
-    "APP_CMD_WINDOW_RESIZED",
-    "APP_CMD_WINDOW_REDRAW_NEEDED",
-    "APP_CMD_CONTENT_RECT_CHANGED",
-    "APP_CMD_GAINED_FOCUS",
-    "APP_CMD_LOST_FOCUS",
-    "APP_CMD_CONFIG_CHANGED",
-    "APP_CMD_LOW_MEMORY",
-    "APP_CMD_START",
-    "APP_CMD_RESUME",
-    "APP_CMD_SAVE_STATE",
-    "APP_CMD_PAUSE",
-    "APP_CMD_STOP",
-    "APP_CMD_DESTROY",
-    "APP_CMD_WINDOW_INSETS_CHANGED"
-};
+// Debug names for NativeAppGlueAppCmd values from android_native_app_glue.h.
+// A switch on the enum constants (rather than an array indexed by value) can't read out
+// of bounds or drift out of order. It deliberately has no default case, so -Wswitch
+// flags any command added by a future GameActivity release.
+static const char *GetGlueCommandName(const int32_t cmd) {
+#define BGF_GLUE_COMMAND_CASE(command) case command: return #command
+  switch (static_cast<NativeAppGlueAppCmd>(cmd)) {
+    BGF_GLUE_COMMAND_CASE(UNUSED_APP_CMD_INPUT_CHANGED);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_INIT_WINDOW);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_TERM_WINDOW);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_WINDOW_RESIZED);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_WINDOW_REDRAW_NEEDED);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_CONTENT_RECT_CHANGED);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_SOFTWARE_KB_VIS_CHANGED);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_GAINED_FOCUS);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_LOST_FOCUS);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_CONFIG_CHANGED);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_LOW_MEMORY);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_START);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_RESUME);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_SAVE_STATE);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_PAUSE);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_STOP);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_DESTROY);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_WINDOW_INSETS_CHANGED);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_EDITOR_ACTION);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_KEY_EVENT);
+    BGF_GLUE_COMMAND_CASE(APP_CMD_TOUCH_EVENT);
+  }
+#undef BGF_GLUE_COMMAND_CASE
+  return "UNKNOWN_APP_CMD";
+}
 
 void PlatformEventAndroid::ProcessApplicationEvent(struct android_app *app, int32_t cmd) {
-  const char *cmdString = "INVALID COMMAND";
-  if (cmd >= UNUSED_APP_CMD_INPUT_CHANGED && cmd <= APP_CMD_WINDOW_INSETS_CHANGED) {
-    cmdString = kGlueCommandStrings[cmd];
-  }
+  const char *cmdString = GetGlueCommandName(cmd);
 
   DebugManager::Log(DebugManager::kLog_Channel_Default,
                     DebugManager::kLog_Level_Debug,
