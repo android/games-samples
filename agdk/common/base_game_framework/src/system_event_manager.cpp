@@ -72,7 +72,7 @@ void SystemEventManager::SetLifecycleEventCallback(LifecycleEventCallback callba
 void SystemEventManager::SetMemoryWarningEventCallback(MemoryWarningEventCallback callback,
                                                        void *user_data) {
   memory_warning_event_callback_ = callback;
-  lifecycle_event_user_data_ = user_data;
+  memory_warning_event_user_data_ = user_data;
 }
 
 void SystemEventManager::SetReadSaveStateCallback(ReadSaveStateCallback callback, void *user_data) {

@@ -73,7 +73,7 @@ class GameControllerManager {
  * (i.e. handset, not controller) motion  data
  * @return true if the device can report motion data, false if not
  */
-  bool GetIntegratedMotionDataSupport() { return integrated_motion_data_; }
+  bool GetIntegratedMotionDataSupport() const { return integrated_motion_data_; }
 
 /**
  * @brief Retrieves the specified `GameController` object
@@ -155,6 +155,9 @@ class GameControllerManager {
   void *callback_user_data_ = nullptr;
   void *integrated_user_data_ = nullptr;
   void *motion_user_data_ = nullptr;
+  // Integrated (handset) sensors available to Paddleboat. Sensor reporting is only
+  // enabled while an integrated motion data callback is registered.
+  uint32_t integrated_sensor_flags_ = 0;
   bool initialized_ = false;
   bool integrated_motion_data_ = false;
 
