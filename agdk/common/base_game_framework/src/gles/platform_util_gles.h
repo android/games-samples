@@ -29,7 +29,10 @@ namespace base_game_framework {
 
 class PlatformUtilGLES {
  public:
+  // Client extensions (queried with EGL_NO_DISPLAY), e.g. EGL_KHR_platform_android
   static bool HasEGLExtension(const char* extension_name);
+  // Display extensions, e.g. EGL_KHR_gl_colorspace. `display` must be initialized.
+  static bool HasEGLDisplayExtension(const EGLDisplay display, const char* extension_name);
   static bool GetPlatformDisplaySupported();
   static EGLDisplay GetPlatformDisplay (EGLenum platform, void* native_display,
                                         const EGLAttrib *attrib_list);

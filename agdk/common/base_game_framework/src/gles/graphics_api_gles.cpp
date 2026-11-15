@@ -21,7 +21,6 @@
 namespace base_game_framework {
 
 static constexpr DisplayManager::SwapchainFrameHandle kDefault_swapchain_handle = 1;
-static constexpr uint32_t kMax_element_count = 20;
 // Just 'double buffer' for GLES
 static constexpr uint32_t kSwapchain_frame_count_gles = 2;
 // Just 'vblank' present mode for GLES
@@ -62,10 +61,13 @@ void GraphicsAPIGLES::QueryAvailability() {
 void GraphicsAPIGLES::QueryCapabilities() {
   egl_display_ = InitializeEGLDisplay();
   if (egl_display_ != EGL_NO_DISPLAY) {
-    srgb_framebuffer_support_ = PlatformUtilGLES::HasEGLExtension("EGL_KHR_gl_colorspace");
     eglInitialize(egl_display_, nullptr, nullptr);
 
     if (PlatformUtilGLES::CheckEGLError("Calling eglInitialize")) {
+      // EGL_KHR_gl_colorspace is a display extension, so it can only be queried on an
+      // initialized display (not via the EGL_NO_DISPLAY client extension string).
+      srgb_framebuffer_support_ =
+          PlatformUtilGLES::HasEGLDisplayExtension(egl_display_, "EGL_KHR_gl_colorspace");
       // Build a list of supported configurations and use that to generate our
       // list of display formats valid for 'swapchain' creation
       ParseEGLConfigs();
@@ -138,47 +140,50 @@ bool GraphicsAPIGLES::DisplayFormatExists(const DisplayManager::DisplayFormat& d
   return false;
 }
 
-const EGLint *GraphicsAPIGLES::GenerateEGLConfigAttribList(
-    const DisplayManager::DisplayFormat& display_format) {
-  EGLint* attrib = new EGLint[kMax_element_count];
-  // Set up defaults
-  EGLint red_size = 8;
-  EGLint green_size = 8;
-  EGLint blue_size = 8;
-  EGLint alpha_size = 0;
-  EGLint depth_size = 0;
-  EGLint stencil_size = 0;
-  EGLint *current_attrib = attrib;
+namespace {
+// Exact channel sizes for a DisplayFormat, matching how ParseEGLConfigs classifies configs.
+struct EGLConfigSizes {
+  EGLint red = 8;
+  EGLint green = 8;
+  EGLint blue = 8;
+  EGLint alpha = 0;
+  EGLint depth = 0;
+  EGLint stencil = 0;
+};
 
+EGLConfigSizes GetEGLConfigSizes(const DisplayManager::DisplayFormat& display_format) {
+  EGLConfigSizes sizes;
   switch (display_format.display_pixel_format) {
     case DisplayManager::kDisplay_Pixel_Format_RGBA8:
-      alpha_size = 8;
+      sizes.alpha = 8;
       break;
     case DisplayManager::kDisplay_Pixel_Format_RGBA4:
-      red_size = 4;
-      green_size = 4;
-      blue_size = 4;
-      alpha_size = 4;
+      sizes.red = 4;
+      sizes.green = 4;
+      sizes.blue = 4;
+      sizes.alpha = 4;
       break;
     case DisplayManager::kDisplay_Pixel_Format_RGBA5551:
-      red_size = 5;
-      green_size = 5;
-      blue_size = 5;
-      alpha_size = 1;
+      sizes.red = 5;
+      sizes.green = 5;
+      sizes.blue = 5;
+      sizes.alpha = 1;
+      break;
     case DisplayManager::kDisplay_Pixel_Format_RGB565:
-      red_size = 5;
-      green_size = 6;
-      blue_size = 5;
+      sizes.red = 5;
+      sizes.green = 6;
+      sizes.blue = 5;
+      break;
     default: break;
   }
 
   switch (display_format.display_depth_format) {
     case DisplayManager::kDisplay_Depth_Format_16F:
     case DisplayManager::kDisplay_Depth_Format_16U:
-      depth_size = 16;
+      sizes.depth = 16;
       break;
     case DisplayManager::kDisplay_Depth_Format_D24S8_Packed:
-      depth_size = 24;
+      sizes.depth = 24;
       break;
     default: break;
   }
@@ -186,36 +191,87 @@ const EGLint *GraphicsAPIGLES::GenerateEGLConfigAttribList(
   switch (display_format.display_stencil_format) {
     case DisplayManager::kDisplay_Stencil_Format_S8:
     case DisplayManager::kDisplay_Stencil_Format_D24S8_Packed:
-      stencil_size = 8;
+      sizes.stencil = 8;
       break;
     default: break;
   }
+  return sizes;
+}
 
-  *current_attrib++ = EGL_RENDERABLE_TYPE;
-  *current_attrib++ = EGL_OPENGL_ES3_BIT;
-  *current_attrib++ = EGL_SURFACE_TYPE;
-  *current_attrib++ = EGL_WINDOW_BIT;
-  *current_attrib++ = EGL_RED_SIZE;
-  *current_attrib++ = red_size;
-  *current_attrib++ = EGL_GREEN_SIZE;
-  *current_attrib++ = green_size;
-  *current_attrib++ = EGL_BLUE_SIZE;
-  *current_attrib++ = blue_size;
-  if (alpha_size > 0) {
-    *current_attrib++ = EGL_ALPHA_SIZE;
-    *current_attrib++ = alpha_size;
+EGLint GetConfigAttrib(const EGLDisplay display, const EGLConfig config, const EGLint attribute) {
+  EGLint value = -1;
+  if (eglGetConfigAttrib(display, config, attribute, &value) != EGL_TRUE) {
+    value = -1;
   }
-  if (depth_size > 0) {
-    *current_attrib++ = EGL_DEPTH_SIZE;
-    *current_attrib++ = depth_size;
+  return value;
+}
+} // anonymous namespace
+
+std::vector<EGLint> GraphicsAPIGLES::GenerateEGLConfigAttribList(
+    const DisplayManager::DisplayFormat& display_format) {
+  const EGLConfigSizes sizes = GetEGLConfigSizes(display_format);
+  // EGL treats these sizes as minimums (and sorts larger color depths first), so callers
+  // must filter eglChooseConfig results for exact sizes, see GetMatchingEGLConfigs.
+  std::vector<EGLint> attribs = {
+      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
+      EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+      EGL_RED_SIZE, sizes.red,
+      EGL_GREEN_SIZE, sizes.green,
+      EGL_BLUE_SIZE, sizes.blue,
+  };
+  if (sizes.alpha > 0) {
+    attribs.insert(attribs.end(), {EGL_ALPHA_SIZE, sizes.alpha});
   }
-  if (stencil_size > 0) {
-    *current_attrib++ = EGL_STENCIL_SIZE;
-    *current_attrib++ = stencil_size;
+  if (sizes.depth > 0) {
+    attribs.insert(attribs.end(), {EGL_DEPTH_SIZE, sizes.depth});
   }
-  // terminate the attribute list
-  *current_attrib = EGL_NONE;
-  return attrib;
+  if (sizes.stencil > 0) {
+    attribs.insert(attribs.end(), {EGL_STENCIL_SIZE, sizes.stencil});
+  }
+  attribs.push_back(EGL_NONE);
+  return attribs;
+}
+
+std::vector<EGLConfig> GraphicsAPIGLES::GetMatchingEGLConfigs(
+    const DisplayManager::DisplayFormat& display_format) {
+  std::vector<EGLConfig> matches;
+  const std::vector<EGLint> attribs = GenerateEGLConfigAttribList(display_format);
+  EGLint config_count = 0;
+  if (eglChooseConfig(egl_display_, attribs.data(), nullptr, 0, &config_count) != EGL_TRUE ||
+      config_count <= 0) {
+    PlatformUtilGLES::CheckEGLError("eglChooseConfig found no matching config");
+    return matches;
+  }
+  std::vector<EGLConfig> configs(config_count);
+  if (eglChooseConfig(egl_display_, attribs.data(), configs.data(), config_count,
+                      &config_count) != EGL_TRUE) {
+    PlatformUtilGLES::CheckEGLError("Calling eglChooseConfig");
+    return matches;
+  }
+  configs.resize(config_count);
+
+  // Keep eglChooseConfig's order (e.g. caveat-free configs first), but require exact color
+  // sizes, and put configs that also match depth/stencil exactly ahead of the rest.
+  // ParseEGLConfigs only offers exact color formats, while depth/stencil sizes it doesn't
+  // recognize (e.g. 32-bit depth) are reported as 'none', so those are a fallback only.
+  const EGLConfigSizes sizes = GetEGLConfigSizes(display_format);
+  std::vector<EGLConfig> color_only_matches;
+  for (const EGLConfig config : configs) {
+    if (GetConfigAttrib(egl_display_, config, EGL_RED_SIZE) != sizes.red ||
+        GetConfigAttrib(egl_display_, config, EGL_GREEN_SIZE) != sizes.green ||
+        GetConfigAttrib(egl_display_, config, EGL_BLUE_SIZE) != sizes.blue ||
+        GetConfigAttrib(egl_display_, config, EGL_ALPHA_SIZE) != sizes.alpha) {
+      continue;
+    }
+    if (GetConfigAttrib(egl_display_, config, EGL_DEPTH_SIZE) == sizes.depth &&
+        GetConfigAttrib(egl_display_, config, EGL_STENCIL_SIZE) == sizes.stencil) {
+      matches.push_back(config);
+    } else {
+      color_only_matches.push_back(config);
+    }
+  }
+  matches.insert(matches.end(), color_only_matches.begin(), color_only_matches.end());
+  return matches;
 }
 
 /*
@@ -363,23 +419,41 @@ EGLDisplay GraphicsAPIGLES::InitializeEGLDisplay() {
   return returnDisplay;
 }
 
+EGLSurface GraphicsAPIGLES::CreateWindowSurface(
+    const EGLConfig config, const DisplayManager::DisplayFormat &display_format) {
+  EGLNativeWindowType native_window = PlatformUtilGLES::GetNativeWindow();
+  if (egl_display_ == EGL_NO_DISPLAY || native_window == nullptr || config == nullptr) {
+    return EGL_NO_SURFACE;
+  }
+  // ParseEGLConfigs only offers sRGB formats when EGL_KHR_gl_colorspace is available.
+  const bool srgb = (display_format.display_color_space ==
+                     DisplayManager::kDisplay_Color_Space_SRGB);
+  const EGLint srgb_surface_attribs[] = {
+      EGL_GL_COLORSPACE_KHR, EGL_GL_COLORSPACE_SRGB_KHR,
+      EGL_NONE
+  };
+  return eglCreateWindowSurface(egl_display_, config, native_window,
+                                srgb ? srgb_surface_attribs : nullptr);
+}
+
 EGLSurface GraphicsAPIGLES::InitializeEGLSurface(
     const DisplayManager::DisplayFormat &display_format) {
-  EGLSurface surface = EGL_NO_SURFACE;
-  EGLNativeWindowType native_window = PlatformUtilGLES::GetNativeWindow();
-  if (egl_display_ != EGL_NO_DISPLAY && native_window != nullptr) {
-    const EGLint* attribs = GenerateEGLConfigAttribList(display_format);
-    EGLint num_configs;
-    if (eglChooseConfig(egl_display_, attribs, &egl_config_, 1, &num_configs) == EGL_TRUE) {
-      // create EGL surface
-      surface = eglCreateWindowSurface(egl_display_, egl_config_, native_window, nullptr);
-      if (surface == EGL_NO_SURFACE) {
-        PlatformUtilGLES::CheckEGLError("eglCreateWindowSurface failed");
-      }
-    }
-    delete[] attribs;
+  if (egl_display_ == EGL_NO_DISPLAY || PlatformUtilGLES::GetNativeWindow() == nullptr) {
+    return EGL_NO_SURFACE;
   }
-  return surface;
+  // Not every matching config necessarily accepts every surface attribute (e.g. the sRGB
+  // colorspace), so try candidates in order until one works.
+  for (const EGLConfig config : GetMatchingEGLConfigs(display_format)) {
+    const EGLSurface surface = CreateWindowSurface(config, display_format);
+    if (surface != EGL_NO_SURFACE) {
+      egl_config_ = config;
+      return surface;
+    }
+    eglGetError();  // clear the failure before trying the next candidate
+  }
+  DebugManager::Log(DebugManager::kLog_Channel_Default, DebugManager::kLog_Level_Error,
+                    BGM_CLASS_TAG, "eglCreateWindowSurface failed for all matching configs");
+  return EGL_NO_SURFACE;
 }
 
 EGLContext GraphicsAPIGLES::InitializeEGLContext() {
@@ -441,8 +515,10 @@ void GraphicsAPIGLES::LostSurfaceGLES() {
 }
 
 void GraphicsAPIGLES::RestoreSurfaceGLES() {
-  egl_surface_ = InitializeEGLSurface(swapchain_format_);
-  if (egl_surface_ != nullptr) {
+  // The context survives surface loss, so recreate the surface with the config the context
+  // was created with rather than choosing a config again.
+  egl_surface_ = CreateWindowSurface(egl_config_, swapchain_format_);
+  if (egl_surface_ != EGL_NO_SURFACE) {
     if (eglMakeCurrent(egl_display_, egl_surface_, egl_surface_, egl_context_) == EGL_TRUE) {
       PlatformUtilGLES::RestoreSurface();
     } else {
@@ -492,6 +568,10 @@ DisplayManager::InitSwapchainResult GraphicsAPIGLES::InitSwapchain(
         egl_surface_ = EGL_NO_SURFACE;
       }
     }
+    // swapchain_frame_count_ doubles as the 'initialized' flag; clear it (and the config
+    // chosen for the failed attempt) so a later InitSwapchain call starts clean.
+    swapchain_frame_count_ = 0;
+    egl_config_ = nullptr;
   }
   return DisplayManager::kInit_Swapchain_Failure;
 }
@@ -526,13 +606,9 @@ DisplayManager::SwapchainFrameHandle GraphicsAPIGLES::PresentCurrentSwapchainFra
   if (PlatformUtilGLES::CheckScreenResolutionChange(egl_display_, egl_surface_,
                                                     swapchain_resolution_)) {
     if (display_changed_callback_) {
-      static bool _called = false;
-      if (!_called) {
-        _called = true;
-        DisplayManager::DisplayChangeInfo change_info(swapchain_resolution_,
-    DisplayManager::kDisplay_Change_Window_Resized);
-        display_changed_callback_(change_info, display_changed_user_data_);
-      }
+      DisplayManager::DisplayChangeInfo change_info(swapchain_resolution_,
+                                                    DisplayManager::kDisplay_Change_Window_Resized);
+      display_changed_callback_(change_info, display_changed_user_data_);
     }
   }
   return kDefault_swapchain_handle;

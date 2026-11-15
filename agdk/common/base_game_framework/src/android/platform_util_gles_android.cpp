@@ -23,6 +23,34 @@
 
 namespace base_game_framework {
 
+// eglQuerySurface reports the window size as currently displayed (already rotated), so the
+// orientation follows directly from the aspect ratio. Compare without dividing to avoid
+// integer truncation and division by zero.
+// Note this is the *window* aspect: a side-by-side split-screen pane on a landscape phone
+// reports portrait. Device rotation (BaseGameFrameworkUtils.getDeviceRotation) is not used.
+static DisplayManager::DisplayOrientation GetSurfaceOrientation(const EGLint width,
+                                                                const EGLint height) {
+  return (width >= height) ? DisplayManager::kDisplay_Orientation_Landscape
+                           : DisplayManager::kDisplay_Orientation_Portrait;
+}
+
+// True if `extension_name` appears as a whole space-separated token in `extensions`.
+static bool HasExtensionToken(const char* extensions, const char* extension_name) {
+  if (extensions == nullptr || extension_name == nullptr || extension_name[0] == '\0') {
+    return false;
+  }
+  const size_t name_length = strlen(extension_name);
+  for (const char* match = strstr(extensions, extension_name); match != nullptr;
+       match = strstr(match + 1, extension_name)) {
+    const bool starts_token = (match == extensions || match[-1] == ' ');
+    const bool ends_token = (match[name_length] == ' ' || match[name_length] == '\0');
+    if (starts_token && ends_token) {
+      return true;
+    }
+  }
+  return false;
+}
+
 typedef EGLDisplay (EGLAPIENTRY* PFNGETPLATFORMDISPLAY) (EGLenum platform, void *native_display,
                                                          const EGLAttrib *attrib_list);
 
@@ -31,18 +59,27 @@ static void* lib_egl = nullptr;
 static PFNGETPLATFORMDISPLAY eglGetPlatformDisplayFunc = nullptr;
 
 bool PlatformUtilGLES::HasEGLExtension(const char* extension_name) {
-  bool supported = false;
-
   // Passing EGL_NO_DISPLAY works on EGL 1.5 and later, implicit version check
   const char* eglExtensions = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
-  if (eglExtensions != nullptr) {
-    if (strstr(eglExtensions, extension_name) != nullptr) {
-      supported = true;
-    }
-  } else {
+  if (eglExtensions == nullptr) {
     PlatformUtilGLES::CheckEGLError("calling eglQueryString - EGL_EXTENSIONS");
+    return false;
   }
-  return supported;
+  return HasExtensionToken(eglExtensions, extension_name);
+}
+
+bool PlatformUtilGLES::HasEGLDisplayExtension(const EGLDisplay display,
+                                              const char* extension_name) {
+  // EGL_NO_DISPLAY would silently return the client extension string instead.
+  if (display == EGL_NO_DISPLAY) {
+    return false;
+  }
+  const char* extensions = eglQueryString(display, EGL_EXTENSIONS);
+  if (extensions == nullptr) {
+    PlatformUtilGLES::CheckEGLError("calling eglQueryString - display EGL_EXTENSIONS");
+    return false;
+  }
+  return HasExtensionToken(extensions, extension_name);
 }
 
 bool PlatformUtilGLES::GetPlatformDisplaySupported() {
@@ -119,22 +156,24 @@ void PlatformUtilGLES::GetRefreshRates(std::vector<DisplayManager::DisplaySwapIn
 
 void PlatformUtilGLES::GetScreenResolutions(const EGLDisplay display, const EGLSurface surface,
     std::vector<DisplayManager::DisplayResolution> &display_resolutions) {
+  display_resolutions.clear();
   EGLint display_width = 0;
   EGLint display_height = 0;
-  eglQuerySurface(display, surface, EGL_WIDTH, &display_width);
+  const EGLBoolean width_ok = eglQuerySurface(display, surface, EGL_WIDTH, &display_width);
   CheckEGLError("Calling eglQuerySurface width");
-  eglQuerySurface(display, surface, EGL_HEIGHT, &display_height);
+  const EGLBoolean height_ok = eglQuerySurface(display, surface, EGL_HEIGHT, &display_height);
   CheckEGLError("Calling eglQuerySurface height");
-
-  // TODO: fix with utils::getDeviceRotation when integrating rest of BaseGameFramework!
-  // For now, hack assume aspect ratios 4:3 or greater are landscape mode
-  const DisplayManager::DisplayOrientation orientation =
-      ((display_width / display_height) >= (4.0f / 3.0f)) ?
-      DisplayManager::kDisplay_Orientation_Landscape :
-      DisplayManager::kDisplay_Orientation_Portrait;
+  if (width_ok != EGL_TRUE || height_ok != EGL_TRUE || display_width <= 0 ||
+      display_height <= 0) {
+    DebugManager::Log(DebugManager::kLog_Channel_Default, DebugManager::kLog_Level_Error,
+                      BGM_CLASS_TAG, "GetScreenResolutions: invalid surface size %dx%d",
+                      display_width, display_height);
+    return;
+  }
 
   display_resolutions.push_back(DisplayManager::DisplayResolution(display_width,
-    display_height, PlatformUtilAndroid::GetDisplayDPI(), orientation));
+    display_height, PlatformUtilAndroid::GetDisplayDPI(),
+    GetSurfaceOrientation(display_width, display_height)));
 }
 
 bool PlatformUtilGLES::CheckEGLError(const char *msg) {
@@ -184,17 +223,22 @@ bool PlatformUtilGLES::CheckScreenResolutionChange(const EGLDisplay display,
                                                    DisplayManager::DisplayResolution& resolution) {
   EGLint display_width = 0;
   EGLint display_height = 0;
-  eglQuerySurface(display, surface, EGL_WIDTH, &display_width);
+  const EGLBoolean width_ok = eglQuerySurface(display, surface, EGL_WIDTH, &display_width);
   CheckEGLError("Calling eglQuerySurface width");
-  eglQuerySurface(display, surface, EGL_HEIGHT, &display_height);
+  const EGLBoolean height_ok = eglQuerySurface(display, surface, EGL_HEIGHT, &display_height);
   CheckEGLError("Calling eglQuerySurface height");
+  if (width_ok != EGL_TRUE || height_ok != EGL_TRUE || display_width <= 0 ||
+      display_height <= 0) {
+    return false;  // e.g. surface lost/transitioning; don't report a bogus 0x0 resolution
+  }
   if (display_width != resolution.display_width || display_height != resolution.display_height) {
     resolution.display_width = display_width;
     resolution.display_height = display_height;
     resolution.display_dpi = PlatformUtilAndroid::GetDisplayDPI();
+    resolution.display_orientation = GetSurfaceOrientation(display_width, display_height);
     return true;
   }
-  return true;
+  return false;
 }
 
 void PlatformUtilGLES::LostSurface() {
