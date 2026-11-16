@@ -150,7 +150,11 @@ class GraphicsAPIVulkan : public GraphicsAPIBase {
   std::vector<DisplayManager::DisplayResolution> display_resolutions_;
   std::vector<DisplayManager::DisplaySwapInterval> swap_intervals_;
 
+  // Optional device extensions found by QueryDeviceCapabilities, enabled on the real device
+  // in CreateDevice along with the matching supported features below.
   std::vector<const char *> enabled_device_extensions_;
+  VkPhysicalDeviceShaderFloat16Int8FeaturesKHR supported_float16_int8_features_{};
+  VkPhysicalDevice16BitStorageFeaturesKHR supported_16bit_storage_features_{};
 
   GraphicsAPIStatus api_status_;
   GraphicsAPIFeatures api_features_;
@@ -193,6 +197,9 @@ class GraphicsAPIVulkan : public GraphicsAPIBase {
 
   // Extension bools
   bool use_physical_device_properties2_;
+  // Validation layers are in use by the active instance/device: requested via
+  // SetValidationLayersEnabled and available when the API was initialized
+  bool validation_layers_active_;
 
   static constexpr const char *BGM_CLASS_TAG = "BGF::GraphicsAPIVulkan";
   static bool enable_validation_layers_;

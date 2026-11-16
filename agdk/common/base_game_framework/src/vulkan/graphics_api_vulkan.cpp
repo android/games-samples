@@ -18,6 +18,7 @@
 #include "debug_manager.h"
 #include "graphics_api_vulkan_utils.h"
 #include "platform_util_vulkan.h"
+#include <cstring>
 #include <vector>
 
 namespace base_game_framework {
@@ -80,7 +81,8 @@ GraphicsAPIVulkan::GraphicsAPIVulkan()
       pretransform_flags_(VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR),
       surface_capabilities_{},
       allocator_(VK_NULL_HANDLE),
-      use_physical_device_properties2_(false) {
+      use_physical_device_properties2_(false),
+      validation_layers_active_(false) {
 }
 
 GraphicsAPIVulkan::~GraphicsAPIVulkan() {
@@ -170,6 +172,10 @@ void GraphicsAPIVulkan::QueryCapabilities() {
 void GraphicsAPIVulkan::QueryDeviceCapabilities(VkPhysicalDevice physical_device) {
   // If we got this far, we at least support a Vulkan 1.0 device
   feature_flags_ = DisplayManager::kVulkan_1_0_Support;
+  enabled_device_extensions_.clear();
+  supported_float16_int8_features_ = {};
+  supported_16bit_storage_features_ = {};
+  api_features_.SetFeatureBits(0);
   api_features_.SetActiveAPIVersion(VK_API_VERSION_1_0);
 
   if (!use_physical_device_properties2_) {
@@ -192,16 +198,6 @@ void GraphicsAPIVulkan::QueryDeviceCapabilities(VkPhysicalDevice physical_device
   // Optional extensions we may query
   const bool has_driver_properties = VulkanAPIUtils::HasDeviceExtension(available_extensions,
                                                                         VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME);
-  const bool has_shader_float16_int8 = VulkanAPIUtils::HasDeviceExtension(available_extensions,
-                                                                          VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
-  if (has_shader_float16_int8) {
-    enabled_device_extensions_.push_back(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
-  }
-  const bool has_16bit_storage = VulkanAPIUtils::HasDeviceExtension(available_extensions,
-                                                                    VK_KHR_16BIT_STORAGE_EXTENSION_NAME);
-  if (has_16bit_storage) {
-    enabled_device_extensions_.push_back(VK_KHR_16BIT_STORAGE_EXTENSION_NAME);
-  }
 
   // Retrieve device properties, including driver properties if available
   VkPhysicalDeviceProperties2KHR device_properties{};
@@ -228,6 +224,32 @@ void GraphicsAPIVulkan::QueryDeviceCapabilities(VkPhysicalDevice physical_device
     driver_id_ = device_driver_properties.driverID;
   }
 
+  // The API version decides whether the reduced precision features are core or need extensions
+  const uint32_t api_version = PlatformUtilVulkan::GetVulkanApiVersion();
+  DetermineAPILevel(api_version, device_properties.properties.apiVersion);
+  const uint32_t active_api_version = api_features_.GetActiveAPIVersion();
+
+  // 16-bit storage is core in Vulkan 1.1. On 1.0 it needs VK_KHR_16bit_storage, which itself
+  // requires VK_KHR_storage_buffer_storage_class.
+  bool use_16bit_storage = true;
+  std::vector<const char *> storage_16bit_extensions;
+  if (active_api_version < VK_API_VERSION_1_1) {
+    storage_16bit_extensions = {VK_KHR_16BIT_STORAGE_EXTENSION_NAME,
+                                VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME};
+    for (const char *extension : storage_16bit_extensions) {
+      use_16bit_storage &= VulkanAPIUtils::HasDeviceExtension(available_extensions, extension);
+    }
+  }
+  // Float16/Int8 shader math is core in Vulkan 1.2, before that it needs
+  // VK_KHR_shader_float16_int8.
+  bool use_float16_int8 = true;
+  std::vector<const char *> float16_int8_extensions;
+  if (active_api_version < VK_API_VERSION_1_2) {
+    float16_int8_extensions = {VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME};
+    use_float16_int8 = VulkanAPIUtils::HasDeviceExtension(available_extensions,
+                                                          VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
+  }
+
   // Retrieve device features, including optional extensions on reduced precision formats
   VkPhysicalDeviceFeatures2KHR device_features{};
   device_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
@@ -238,14 +260,16 @@ void GraphicsAPIVulkan::QueryDeviceCapabilities(VkPhysicalDevice physical_device
   device_16_bit_storage_features.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR;
   // Chain the features structures
-  if (has_16bit_storage) {
-    device_features.pNext = &device_16_bit_storage_features;
-    if (has_shader_float16_int8) {
-      device_16_bit_storage_features.pNext = &shader_float_16_int_8_features;
-    }
-  } else if (has_shader_float16_int8) {
-    device_features.pNext = &shader_float_16_int_8_features;
+  void *feature_chain = nullptr;
+  if (use_float16_int8) {
+    shader_float_16_int_8_features.pNext = feature_chain;
+    feature_chain = &shader_float_16_int_8_features;
   }
+  if (use_16bit_storage) {
+    device_16_bit_storage_features.pNext = feature_chain;
+    feature_chain = &device_16_bit_storage_features;
+  }
+  device_features.pNext = feature_chain;
 
   if (vkGetPhysicalDeviceFeatures2 != nullptr) {
     vkGetPhysicalDeviceFeatures2(physical_device, &device_features);
@@ -263,16 +287,45 @@ void GraphicsAPIVulkan::QueryDeviceCapabilities(VkPhysicalDevice physical_device
     api_features_.SetGraphicsFeature(GraphicsAPIFeatures::kGraphicsFeature_Wide_Lines);
   }
 
-  const uint32_t api_version = PlatformUtilVulkan::GetVulkanApiVersion();
-  DetermineAPILevel(api_version, device_properties.properties.apiVersion);
-
   // Determine if the device has ETC2 texture support
   if (device_features.features.textureCompressionETC2) {
       feature_flags_ |= DisplayManager::kVulkan_ETC2_Support;
   }
 
+  // Ignore the feature structs entirely if they report no supported features, so
+  // CreateDevice doesn't chain them or enable their extensions for nothing
+  shader_float_16_int_8_features.pNext = nullptr;
+  device_16_bit_storage_features.pNext = nullptr;
+  if (!use_float16_int8 || !(shader_float_16_int_8_features.shaderFloat16 ||
+                             shader_float_16_int_8_features.shaderInt8)) {
+    shader_float_16_int_8_features = {};
+    use_float16_int8 = false;
+  }
+  if (!use_16bit_storage || !(device_16_bit_storage_features.storageBuffer16BitAccess ||
+                              device_16_bit_storage_features.uniformAndStorageBuffer16BitAccess ||
+                              device_16_bit_storage_features.storagePushConstant16 ||
+                              device_16_bit_storage_features.storageInputOutput16)) {
+    device_16_bit_storage_features = {};
+    use_16bit_storage = false;
+  }
+
   DetermineNumericSupport(device_features.features.shaderInt16,
                           shader_float_16_int_8_features, device_16_bit_storage_features);
+
+  // Keep the supported feature bits (and any extensions they need) so CreateDevice can enable
+  // what we advertise
+  if (use_float16_int8) {
+    supported_float16_int8_features_ = shader_float_16_int_8_features;
+    enabled_device_extensions_.insert(enabled_device_extensions_.end(),
+                                      float16_int8_extensions.begin(),
+                                      float16_int8_extensions.end());
+  }
+  if (use_16bit_storage) {
+    supported_16bit_storage_features_ = device_16_bit_storage_features;
+    enabled_device_extensions_.insert(enabled_device_extensions_.end(),
+                                      storage_16bit_extensions.begin(),
+                                      storage_16bit_extensions.end());
+  }
   // TODO: Android Baseline Profile detection
 }
 
@@ -387,13 +440,17 @@ bool GraphicsAPIVulkan::DisplayFormatExists(const DisplayManager::DisplayFormat 
 }
 
 bool GraphicsAPIVulkan::InitializeGraphicsAPI() {
-  if (!PlatformUtilVulkan::GetValidationLayersAvailable()) {
-    // Disable request for validation layers if they aren't available
-    GraphicsAPIVulkan::enable_validation_layers_ = false;
-    DebugManager::Log(DebugManager::kLog_Channel_Default,
-                      DebugManager::kLog_Level_Error,
-                      BGM_CLASS_TAG,
-                      "Vulkan validation layers were requested but unavailable!");
+  // Use validation layers for this API session only if requested and available; don't
+  // overwrite the caller's request, so a later session checks availability again
+  validation_layers_active_ = false;
+  if (GraphicsAPIVulkan::enable_validation_layers_) {
+    validation_layers_active_ = PlatformUtilVulkan::GetValidationLayersAvailable();
+    if (!validation_layers_active_) {
+      DebugManager::Log(DebugManager::kLog_Channel_Default,
+                        DebugManager::kLog_Level_Error,
+                        BGM_CLASS_TAG,
+                        "Vulkan validation layers were requested but unavailable!");
+    }
   }
   CreateInstance(false);
   if (vk_instance_ != VK_NULL_HANDLE) {
@@ -401,6 +458,9 @@ bool GraphicsAPIVulkan::InitializeGraphicsAPI() {
     if (vk_surface_ != VK_NULL_HANDLE) {
       vk_physical_device_ = GetPhysicalDevice();
       if (vk_physical_device_ != VK_NULL_HANDLE) {
+        // QueryCapabilities used a temporary instance, so query the capabilities again on
+        // this instance's physical device; these decide what CreateDevice enables
+        QueryDeviceCapabilities(vk_physical_device_);
         QueueFamilyIndices queue_indices = VulkanAPIUtils::FindQueueFamilies(
             vk_physical_device_, vk_surface_);
         if (CreateDevice(false, queue_indices)) {
@@ -418,19 +478,21 @@ bool GraphicsAPIVulkan::InitializeGraphicsAPI() {
           allocator_info.pVulkanFunctions = &vulkan_functions;
 
           VkResult vma_result = vmaCreateAllocator(&allocator_info, &allocator_);
-          if (vma_result != VK_SUCCESS) {
-            DebugManager::Log(DebugManager::kLog_Channel_Default,
-                              DebugManager::kLog_Level_Error,
-                              BGM_CLASS_TAG,
-                              "vmaCreateAllocator failed: %d", vma_result);
-            return false;
+          if (vma_result == VK_SUCCESS) {
+            api_status_ = kGraphicsAPI_Active;
+            return true;
           }
-          api_status_ = kGraphicsAPI_Active;
-          return true;
+          allocator_ = VK_NULL_HANDLE;
+          DebugManager::Log(DebugManager::kLog_Channel_Default,
+                            DebugManager::kLog_Level_Error,
+                            BGM_CLASS_TAG,
+                            "vmaCreateAllocator failed: %d", vma_result);
         }
       }
     }
   }
+  // Release whatever was created before the failure
+  ShutdownGraphicsAPI();
   return false;
 }
 
@@ -454,7 +516,10 @@ void GraphicsAPIVulkan::ShutdownGraphicsAPI() {
     debug_messenger_ = VK_NULL_HANDLE;
   }
 
+  // The physical device handle belongs to the instance
+  vk_physical_device_ = VK_NULL_HANDLE;
   DestroyInstance();
+  validation_layers_active_ = false;
   api_status_ = kGraphicsAPI_AvailabilityReady;
 }
 
@@ -520,8 +585,9 @@ DisplayManager::InitSwapchainResult GraphicsAPIVulkan::InitSwapchain(
     return DisplayManager::kInit_Swapchain_Failure;
   }
 
-  if (!(swapchain_frame_count >= swapchain_min_frames_ &&
-      swapchain_frame_count <= swapchain_max_frames_)) {
+  // A maxImageCount of 0 means the surface has no upper limit on image count
+  if (swapchain_frame_count < swapchain_min_frames_ ||
+      (swapchain_max_frames_ != 0 && swapchain_frame_count > swapchain_max_frames_)) {
     DebugManager::Log(DebugManager::kLog_Channel_Default,
                       DebugManager::kLog_Level_Error,
                       BGM_CLASS_TAG,
@@ -665,6 +731,7 @@ DisplayManager::SwapchainFrameHandle GraphicsAPIVulkan::PresentCurrentSwapchainF
 bool GraphicsAPIVulkan::GetGraphicsAPIResourcesVk(GraphicsAPIResourcesVk &api_resources_vk) {
   api_resources_vk.device = vk_device_;
   api_resources_vk.instance = vk_instance_;
+  api_resources_vk.physical_device = vk_physical_device_;
   api_resources_vk.render_queue = vk_graphics_queue_;
   api_resources_vk.allocator = allocator_;
   api_resources_vk.graphics_queue_index = graphics_queue_index_;
@@ -775,7 +842,7 @@ bool GraphicsAPIVulkan::CreateDevice(bool is_preflight_check,
                                      const QueueFamilyIndices &queue_indices) {
   // Skip validation layers if we are just creating a preflight device to query
   // device extensions and capabilities
-  const bool enable_validation = !is_preflight_check && enable_validation_layers_;
+  const bool enable_validation = !is_preflight_check && validation_layers_active_;
 
   graphics_queue_index_ = queue_indices.graphics_family.value();
   present_queue_index_ = queue_indices.present_family.value();
@@ -810,31 +877,62 @@ bool GraphicsAPIVulkan::CreateDevice(bool is_preflight_check,
     device_features.wideLines = VK_TRUE;
   }
 
-  const std::vector<const char *> required_device_extensions =
+  std::vector<const char *> device_extensions =
       PlatformUtilVulkan::GetRequiredDeviceExtensions(vk_physical_device_);
 
   VkDeviceCreateInfo device_create_info{};
   device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+  // The real device enables the optional extensions QueryDeviceCapabilities found, plus the
+  // supported features of each, so features advertised through api_features_ (F16/I8 math,
+  // 16-bit storage) are actually usable. The preflight device only needs the basics.
+  VkPhysicalDeviceShaderFloat16Int8FeaturesKHR float16_int8_features{};
+  VkPhysicalDevice16BitStorageFeaturesKHR storage_16bit_features{};
+  if (!is_preflight_check) {
+    for (const char *extension : enabled_device_extensions_) {
+      bool already_enabled = false;
+      for (const char *enabled : device_extensions) {
+        if (strcmp(enabled, extension) == 0) {
+          already_enabled = true;
+          break;
+        }
+      }
+      if (!already_enabled) {
+        device_extensions.push_back(extension);
+      }
+    }
+    void *feature_chain = nullptr;
+    if (supported_float16_int8_features_.sType != 0) {
+      float16_int8_features = supported_float16_int8_features_;
+      float16_int8_features.pNext = feature_chain;
+      feature_chain = &float16_int8_features;
+    }
+    if (supported_16bit_storage_features_.sType != 0) {
+      storage_16bit_features = supported_16bit_storage_features_;
+      storage_16bit_features.pNext = feature_chain;
+      feature_chain = &storage_16bit_features;
+    }
+    device_create_info.pNext = feature_chain;
+  }
+
   device_create_info.queueCreateInfoCount =
       static_cast<uint32_t>(queue_create_infos.size());
   device_create_info.pQueueCreateInfos = queue_create_infos.data();
   device_create_info.pEnabledFeatures = &device_features;
-  device_create_info.enabledExtensionCount =
-      static_cast<uint32_t>(required_device_extensions.size());
-  device_create_info.ppEnabledExtensionNames = required_device_extensions.data();
+  device_create_info.enabledExtensionCount = static_cast<uint32_t>(device_extensions.size());
+  device_create_info.ppEnabledExtensionNames = device_extensions.data();
+  // Device layers are deprecated and must not be set
+  // (VUID-VkDeviceCreateInfo-enabledLayerCount-12384); the instance layers enabled in
+  // CreateInstance validate device calls too
+  device_create_info.enabledLayerCount = 0;
+  device_create_info.ppEnabledLayerNames = nullptr;
 
-  std::vector<const char *> validation_layers = PlatformUtilVulkan::GetValidationLayers();
-  if (enable_validation) {
-    device_create_info.enabledLayerCount =
-        static_cast<uint32_t>(validation_layers.size());
-    device_create_info.ppEnabledLayerNames = validation_layers.data();
-  } else {
-    device_create_info.enabledLayerCount = 0;
-  }
-
-  VulkanAPIUtils::CheckVkResult(
+  if (!VulkanAPIUtils::CheckVkResult(
       vkCreateDevice(vk_physical_device_, &device_create_info, nullptr, &vk_device_),
-      "vkCreateDevice");
+      "vkCreateDevice")) {
+    vk_device_ = VK_NULL_HANDLE;
+    return false;
+  }
 
   vkGetDeviceQueue(vk_device_, queue_indices.graphics_family.value(), 0, &vk_graphics_queue_);
   vkGetDeviceQueue(vk_device_, queue_indices.present_family.value(), 0, &vk_present_queue_);
@@ -863,7 +961,7 @@ void GraphicsAPIVulkan::DestroyDevice() {
 void GraphicsAPIVulkan::CreateInstance(bool is_preflight_check) {
   // Skip validation layers if we are just creating a preflight instance to query
   // device extensions and capabilities
-  const bool request_validation = !is_preflight_check && enable_validation_layers_;
+  const bool request_validation = !is_preflight_check && validation_layers_active_;
 
   const std::vector<const char *> instance_extensions =
       PlatformUtilVulkan::GetRequiredInstanceExtensions(request_validation,
@@ -923,7 +1021,8 @@ bool GraphicsAPIVulkan::CreateSwapchain(const QueueFamilyIndices &queue_indices)
   uint32_t queue_family_indices[] = {queue_indices.graphics_family.value(),
                                      queue_indices.present_family.value()};
   swapchain_info_.swapchain_color_format_ =
-      VulkanAPIUtils::GetVkPixelFormat(swapchain_format_.display_pixel_format);
+      VulkanAPIUtils::GetVkPixelFormat(swapchain_format_.display_pixel_format,
+                                       swapchain_format_.display_color_space);
   swapchain_info_.swapchain_depth_stencil_format_ =
       VulkanAPIUtils::GetVkDepthFormat(swapchain_format_.display_depth_format);
 
@@ -1017,7 +1116,7 @@ void GraphicsAPIVulkan::CreateSwapchainImages() {
   swapchain_info_.swapchain_image_views_.resize(swapchain_info_.swapchain_image_count_);
   VkImageView *base_view = swapchain_info_.swapchain_image_views_.data();
   const VkFormat pixel_format = VulkanAPIUtils::GetVkPixelFormat(
-      swapchain_format_.display_pixel_format);
+      swapchain_format_.display_pixel_format, swapchain_format_.display_color_space);
 
   for (size_t i = 0; i < swapchain_info_.swapchain_image_count_; ++i) {
     VkImageViewCreateInfo create_info{};

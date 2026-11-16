@@ -375,7 +375,10 @@ class DisplayManager {
     const std::vector<DisplaySwapInterval>& display_swap_intervals;
     /** @brief The minimum number of frame images configurable by the display swapchain */
     const uint32_t min_swapchain_frame_count;
-    /** @brief The maximum number of frame images configurable by the display swapchain */
+    /**
+     * @brief The maximum number of frame images configurable by the display swapchain.
+     * 0 means there is no upper limit (Vulkan `maxImageCount` of 0).
+     */
     const uint32_t max_swapchain_frame_count;
     /** @brief A bitmask of `SwapchainPresentMode` values of supported present modes */
     const uint32_t swapchain_present_modes;
