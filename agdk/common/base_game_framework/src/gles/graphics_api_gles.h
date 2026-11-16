@@ -79,10 +79,18 @@ class GraphicsAPIGLES : public GraphicsAPIBase {
   void QueryCapabilities();
   void ParseEGLConfigs();
   EGLDisplay InitializeEGLDisplay();
+  // Picks an EGLConfig exactly matching display_format and creates a window surface with it,
+  // storing the config in egl_config_ on success.
   EGLSurface InitializeEGLSurface(const DisplayManager::DisplayFormat& display_format);
+  // Creates a window surface for an already chosen config (no config selection).
+  EGLSurface CreateWindowSurface(const EGLConfig config,
+                                 const DisplayManager::DisplayFormat& display_format);
+  // eglChooseConfig candidates whose color sizes exactly match display_format, best first.
+  std::vector<EGLConfig> GetMatchingEGLConfigs(const DisplayManager::DisplayFormat& display_format);
   EGLContext InitializeEGLContext();
   bool DisplayFormatExists(const DisplayManager::DisplayFormat& display_format);
-  const EGLint *GenerateEGLConfigAttribList(const DisplayManager::DisplayFormat& display_format);
+  std::vector<EGLint> GenerateEGLConfigAttribList(
+      const DisplayManager::DisplayFormat& display_format);
 
   std::vector<DisplayManager::DisplayFormat> display_formats_;
   std::vector<DisplayManager::DisplayResolution> display_resolutions_;
