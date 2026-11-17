@@ -22,15 +22,22 @@
 
 namespace base_game_framework {
 
-static constexpr VkFormat kColorFormatTableVk[DisplayManager::kDisplay_Pixel_Format_Count] = {
-    VK_FORMAT_R8G8B8A8_SRGB,           // kDisplay_Pixel_Format_RGBA8
-    VK_FORMAT_B8G8R8A8_SRGB,           // kDisplay_Pixel_Format_BGRA8
-    VK_FORMAT_R16G16B16A16_SFLOAT,     // kDisplay_Pixel_Format_RGBA_16F
-    VK_FORMAT_R32G32B32A32_SFLOAT,     // kDisplay_Pixel_Format_RGBA_32F
-    VK_FORMAT_R4G4B4A4_UNORM_PACK16,   // kDisplay_Pixel_Format_RGBA4
-    VK_FORMAT_R5G5B5A1_UNORM_PACK16,   // kDisplay_Pixel_Format_RGBA5551
-    VK_FORMAT_R5G6B5_UNORM_PACK16,     // kDisplay_Pixel_Format_RGBA565
-    VK_FORMAT_A2B10G10R10_UNORM_PACK32 // kDisplay_Pixel_Format_ABGR2_10_10_10
+// Color formats by pixel format and color space. As with GLES, kDisplay_Color_Space_SRGB means
+// the hardware sRGB-encodes fragment writes (an _SRGB VkFormat), and kDisplay_Color_Space_Linear
+// means values are written as-is. Only the 8-bit formats have an _SRGB variant.
+struct ColorFormatVk {
+  VkFormat linear;
+  VkFormat srgb;
+};
+static constexpr ColorFormatVk kColorFormatTableVk[DisplayManager::kDisplay_Pixel_Format_Count] = {
+    {VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SRGB},       // kDisplay_Pixel_Format_RGBA8
+    {VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_B8G8R8A8_SRGB},       // kDisplay_Pixel_Format_BGRA8
+    {VK_FORMAT_R16G16B16A16_SFLOAT, VK_FORMAT_UNDEFINED},      // kDisplay_Pixel_Format_RGBA_16F
+    {VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_UNDEFINED},      // kDisplay_Pixel_Format_RGBA_32F
+    {VK_FORMAT_R4G4B4A4_UNORM_PACK16, VK_FORMAT_UNDEFINED},    // kDisplay_Pixel_Format_RGBA4
+    {VK_FORMAT_R5G5B5A1_UNORM_PACK16, VK_FORMAT_UNDEFINED},    // kDisplay_Pixel_Format_RGBA5551
+    {VK_FORMAT_R5G6B5_UNORM_PACK16, VK_FORMAT_UNDEFINED},      // kDisplay_Pixel_Format_RGB565
+    {VK_FORMAT_A2B10G10R10_UNORM_PACK32, VK_FORMAT_UNDEFINED}  // kDisplay_Pixel_Format_ABGR2_10_10_10
 };
 
 static constexpr VkFormat kDepthFormatTableVk[DisplayManager::kDisplay_Depth_Format_Count] = {
@@ -172,49 +179,36 @@ void VulkanAPIUtils::GetDisplayFormats(VkPhysicalDevice physical_device, VkSurfa
   vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count,
                                        surface_formats.data());
 
-  std::vector<DisplayManager::DisplayPixelFormat> pixel_formats;
-  DisplayManager::DisplayFormat current_format;
-  // Only supporting SRGB for display formats right now
-  current_format.display_color_space = DisplayManager::kDisplay_Color_Space_SRGB;
-
-  for (const VkSurfaceFormatKHR &format : surface_formats) {
-    if (format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-      switch (format.format) {
-        case VK_FORMAT_R8G8B8A8_UNORM:
-        case VK_FORMAT_R8G8B8A8_SRGB:pixel_formats.push_back(
-            DisplayManager::kDisplay_Pixel_Format_RGBA8);
+  // Offer a pixel format/color space pair only if the surface supports the exact VkFormat
+  // that GetVkPixelFormat maps it to (e.g. RGBA8 sRGB is VK_FORMAT_R8G8B8A8_SRGB, so a surface
+  // that only reports R8G8B8A8_UNORM offers RGBA8 linear but not RGBA8 sRGB). Each pair is
+  // listed once, even if the surface reports a format more than once.
+  static constexpr DisplayManager::DisplayColorSpace kColorSpaces[] = {
+      DisplayManager::kDisplay_Color_Space_Linear, DisplayManager::kDisplay_Color_Space_SRGB};
+  std::vector<DisplayManager::DisplayFormat> color_formats;
+  for (int32_t i = 0; i < DisplayManager::kDisplay_Pixel_Format_Count; ++i) {
+    const DisplayManager::DisplayPixelFormat pixel_format =
+        static_cast<DisplayManager::DisplayPixelFormat>(i);
+    for (const DisplayManager::DisplayColorSpace color_space : kColorSpaces) {
+      const VkFormat vk_format = GetVkPixelFormat(pixel_format, color_space);
+      if (vk_format == VK_FORMAT_UNDEFINED) {
+        continue;
+      }
+      for (const VkSurfaceFormatKHR &format : surface_formats) {
+        if (format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR && format.format == vk_format) {
+          DisplayManager::DisplayFormat color_format;
+          color_format.display_pixel_format = pixel_format;
+          color_format.display_color_space = color_space;
+          color_formats.push_back(color_format);
           break;
-        case VK_FORMAT_B8G8R8A8_UNORM:
-        case VK_FORMAT_B8G8R8A8_SRGB:pixel_formats.push_back(
-            DisplayManager::kDisplay_Pixel_Format_BGRA8);
-          break;
-        case VK_FORMAT_R16G16B16A16_SFLOAT:pixel_formats.push_back(
-            DisplayManager::kDisplay_Pixel_Format_RGBA_16F);
-          break;
-        case VK_FORMAT_R32G32B32A32_SFLOAT:pixel_formats.push_back(
-            DisplayManager::kDisplay_Pixel_Format_RGBA_32F);
-          break;
-        case VK_FORMAT_R4G4B4A4_UNORM_PACK16:pixel_formats.push_back(
-            DisplayManager::kDisplay_Pixel_Format_RGBA4);
-          break;
-        case VK_FORMAT_R5G5B5A1_UNORM_PACK16:pixel_formats.push_back(
-            DisplayManager::kDisplay_Pixel_Format_RGBA5551);
-          break;
-        case VK_FORMAT_R5G6B5_UNORM_PACK16:pixel_formats.push_back(
-            DisplayManager::kDisplay_Pixel_Format_RGB565);
-          break;
-        case VK_FORMAT_A2B10G10R10_UNORM_PACK32:pixel_formats.push_back(
-            DisplayManager::kDisplay_Pixel_Format_ABGR2_10_10_10);
-          break;
-        default:break;
+        }
       }
     }
   }
 
   // Build all the permutations of depth/stencil with each color format
-  display_formats.reserve(pixel_formats.size() * depth_stencil_formats.size());
-  for (const DisplayManager::DisplayPixelFormat pixel_format : pixel_formats) {
-    current_format.display_pixel_format = pixel_format;
+  display_formats.reserve(color_formats.size() * depth_stencil_formats.size());
+  for (DisplayManager::DisplayFormat current_format : color_formats) {
     for (const DisplayManager::DisplayFormat &depth_stencil_format : depth_stencil_formats) {
       current_format.display_depth_format = depth_stencil_format.display_depth_format;
       current_format.display_stencil_format = depth_stencil_format.display_stencil_format;
@@ -287,9 +281,11 @@ VkFormat VulkanAPIUtils::GetVkDepthFormat(const DisplayManager::DisplayDepthForm
   return VK_FORMAT_UNDEFINED;
 }
 
-VkFormat VulkanAPIUtils::GetVkPixelFormat(const DisplayManager::DisplayPixelFormat pixel_format) {
-  if (pixel_format >= 0) {
-    return kColorFormatTableVk[pixel_format];
+VkFormat VulkanAPIUtils::GetVkPixelFormat(const DisplayManager::DisplayPixelFormat pixel_format,
+                                          const DisplayManager::DisplayColorSpace color_space) {
+  if (pixel_format >= 0 && pixel_format < DisplayManager::kDisplay_Pixel_Format_Count) {
+    return (color_space == DisplayManager::kDisplay_Color_Space_SRGB) ?
+           kColorFormatTableVk[pixel_format].srgb : kColorFormatTableVk[pixel_format].linear;
   }
   return VK_FORMAT_UNDEFINED;
 }
@@ -303,13 +299,11 @@ VkFormat VulkanAPIUtils::GetVkStencilFormat(
 }
 
 VkColorSpaceKHR VulkanAPIUtils::GetVkColorSpace(const DisplayManager::DisplayColorSpace color_space) {
-  VkColorSpaceKHR vk_color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-  switch (color_space) {
-    case DisplayManager::kDisplay_Color_Space_SRGB:
-      // Don't actually have a real linear format here?
-    case DisplayManager::kDisplay_Color_Space_Linear:break;
-  }
-  return vk_color_space;
+  // DisplayColorSpace selects whether the swapchain VkFormat sRGB-encodes writes (see
+  // GetVkPixelFormat). Either way the presentation engine interprets the stored values as
+  // sRGB-encoded, so the presentation color space is always SRGB_NONLINEAR.
+  (void)color_space;
+  return VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 }
 
 bool VulkanAPIUtils::HasDeviceExtension(
