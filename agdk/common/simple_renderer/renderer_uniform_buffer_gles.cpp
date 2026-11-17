@@ -41,7 +41,7 @@ UniformBufferGLES::UniformBufferGLES(const UniformBuffer::UniformBufferCreationP
     }
     RENDERER_LOG("Element %u : name: %s type: %u set: %u index: %u",
                  i, element.element_name, element.element_type,
-                 element.element_bind_set, element.element_bind_index)
+                 element.element_bind_set, element.element_bind_index);
     ++i;
   }
   while (i < kMaxUniforms) {
@@ -56,7 +56,7 @@ UniformBufferGLES::~UniformBufferGLES() {
 }
 
 uint32_t UniformBufferGLES::GetElementOffset(uint32_t index) const {
-  RENDERER_ASSERT(index < GetBufferElementCount())
+  RENDERER_ASSERT(index < GetBufferElementCount());
 
   if (index > GetBufferElementCount()) {
     index = 0;
@@ -66,13 +66,13 @@ uint32_t UniformBufferGLES::GetElementOffset(uint32_t index) const {
 
 void UniformBufferGLES::SetBufferElementData(const uint32_t index, const float* data,
                                          const size_t size) {
-  RENDERER_ASSERT(index < GetBufferElementCount())
+  RENDERER_ASSERT(index < GetBufferElementCount());
 
   if (index < GetBufferElementCount()) {
     const uint32_t offset = element_offsets_[index];
     const uint32_t end_offset = offset + (size / sizeof(float));
-    RENDERER_ASSERT(offset < kMaxUniformBufferFloatSize)
-    RENDERER_ASSERT(end_offset <= kMaxUniformBufferFloatSize)
+    RENDERER_ASSERT(offset < kMaxUniformBufferFloatSize);
+    RENDERER_ASSERT(end_offset <= kMaxUniformBufferFloatSize);
     if (offset < kMaxUniformBufferFloatSize && end_offset <= kMaxUniformBufferFloatSize) {
       memcpy(&buffer_data_[offset], data, size);
     }

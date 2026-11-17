@@ -24,8 +24,8 @@ ShaderProgramVk::ShaderProgramVk(const ShaderProgram::ShaderProgramCreationParam
   RendererVk& renderer = RendererVk::GetInstanceVk();
   valid_program_ = false;
   // Input SPIR-V code must be 32 bit aligned
-  RENDERER_ASSERT((((uint64_t)params.vertex_shader_data) & 0x3) == 0)
-  RENDERER_ASSERT((((uint64_t)params.fragment_shader_data) & 0x3) == 0)
+  RENDERER_ASSERT((((uint64_t)params.vertex_shader_data) & 0x3) == 0);
+  RENDERER_ASSERT((((uint64_t)params.fragment_shader_data) & 0x3) == 0);
 
   VkShaderModuleCreateInfo vertex_create_info = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
   vertex_create_info.codeSize = params.vertex_data_byte_count;

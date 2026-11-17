@@ -141,19 +141,19 @@ void RenderStateGLES::InitializeAttributes(const GLuint program_handle) {
   vertex_attribute_locations_[kAttribute_Position] = glGetAttribLocation(
       program_handle, vertex_attribute_names[kAttribute_Position]);
   RENDERER_CHECK_GLES("glGetUniformLocation (position)");
-  RENDERER_ASSERT(vertex_attribute_locations_[kAttribute_Position] >= 0)
+  RENDERER_ASSERT(vertex_attribute_locations_[kAttribute_Position] >= 0);
 
   if (state_vertex_layout_ == VertexBuffer::kVertexFormat_P3T2 ||
       state_vertex_layout_ == VertexBuffer::kVertexFormat_P3T2C4) {
     vertex_attribute_locations_[kAttribute_TexCoord] = glGetAttribLocation(
         program_handle, vertex_attribute_names[kAttribute_TexCoord]);
     RENDERER_CHECK_GLES("glGetUniformLocation (texture)");
-    RENDERER_ASSERT(vertex_attribute_locations_[kAttribute_TexCoord] >= 0)
+    RENDERER_ASSERT(vertex_attribute_locations_[kAttribute_TexCoord] >= 0);
 
     sampler_location_ = glGetUniformLocation(
         program_handle, sampler_name);
     RENDERER_CHECK_GLES("glGetUniformLocation (sampler)");
-    RENDERER_ASSERT(sampler_location_ >= 0)
+    RENDERER_ASSERT(sampler_location_ >= 0);
   } else {
     vertex_attribute_locations_[kAttribute_TexCoord] = -1;
     sampler_location_ = -1;
@@ -164,7 +164,7 @@ void RenderStateGLES::InitializeAttributes(const GLuint program_handle) {
     vertex_attribute_locations_[kAttribute_Color] = glGetAttribLocation(
         program_handle, vertex_attribute_names[kAttribute_Color]);
     RENDERER_CHECK_GLES("glGetUniformLocation (color)");
-    RENDERER_ASSERT(vertex_attribute_locations_[kAttribute_Color] >= 0)
+    RENDERER_ASSERT(vertex_attribute_locations_[kAttribute_Color] >= 0);
   } else {
     vertex_attribute_locations_[kAttribute_Color] = -1;
   }
@@ -173,12 +173,12 @@ void RenderStateGLES::InitializeAttributes(const GLuint program_handle) {
 void RenderStateGLES::InitializeUniforms(const GLuint program_handle) {
   const UniformBufferGLES& buffer = GetUniformBuffer();
   uint32_t i = 0;
-  RENDERER_ASSERT(buffer.GetBufferElementCount() <= UniformBuffer::kMaxUniforms)
+  RENDERER_ASSERT(buffer.GetBufferElementCount() <= UniformBuffer::kMaxUniforms);
   while (i < buffer.GetBufferElementCount()) {
     const char* element_name = buffer.GetElement(i).element_name;
     uniform_locations_[i] = glGetUniformLocation(program_handle, element_name);
     RENDERER_CHECK_GLES("glGetUniformLocation (shader uniform)");
-    RENDERER_ASSERT(uniform_locations_[i] >= 0)
+    RENDERER_ASSERT(uniform_locations_[i] >= 0);
     ++i;
   }
 

@@ -39,9 +39,17 @@ VertexBufferVk::VertexBufferVk(const VertexBuffer::VertexBufferCreationParams& p
   VmaAllocation staging_alloc = VK_NULL_HANDLE;
   VmaAllocationInfo staging_info = {};
   const VkResult staging_alloc_result = vmaCreateBuffer(allocator, &create_info, &alloc_info,
-                                                        &staging_buffer, &staging_alloc, &staging_info);
-  RENDERER_CHECK_VK(staging_alloc_result, "vmaCreateBuffer (staging)");
-  RENDERER_ASSERT(staging_info.pMappedData != nullptr)
+      &staging_buffer, &staging_alloc, &staging_info);
+  // The checks below log (and assert in debug builds); in release builds an allocation
+  // failure leaves the buffer empty instead of using null handles or memory.
+  if (!RENDERER_CHECK_VK(staging_alloc_result, "vmaCreateBuffer (staging)")) {
+    return;
+  }
+  RENDERER_ASSERT(staging_info.pMappedData != nullptr);
+  if (staging_info.pMappedData == nullptr) {
+    vmaDestroyBuffer(allocator, staging_buffer, staging_alloc);
+    return;
+  }
   memcpy(staging_info.pMappedData, params.vertex_data, params.data_byte_size);
 
   create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
@@ -49,7 +57,12 @@ VertexBufferVk::VertexBufferVk(const VertexBuffer::VertexBufferCreationParams& p
   const VkResult buffer_alloc_result = vmaCreateBuffer(allocator, &create_info, &alloc_info,
                                                        &vertex_buffer_, &vertex_buffer_alloc_,
                                                        nullptr);
-  RENDERER_CHECK_VK(staging_alloc_result, "vmaCreateBuffer (vertex buffer)");
+  if (!RENDERER_CHECK_VK(buffer_alloc_result, "vmaCreateBuffer (vertex buffer)")) {
+    vertex_buffer_ = VK_NULL_HANDLE;
+    vertex_buffer_alloc_ = VK_NULL_HANDLE;
+    vmaDestroyBuffer(allocator, staging_buffer, staging_alloc);
+    return;
+  }
 
   VkCommandBuffer command_buffer = renderer.BeginStagingCommandBuffer();
   VkBufferCopy copy_region = {};
@@ -62,8 +75,10 @@ VertexBufferVk::VertexBufferVk(const VertexBuffer::VertexBufferCreationParams& p
 }
 
 VertexBufferVk::~VertexBufferVk() {
-  RENDERER_ASSERT(vertex_buffer_ != VK_NULL_HANDLE)
-  RendererVk& renderer = RendererVk::GetInstanceVk();
-  vmaDestroyBuffer(renderer.GetAllocator(), vertex_buffer_, vertex_buffer_alloc_);
+  // Null if creation failed
+  if (vertex_buffer_ != VK_NULL_HANDLE) {
+    RendererVk& renderer = RendererVk::GetInstanceVk();
+    vmaDestroyBuffer(renderer.GetAllocator(), vertex_buffer_, vertex_buffer_alloc_);
+  }
 }
 }
