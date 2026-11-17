@@ -38,11 +38,14 @@ class VulkanAPIUtils {
   static const char *GetMessageSeverityString(VkDebugUtilsMessageSeverityFlagBitsEXT s);
   static const char *GetMessageTypeString(VkDebugUtilsMessageTypeFlagsEXT s);
   static bool GetUsePhysicalDeviceProperties2();
-  static VkFormat GetVkDepthFormat(const DisplayManager::DisplayDepthFormat depth_format);
+  // Returns VK_FORMAT_UNDEFINED for none/none or a combination with no Vulkan format
+  static VkFormat GetVkDepthStencilFormat(const DisplayManager::DisplayDepthFormat depth_format,
+                                          const DisplayManager::DisplayStencilFormat stencil_format);
+  // Depth and/or stencil aspect bits of a depth/stencil format, 0 for other formats
+  static VkImageAspectFlags GetVkDepthStencilAspectMask(const VkFormat format);
   // Returns VK_FORMAT_UNDEFINED if the pixel format has no variant in the color space
   static VkFormat GetVkPixelFormat(const DisplayManager::DisplayPixelFormat pixel_format,
                                    const DisplayManager::DisplayColorSpace color_space);
-  static VkFormat GetVkStencilFormat(const DisplayManager::DisplayStencilFormat stencil_format);
   static VkColorSpaceKHR GetVkColorSpace(const DisplayManager::DisplayColorSpace color_space);
   static bool HasDeviceExtension(const std::vector<VkExtensionProperties> &available_extensions,
                                  const char *extension_name);

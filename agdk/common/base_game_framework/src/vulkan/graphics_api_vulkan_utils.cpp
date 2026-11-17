@@ -40,16 +40,27 @@ static constexpr ColorFormatVk kColorFormatTableVk[DisplayManager::kDisplay_Pixe
     {VK_FORMAT_A2B10G10R10_UNORM_PACK32, VK_FORMAT_UNDEFINED}  // kDisplay_Pixel_Format_ABGR2_10_10_10
 };
 
-static constexpr VkFormat kDepthFormatTableVk[DisplayManager::kDisplay_Depth_Format_Count] = {
-    VK_FORMAT_D24_UNORM_S8_UINT,         // kDisplay_Depth_Format_D24S8_Packed
-    VK_FORMAT_D16_UNORM,                 // kDisplay_Depth_Format_16U
-    VK_FORMAT_UNDEFINED,                 // kDisplay_Depth_Format_16F
-    VK_FORMAT_D32_SFLOAT                 // kDisplay_Depth_Format_32F
+// Depth/stencil combinations and the VkFormat each maps to. GetDepthStencilFormats offers
+// the combinations the device supports, and GetVkDepthStencilFormat resolves a selected one,
+// so both always agree. kDisplay_Depth_Format_16F has no Vulkan format and is never offered.
+struct DepthStencilFormatVk {
+  DisplayManager::DisplayDepthFormat depth;
+  DisplayManager::DisplayStencilFormat stencil;
+  VkFormat format;
 };
-
-static constexpr VkFormat kStencilFormatTableVk[DisplayManager::kDisplay_Stencil_Format_Count] = {
-    VK_FORMAT_D24_UNORM_S8_UINT,       // kDisplay_Stencil_Format_D24S8_Packed
-    VK_FORMAT_S8_UINT                  // kDisplay_Stencil_Format_S8
+static constexpr DepthStencilFormatVk kDepthStencilFormatTableVk[] = {
+    {DisplayManager::kDisplay_Depth_Format_D24S8_Packed,
+     DisplayManager::kDisplay_Stencil_Format_D24S8_Packed, VK_FORMAT_D24_UNORM_S8_UINT},
+    {DisplayManager::kDisplay_Depth_Format_None,
+     DisplayManager::kDisplay_Stencil_Format_S8, VK_FORMAT_S8_UINT},
+    {DisplayManager::kDisplay_Depth_Format_16U,
+     DisplayManager::kDisplay_Stencil_Format_None, VK_FORMAT_D16_UNORM},
+    {DisplayManager::kDisplay_Depth_Format_16U,
+     DisplayManager::kDisplay_Stencil_Format_S8, VK_FORMAT_D16_UNORM_S8_UINT},
+    {DisplayManager::kDisplay_Depth_Format_32F,
+     DisplayManager::kDisplay_Stencil_Format_None, VK_FORMAT_D32_SFLOAT},
+    {DisplayManager::kDisplay_Depth_Format_32F,
+     DisplayManager::kDisplay_Stencil_Format_S8, VK_FORMAT_D32_SFLOAT_S8_UINT}
 };
 
 bool VulkanAPIUtils::CheckVkResult(const VkResult result, const char *message) {
@@ -113,57 +124,20 @@ bool VulkanAPIUtils::GetImageFormatSupported(VkPhysicalDevice physical_device,
 
 void VulkanAPIUtils::GetDepthStencilFormats(VkPhysicalDevice physical_device,
                                             std::vector<DisplayManager::DisplayFormat> &depth_stencil_formats) {
+  depth_stencil_formats.clear();
   // Color format and color space are placeholder for our depth/stencil permutations
   DisplayManager::DisplayFormat format;
   // Always have none/none available for depth/stencil
   depth_stencil_formats.push_back(format);
 
-  if (VulkanAPIUtils::GetImageFormatSupported(physical_device, VK_FORMAT_D24_UNORM_S8_UINT,
-                                              VK_IMAGE_TILING_OPTIMAL,
-                                              VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
-    format.display_depth_format = DisplayManager::kDisplay_Depth_Format_D24S8_Packed;
-    format.display_stencil_format = DisplayManager::kDisplay_Stencil_Format_D24S8_Packed;
-    depth_stencil_formats.push_back(format);
-  }
-
-  if (VulkanAPIUtils::GetImageFormatSupported(physical_device, VK_FORMAT_S8_UINT,
-                                              VK_IMAGE_TILING_OPTIMAL,
-                                              VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
-    format.display_depth_format = DisplayManager::kDisplay_Depth_Format_None;
-    format.display_stencil_format = DisplayManager::kDisplay_Stencil_Format_S8;
-    depth_stencil_formats.push_back(format);
-  }
-
-  if (VulkanAPIUtils::GetImageFormatSupported(physical_device, VK_FORMAT_D16_UNORM,
-                                              VK_IMAGE_TILING_OPTIMAL,
-                                              VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
-    format.display_depth_format = DisplayManager::kDisplay_Depth_Format_16U;
-    format.display_stencil_format = DisplayManager::kDisplay_Stencil_Format_None;
-    depth_stencil_formats.push_back(format);
-  }
-
-  if (VulkanAPIUtils::GetImageFormatSupported(physical_device, VK_FORMAT_D16_UNORM_S8_UINT,
-                                              VK_IMAGE_TILING_OPTIMAL,
-                                              VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
-    format.display_depth_format = DisplayManager::kDisplay_Depth_Format_16U;
-    format.display_stencil_format = DisplayManager::kDisplay_Stencil_Format_S8;
-    depth_stencil_formats.push_back(format);
-  }
-
-  if (VulkanAPIUtils::GetImageFormatSupported(physical_device, VK_FORMAT_D32_SFLOAT,
-                                              VK_IMAGE_TILING_OPTIMAL,
-                                              VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
-    format.display_depth_format = DisplayManager::kDisplay_Depth_Format_32F;
-    format.display_stencil_format = DisplayManager::kDisplay_Stencil_Format_None;
-    depth_stencil_formats.push_back(format);
-  }
-
-  if (VulkanAPIUtils::GetImageFormatSupported(physical_device, VK_FORMAT_D32_SFLOAT_S8_UINT,
-                                              VK_IMAGE_TILING_OPTIMAL,
-                                              VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
-    format.display_depth_format = DisplayManager::kDisplay_Depth_Format_32F;
-    format.display_stencil_format = DisplayManager::kDisplay_Stencil_Format_S8;
-    depth_stencil_formats.push_back(format);
+  for (const DepthStencilFormatVk &entry : kDepthStencilFormatTableVk) {
+    if (VulkanAPIUtils::GetImageFormatSupported(physical_device, entry.format,
+                                                VK_IMAGE_TILING_OPTIMAL,
+                                                VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
+      format.display_depth_format = entry.depth;
+      format.display_stencil_format = entry.stencil;
+      depth_stencil_formats.push_back(format);
+    }
   }
 }
 
@@ -274,11 +248,33 @@ bool VulkanAPIUtils::GetUsePhysicalDeviceProperties2() {
   return true;
 }
 
-VkFormat VulkanAPIUtils::GetVkDepthFormat(const DisplayManager::DisplayDepthFormat depth_format) {
-  if (depth_format >= 0) {
-    return kDepthFormatTableVk[depth_format];
+VkFormat VulkanAPIUtils::GetVkDepthStencilFormat(
+    const DisplayManager::DisplayDepthFormat depth_format,
+    const DisplayManager::DisplayStencilFormat stencil_format) {
+  for (const DepthStencilFormatVk &entry : kDepthStencilFormatTableVk) {
+    if (entry.depth == depth_format && entry.stencil == stencil_format) {
+      return entry.format;
+    }
   }
+  // None/none, or a combination with no Vulkan format
   return VK_FORMAT_UNDEFINED;
+}
+
+VkImageAspectFlags VulkanAPIUtils::GetVkDepthStencilAspectMask(const VkFormat format) {
+  switch (format) {
+    case VK_FORMAT_D16_UNORM:
+    case VK_FORMAT_X8_D24_UNORM_PACK32:
+    case VK_FORMAT_D32_SFLOAT:
+      return VK_IMAGE_ASPECT_DEPTH_BIT;
+    case VK_FORMAT_S8_UINT:
+      return VK_IMAGE_ASPECT_STENCIL_BIT;
+    case VK_FORMAT_D16_UNORM_S8_UINT:
+    case VK_FORMAT_D24_UNORM_S8_UINT:
+    case VK_FORMAT_D32_SFLOAT_S8_UINT:
+      return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    default:
+      return 0;
+  }
 }
 
 VkFormat VulkanAPIUtils::GetVkPixelFormat(const DisplayManager::DisplayPixelFormat pixel_format,
@@ -286,14 +282,6 @@ VkFormat VulkanAPIUtils::GetVkPixelFormat(const DisplayManager::DisplayPixelForm
   if (pixel_format >= 0 && pixel_format < DisplayManager::kDisplay_Pixel_Format_Count) {
     return (color_space == DisplayManager::kDisplay_Color_Space_SRGB) ?
            kColorFormatTableVk[pixel_format].srgb : kColorFormatTableVk[pixel_format].linear;
-  }
-  return VK_FORMAT_UNDEFINED;
-}
-
-VkFormat VulkanAPIUtils::GetVkStencilFormat(
-    const DisplayManager::DisplayStencilFormat stencil_format) {
-  if (stencil_format >= 0) {
-    return kStencilFormatTableVk[stencil_format];
   }
   return VK_FORMAT_UNDEFINED;
 }
