@@ -256,6 +256,9 @@ class Texture {
     if (params.mip_count > kMaxMipCount) {
       texture_mip_count_ = kMaxMipCount;
     }
+    if (params.texture_sizes == nullptr) {
+      texture_mip_count_ = 0;
+    }
     uint32_t i = 0;
     while (i < texture_mip_count_) {
       texture_sizes_[i] = params.texture_sizes[i];

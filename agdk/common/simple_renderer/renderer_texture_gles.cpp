@@ -84,9 +84,91 @@ static constexpr GLint kGLWrapT[Texture::kWrapT_Count] = {
     GL_MIRRORED_REPEAT
 };
 
+// Returns true if the creation parameters are usable: enums in range, the compression type
+// matches a compressed format, and every mip level has data of a plausible size
+static bool ValidateTextureParams(const Texture::TextureCreationParams& params,
+                                  const uint32_t mip_count) {
+  if (params.format >= Texture::kTextureFormat_Count ||
+      params.min_filter >= Texture::kMinFilter_Count ||
+      params.mag_filter >= Texture::kMagFilter_Count ||
+      params.wrap_s >= Texture::kWrapS_Count || params.wrap_t >= Texture::kWrapT_Count) {
+    RENDERER_ERROR("TextureGLES: invalid format/filter/wrap enum");
+    return false;
+  }
+  if (params.base_width == 0 || params.base_height == 0 || mip_count == 0 ||
+      params.texture_data == nullptr || params.texture_sizes == nullptr) {
+    RENDERER_ERROR("TextureGLES: missing size or data (%ux%u, %u mips)", params.base_width,
+                   params.base_height, params.mip_count);
+    return false;
+  }
+  if (params.format == Texture::kTextureFormat_ASTC &&
+      !(params.compression_type >= Texture::kTextureCompression_ASTC_LDR_4x4 &&
+        params.compression_type <= Texture::kTextureCompression_ASTC_LDR_12x12)) {
+    RENDERER_ERROR("TextureGLES: ASTC texture with non-ASTC compression %u",
+                   params.compression_type);
+    return false;
+  }
+  if (params.format == Texture::kTextureFormat_ETC2 &&
+      !(params.compression_type >= Texture::kTextureCompression_ETC2_RGB8 &&
+        params.compression_type <= Texture::kTextureCompression_ETC2_SRGB8_ALPHA8_EAC)) {
+    RENDERER_ERROR("TextureGLES: ETC2 texture with non-ETC2 compression %u",
+                   params.compression_type);
+    return false;
+  }
+  // glTexImage2D reads width * height * bytes per pixel for each uncompressed level,
+  // regardless of the size passed in, so make sure that much data is there
+  if (params.format == Texture::kTextureFormat_RGBA_8888 ||
+      params.format == Texture::kTextureFormat_RGB_888) {
+    const size_t bytes_per_pixel = (params.format == Texture::kTextureFormat_RGBA_8888) ? 4 : 3;
+    size_t width = params.base_width;
+    size_t height = params.base_height;
+    for (uint32_t level = 0; level < mip_count; ++level) {
+      if (params.texture_sizes[level] < width * height * bytes_per_pixel) {
+        RENDERER_ERROR("TextureGLES: mip %u has %u bytes, needs %zu", level,
+                       params.texture_sizes[level], width * height * bytes_per_pixel);
+        return false;
+      }
+      width = (width > 1) ? (width >> 1) : 1;
+      height = (height > 1) ? (height >> 1) : 1;
+    }
+  }
+  return true;
+}
+
 TextureGLES::TextureGLES(const Texture::TextureCreationParams& params)
                          : Texture(params) {
   texture_object_ = 0;
+  // Use the base class mip count, which is clamped to the supported maximum
+  const uint32_t mip_count = GetMipCount();
+  const bool valid_params = ValidateTextureParams(params, mip_count);
+  RENDERER_ASSERT(valid_params);
+  if (!valid_params) {
+    // Leave texture_object_ as 0; binding it unbinds any texture
+    return;
+  }
+
+  // Don't disturb the caller's texture binding or pixel unpack state
+  GLint previous_texture = 0;
+  glGetIntegerv(GL_TEXTURE_BINDING_2D, &previous_texture);
+  GLint previous_unpack_buffer = 0;
+  glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &previous_unpack_buffer);
+  GLint previous_unpack_alignment = 4;
+  GLint previous_unpack_row_length = 0;
+  GLint previous_unpack_skip_pixels = 0;
+  GLint previous_unpack_skip_rows = 0;
+  glGetIntegerv(GL_UNPACK_ALIGNMENT, &previous_unpack_alignment);
+  glGetIntegerv(GL_UNPACK_ROW_LENGTH, &previous_unpack_row_length);
+  glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &previous_unpack_skip_pixels);
+  glGetIntegerv(GL_UNPACK_SKIP_ROWS, &previous_unpack_skip_rows);
+
+  // Upload from client memory (not a pixel unpack buffer), with tightly packed rows
+  // (e.g. a 3 pixel wide RGB row is 9 bytes, not padded to 12)
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+  glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+  glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+  RENDERER_CHECK_GLES("pixel unpack state");
 
   glGenTextures(1, &texture_object_);
   RENDERER_CHECK_GLES("glGenTextures");
@@ -95,50 +177,63 @@ TextureGLES::TextureGLES(const Texture::TextureCreationParams& params)
 
   GLsizei width = params.base_width;
   GLsizei height = params.base_height;
-  uint32_t current_mip_level = 0;
   const uint8_t* data = static_cast<const uint8_t *>(params.texture_data);
+  const bool uncompressed = (params.format == kTextureFormat_RGBA_8888 ||
+                             params.format == kTextureFormat_RGB_888);
   const GLenum format = (params.format == kTextureFormat_RGBA_8888) ? GL_RGBA : GL_RGB;
+  // Sized internal formats guarantee 8 bit channels (and GL_RGB8 is color-renderable)
+  const GLint internal_format = (params.format == kTextureFormat_RGBA_8888) ? GL_RGBA8 : GL_RGB8;
 
-  if (params.format == kTextureFormat_RGBA_8888 || params.format == kTextureFormat_RGB_888) {
-    // Uncompressed
-    glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    RENDERER_CHECK_GLES("glPixelStorei");
-  }
-  while (current_mip_level < params.mip_count) {
-    if (params.format == kTextureFormat_RGBA_8888 || params.format == kTextureFormat_RGB_888) {
-      glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format,
-                    GL_UNSIGNED_BYTE, data);
+  for (uint32_t mip_level = 0; mip_level < mip_count; ++mip_level) {
+    const GLint level = static_cast<GLint>(mip_level);
+    if (uncompressed) {
+      glTexImage2D(GL_TEXTURE_2D, level, internal_format, width, height, 0, format,
+                   GL_UNSIGNED_BYTE, data);
       RENDERER_CHECK_GLES("glTexImage2D");
     } else {
-      glCompressedTexImage2D(GL_TEXTURE_2D, 0,
+      glCompressedTexImage2D(GL_TEXTURE_2D, level,
                              kGLCompressedFormats[params.compression_type],
-                             width, height,0,
-                             params.texture_sizes[current_mip_level], data);
+                             width, height, 0,
+                             params.texture_sizes[mip_level], data);
       RENDERER_CHECK_GLES("glCompressedTexImage2D");
     }
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, kGLMinFilters[params.min_filter]);
-    RENDERER_CHECK_GLES("glTexParameteri");
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, kGLMagFilters[params.mag_filter]);
-    RENDERER_CHECK_GLES("glTexParameteri");
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, kGLWrapS[params.wrap_s]);
-    RENDERER_CHECK_GLES("glTexParameteri");
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, kGLWrapT[params.wrap_t]);
-    RENDERER_CHECK_GLES("glTexParameteri");
-
-    data += params.texture_sizes[current_mip_level];
-    width >>= 1;
-    height >>= 1;
-    ++current_mip_level;
+    data += params.texture_sizes[mip_level];
+    // Each mip dimension halves but never goes below 1 (non-square textures reach 1
+    // along one axis first)
+    width = (width > 1) ? (width >> 1) : 1;
+    height = (height > 1) ? (height >> 1) : 1;
   }
-  glBindTexture(GL_TEXTURE_2D, 0);
-  RENDERER_CHECK_GLES("glBindTexture");
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, kGLMinFilters[params.min_filter]);
+  RENDERER_CHECK_GLES("glTexParameteri GL_TEXTURE_MIN_FILTER");
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, kGLMagFilters[params.mag_filter]);
+  RENDERER_CHECK_GLES("glTexParameteri GL_TEXTURE_MAG_FILTER");
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, kGLWrapS[params.wrap_s]);
+  RENDERER_CHECK_GLES("glTexParameteri GL_TEXTURE_WRAP_S");
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, kGLWrapT[params.wrap_t]);
+  RENDERER_CHECK_GLES("glTexParameteri GL_TEXTURE_WRAP_T");
+  // Only the uploaded levels exist. Without this, a mipmapped min filter on a texture
+  // with fewer levels than a full chain makes the texture incomplete (samples as black).
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, static_cast<GLint>(mip_count - 1));
+  RENDERER_CHECK_GLES("glTexParameteri GL_TEXTURE_MAX_LEVEL");
+
+  // Restore the caller's state
+  glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(previous_texture));
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, static_cast<GLuint>(previous_unpack_buffer));
+  glPixelStorei(GL_UNPACK_ALIGNMENT, previous_unpack_alignment);
+  glPixelStorei(GL_UNPACK_ROW_LENGTH, previous_unpack_row_length);
+  glPixelStorei(GL_UNPACK_SKIP_PIXELS, previous_unpack_skip_pixels);
+  glPixelStorei(GL_UNPACK_SKIP_ROWS, previous_unpack_skip_rows);
+  RENDERER_CHECK_GLES("restore texture/unpack state");
 }
 
 TextureGLES::~TextureGLES() {
-  glBindTexture(GL_TEXTURE_2D, 0);
-  RENDERER_CHECK_GLES("glBindTexture");
-  glDeleteTextures(1, &texture_object_);
-  RENDERER_CHECK_GLES("glDeleteTextures");
-  texture_object_ = 0;
+  // glDeleteTextures unbinds the texture wherever it is bound, so other bindings are
+  // left alone
+  if (texture_object_ != 0) {
+    glDeleteTextures(1, &texture_object_);
+    RENDERER_CHECK_GLES("glDeleteTextures");
+    texture_object_ = 0;
+  }
 }
 }
