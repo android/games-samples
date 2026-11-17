@@ -42,10 +42,11 @@ bool RendererCheckGLES(const char* message) {
       default:
         break;
     }
-    RENDERER_ERROR("GL error: (%u) %s from %s", error, error_string, message)
+    RENDERER_ERROR("GL error: (%u) %s from %s", error, error_string,
+                   (message != nullptr) ? message : "");
     error = glGetError();
   }
-  RENDERER_ASSERT(no_error)
+  RENDERER_ASSERT(no_error);
 
   return no_error;
 }

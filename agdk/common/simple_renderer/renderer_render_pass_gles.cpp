@@ -15,6 +15,7 @@
  */
 
 #include "renderer_render_pass_gles.h"
+#include <GLES3/gl3.h>
 #include "renderer_debug.h"
 
 namespace simple_renderer {

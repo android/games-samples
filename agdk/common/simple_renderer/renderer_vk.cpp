@@ -124,7 +124,7 @@ void RendererVk::BeginFrame(
     display_manager.GetSwapchainFrameResourcesVk(frame_handle, swap_, true);
     active_extent_ = swap_.swapchain_extent;
 
-    RENDERER_ASSERT(swap_.swapchain_frame_index < descriptor_pools_.size())
+    RENDERER_ASSERT(swap_.swapchain_frame_index < descriptor_pools_.size());
     active_frame_pool_ = descriptor_pools_[swap_.swapchain_frame_index];
     VkResult reset_result = vkResetDescriptorPool(vk_.device, active_frame_pool_, 0);
     RENDERER_CHECK_VK(reset_result, "vkResetDescriptorPool");
@@ -440,7 +440,7 @@ VkDescriptorSetLayout RendererVk::GetDescriptorSetLayout(
 }
 
 VkCommandBuffer RendererVk::BeginStagingCommandBuffer() {
-  RENDERER_ASSERT(staging_command_buffer_ != nullptr)
+  RENDERER_ASSERT(staging_command_buffer_ != nullptr);
 
   VkCommandBufferBeginInfo begin_info = {
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -454,7 +454,7 @@ VkCommandBuffer RendererVk::BeginStagingCommandBuffer() {
 }
 
 void RendererVk::EndStagingCommandBuffer() {
-  RENDERER_ASSERT(staging_command_buffer_ != nullptr)
+  RENDERER_ASSERT(staging_command_buffer_ != nullptr);
   const VkResult end_result = vkEndCommandBuffer(staging_command_buffer_);
   RENDERER_CHECK_VK(end_result, "vkEndCommandBuffer (EndStagingCommandBuffer");
 

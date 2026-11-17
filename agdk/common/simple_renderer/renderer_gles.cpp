@@ -86,7 +86,7 @@ void RendererGLES::BeginFrame(
   resources_.ProcessDeleteQueue();
   EGLBoolean result = eglMakeCurrent(egl_display_, egl_surface_, egl_surface_, egl_context_);
   if (result == EGL_FALSE) {
-    RENDERER_ERROR("eglMakeCurrent failed: %d", eglGetError())
+    RENDERER_ERROR("eglMakeCurrent failed: %d", eglGetError());
   }
 
   // Make sure errors are cleared at top of frame

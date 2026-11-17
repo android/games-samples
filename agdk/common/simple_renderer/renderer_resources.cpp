@@ -23,37 +23,37 @@ static constexpr long kExpectedUseCount = 1;
 
 void RendererResources::ProcessDeleteQueue() {
   while (!index_buffer_delete_queue_.empty()) {
-    RENDERER_ASSERT(index_buffer_delete_queue_.front().use_count() == kExpectedUseCount)
+    RENDERER_ASSERT(index_buffer_delete_queue_.front().use_count() == kExpectedUseCount);
     index_buffer_delete_queue_.pop();
   }
 
   while (!render_state_delete_queue_.empty()) {
-    RENDERER_ASSERT(render_state_delete_queue_.front().use_count() == kExpectedUseCount)
+    RENDERER_ASSERT(render_state_delete_queue_.front().use_count() == kExpectedUseCount);
     render_state_delete_queue_.pop();
   }
 
   while (!render_pass_delete_queue_.empty()) {
-    RENDERER_ASSERT(render_pass_delete_queue_.front().use_count() == kExpectedUseCount)
+    RENDERER_ASSERT(render_pass_delete_queue_.front().use_count() == kExpectedUseCount);
     render_pass_delete_queue_.pop();
   }
 
   while (!shader_program_delete_queue_.empty()) {
-    RENDERER_ASSERT(shader_program_delete_queue_.front().use_count() == kExpectedUseCount)
+    RENDERER_ASSERT(shader_program_delete_queue_.front().use_count() == kExpectedUseCount);
     shader_program_delete_queue_.pop();
   }
 
   while (!texture_delete_queue_.empty()) {
-    RENDERER_ASSERT(texture_delete_queue_.front().use_count() == kExpectedUseCount)
+    RENDERER_ASSERT(texture_delete_queue_.front().use_count() == kExpectedUseCount);
     texture_delete_queue_.pop();
   }
 
   while (!uniform_buffer_delete_queue_.empty()) {
-    RENDERER_ASSERT(uniform_buffer_delete_queue_.front().use_count() == kExpectedUseCount)
+    RENDERER_ASSERT(uniform_buffer_delete_queue_.front().use_count() == kExpectedUseCount);
     uniform_buffer_delete_queue_.pop();
   }
 
   while (!vertex_buffer_delete_queue_.empty()) {
-    RENDERER_ASSERT(vertex_buffer_delete_queue_.front().use_count() == kExpectedUseCount)
+    RENDERER_ASSERT(vertex_buffer_delete_queue_.front().use_count() == kExpectedUseCount);
     vertex_buffer_delete_queue_.pop();
   }
 }

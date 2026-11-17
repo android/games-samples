@@ -31,8 +31,8 @@ class IndexBufferVk : public IndexBuffer {
   VkBuffer GetIndexBuffer() const { return index_buffer_; }
 
  private:
-  VkBuffer index_buffer_;
-  VmaAllocation index_buffer_alloc_;
+  VkBuffer index_buffer_ = VK_NULL_HANDLE;
+  VmaAllocation index_buffer_alloc_ = VK_NULL_HANDLE;
 };
 } // namespace simple_renderer
 

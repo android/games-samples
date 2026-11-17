@@ -24,12 +24,12 @@ static bool CheckProgramStatus(GLuint program_handle) {
   bool valid = true;
   glGetProgramiv(program_handle, GL_LINK_STATUS, &status);
   if (status == 0) {
-    char error_buffer[2048];
+    char error_buffer[2048] = {};
     valid = false;
-    RENDERER_ERROR("Shader program link failed %u", program_handle)
+    RENDERER_ERROR("Shader program link failed %u", program_handle);
     glGetProgramInfoLog(program_handle, sizeof(error_buffer) - 1, nullptr, error_buffer);
-    RENDERER_ERROR("*** Info log:\n%s", error_buffer)
-    RENDERER_ASSERT(false)
+    RENDERER_ERROR("*** Info log:\n%s", error_buffer);
+    RENDERER_ASSERT(false);
   }
   return valid;
 }
@@ -39,12 +39,12 @@ static bool CheckShaderStatus(GLuint shader_handle) {
   bool valid = true;
   glGetShaderiv(shader_handle, GL_COMPILE_STATUS, &status);
   if (status == 0) {
-    char error_buffer[2048];
+    char error_buffer[2048] = {};
     valid = false;
-    RENDERER_ERROR("Shader compile failed %u", shader_handle)
+    RENDERER_ERROR("Shader compile failed %u", shader_handle);
     glGetShaderInfoLog(shader_handle, sizeof(error_buffer) - 1, nullptr, error_buffer);
-    RENDERER_ERROR("*** Info log:\n%s", error_buffer)
-    RENDERER_ASSERT(false)
+    RENDERER_ERROR("*** Info log:\n%s", error_buffer);
+    RENDERER_ASSERT(false);
   }
   return valid;
 }
@@ -78,8 +78,8 @@ ShaderProgramGLES::ShaderProgramGLES(const ShaderProgram::ShaderProgramCreationP
       }
     }
   } else {
-    RENDERER_ERROR("Failed to create shader program handles")
-    RENDERER_ASSERT(false)
+    RENDERER_ERROR("Failed to create shader program handles");
+    RENDERER_ASSERT(false);
   }
 }
 

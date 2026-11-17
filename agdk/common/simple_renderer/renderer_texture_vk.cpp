@@ -90,7 +90,7 @@ static VkFormat GetTextureVkFormat(const Texture::TextureCreationParams& params)
       case Texture::kTextureCompression_ASTC_LDR_12x12:
         texture_format = VK_FORMAT_ASTC_4x4_UNORM_BLOCK; break;
       default:
-        RENDERER_ASSERT(false)
+        RENDERER_ASSERT(false);
         break;
     }
   } else if (params.format == Texture::kTextureFormat_ETC2) {
@@ -108,7 +108,7 @@ static VkFormat GetTextureVkFormat(const Texture::TextureCreationParams& params)
       case Texture::kTextureCompression_ETC2_SRGB8_ALPHA8_EAC:
         texture_format = VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK; break;
       default:
-        RENDERER_ASSERT(false)
+        RENDERER_ASSERT(false);
         break;
     }
   }
@@ -143,7 +143,7 @@ TextureVk::TextureVk(const Texture::TextureCreationParams& params)
       staging_alloc_result = vmaCreateBuffer(allocator, &create_info, &staging_create_info,
                                              &staging_buffer, &staging_alloc, &staging_info);
   RENDERER_CHECK_VK(staging_alloc_result, "vmaCreateBuffer (staging)");
-  RENDERER_ASSERT(staging_info.pMappedData != nullptr)
+  RENDERER_ASSERT(staging_info.pMappedData != nullptr);
   memcpy(staging_info.pMappedData, params.texture_data, params.texture_sizes[0]);
 
   VkImageCreateInfo image_create_info = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };

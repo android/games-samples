@@ -31,8 +31,8 @@ class VertexBufferVk : public VertexBuffer {
   VkBuffer GetVertexBuffer() const { return vertex_buffer_; }
 
  private:
-  VkBuffer vertex_buffer_;
-  VmaAllocation vertex_buffer_alloc_;
+  VkBuffer vertex_buffer_ = VK_NULL_HANDLE;
+  VmaAllocation vertex_buffer_alloc_ = VK_NULL_HANDLE;
 };
 } // namespace simple_renderer
 

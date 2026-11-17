@@ -109,7 +109,7 @@ static uint32_t ConfigureAttributeDescriptions(const VertexBuffer::VertexFormat 
   attribute_offset += kPositionAttributeSize;
   if (state_vertex_layout == VertexBuffer::kVertexFormat_P3T2 ||
       state_vertex_layout == VertexBuffer::kVertexFormat_P3T2C4) {
-    RENDERER_ASSERT(attribute_count < max_attributes)
+    RENDERER_ASSERT(attribute_count < max_attributes);
     attributes->binding = 0;
     attributes->location = attribute_count;
     attributes->format = VK_FORMAT_R32G32_SFLOAT;
@@ -120,7 +120,7 @@ static uint32_t ConfigureAttributeDescriptions(const VertexBuffer::VertexFormat 
   }
   if (state_vertex_layout == VertexBuffer::kVertexFormat_P3C4 ||
       state_vertex_layout == VertexBuffer::kVertexFormat_P3T2C4) {
-    RENDERER_ASSERT(attribute_count < max_attributes)
+    RENDERER_ASSERT(attribute_count < max_attributes);
     attributes->binding = 0;
     attributes->location = attribute_count;
     attributes->format = VK_FORMAT_R32G32B32A32_SFLOAT;
@@ -185,10 +185,10 @@ RenderStateVk::RenderStateVk(const RenderStateCreationParams& params) :
                state_program_->GetVertexDebugName().c_str(),
                state_program_->GetFragmentDebugName().c_str(),
                state_uniform_->GetBufferDebugName().c_str(),
-               state_vertex_layout_)
+               state_vertex_layout_);
   const RenderPassVk& render_pass_vk = *(static_cast<RenderPassVk*>(render_pass_.get()));
   VkRenderPass render_pass = render_pass_vk.GetRenderPassVk();
-  RENDERER_ASSERT(render_pass != VK_NULL_HANDLE)
+  RENDERER_ASSERT(render_pass != VK_NULL_HANDLE);
 
   descriptor_set_layout_ =
       RendererVk::GetInstanceVk().GetDescriptorSetLayout(params.state_vertex_layout);

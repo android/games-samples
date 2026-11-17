@@ -55,14 +55,10 @@ bool RendererCheckVk(int result, const char* message) {
         error_string = "VK_ERROR_FRAGMENTATION"; break;
       case VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS:
         error_string = "VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS"; break;
-      case VK_PIPELINE_COMPILE_REQUIRED:
-        error_string = "VK_PIPELINE_COMPILE_REQUIRED"; break;
       case VK_ERROR_SURFACE_LOST_KHR:
         error_string = "VK_ERROR_SURFACE_LOST_KHR"; break;
       case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR:
         error_string = "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR"; break;
-      case VK_SUBOPTIMAL_KHR:
-        error_string = "VK_SUBOPTIMAL_KHR"; break;
       case VK_ERROR_OUT_OF_DATE_KHR:
         error_string = "VK_ERROR_OUT_OF_DATE_KHR"; break;
       case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR:
@@ -80,8 +76,9 @@ bool RendererCheckVk(int result, const char* message) {
       default:
         break;
     }
-    RENDERER_ERROR("Vk error: (%d) %s from %s", result, error_string, message)
-    RENDERER_ASSERT(false)
+    RENDERER_ERROR("Vk error: (%d) %s from %s", result, error_string,
+                   (message != nullptr) ? message : "");
+    RENDERER_ASSERT(false);
   }
   return (result >= 0);
 }
