@@ -49,12 +49,9 @@ class GraphicsAPIVulkan : public GraphicsAPIBase {
     // This is the index of the current in-flight frame:
     // i.e. 0/1 for double buffer, or 0/1/2 for triple buffer
     uint32_t swapchain_current_frame_index_ = 0;
-    // This is the index of the current in-flight depth/stencil frame,
-    // this index won't match the color buffer since we don't have to
-    // keep the depth/stencil buffer for presentation
-    uint32_t swapchain_current_depth_stencil_frame_index_ = 0;
     // This is the index of the current active swapchain image,
-    // which may be greater than the number of max in-flight frames
+    // which may be greater than the number of max in-flight frames.
+    // Each swapchain image has its own depth/stencil image, also selected by this index.
     uint32_t swapchain_current_image_index_ = 0;
     // Number of max in-flight frames
     uint32_t swapchain_frame_count_ = 0;
@@ -127,7 +124,7 @@ class GraphicsAPIVulkan : public GraphicsAPIBase {
   bool CreateSwapchain(const QueueFamilyIndices &queue_indices);
   void RecreateSwapchain();
   void DestroySwapchain();
-  void CreateSwapchainImages();
+  bool CreateSwapchainImages();
   void DestroySwapchainImages();
 
   void CreateSynchronizationObjects();

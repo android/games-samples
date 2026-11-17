@@ -630,7 +630,10 @@ DisplayManager::InitSwapchainResult GraphicsAPIVulkan::InitSwapchain(
     return DisplayManager::kInit_Swapchain_Failure;
   }
 
-  CreateSwapchainImages();
+  if (!CreateSwapchainImages()) {
+    DestroySwapchain();
+    return DisplayManager::kInit_Swapchain_Failure;
+  }
 
   if (!PlatformUtilVulkan::ActivateSwapchain(vk_physical_device_,
                                              vk_device_,
@@ -638,6 +641,9 @@ DisplayManager::InitSwapchainResult GraphicsAPIVulkan::InitSwapchain(
                                              vk_present_queue_,
                                              present_queue_index_,
                                              swapchain_interval_)) {
+    // Don't leave a half initialized swapchain that GetSwapchainValid reports as valid
+    PlatformUtilVulkan::DeactivateSwapchain(vk_device_, vk_swapchain_);
+    DestroySwapchain();
     return DisplayManager::kInit_Swapchain_Failure;
   }
   return DisplayManager::kInit_Swapchain_Success;
@@ -715,9 +721,6 @@ DisplayManager::SwapchainFrameHandle GraphicsAPIVulkan::PresentCurrentSwapchainF
     swapchain_info_.swapchain_current_frame_index_ =
         (swapchain_info_.swapchain_current_frame_index_ + 1) %
             swapchain_info_.swapchain_frame_count_;
-    swapchain_info_.swapchain_current_depth_stencil_frame_index_ =
-        (swapchain_info_.swapchain_current_depth_stencil_frame_index_ + 1) %
-            swapchain_info_.swapchain_image_count_;
   } else {
     DebugManager::Log(DebugManager::kLog_Channel_Default,
                       DebugManager::kLog_Level_Error,
@@ -786,9 +789,15 @@ bool GraphicsAPIVulkan::GetSwapchainFrameResourcesVk(
         frame_render_completion_semaphore_[swapchain_info_.swapchain_current_frame_index_];
     frame_resources.swapchain_color_image_view =
         swapchain_info_.swapchain_image_views_[swapchain_info_.swapchain_current_image_index_];
+    // Each swapchain image has its own depth/stencil image, so a depth/stencil image is never
+    // shared by two frames in flight. None exist if the swapchain format has no depth or
+    // stencil.
+    const uint32_t image_index = swapchain_info_.swapchain_current_image_index_;
+    const std::vector<VkImageView> &depth_stencil_views =
+        swapchain_info_.swapchain_depth_stencil_image_views_;
     frame_resources.swapchain_depth_stencil_image_view =
-        swapchain_info_.swapchain_depth_stencil_image_views_[
-            swapchain_info_.swapchain_current_depth_stencil_frame_index_];
+        (image_index < depth_stencil_views.size()) ? depth_stencil_views[image_index] :
+                                                     VK_NULL_HANDLE;
     frame_resources.swapchain = vk_swapchain_;
     frame_resources.swapchain_color_format = swapchain_info_.swapchain_color_format_;
     frame_resources.swapchain_depth_stencil_format =
@@ -1024,7 +1033,8 @@ bool GraphicsAPIVulkan::CreateSwapchain(const QueueFamilyIndices &queue_indices)
       VulkanAPIUtils::GetVkPixelFormat(swapchain_format_.display_pixel_format,
                                        swapchain_format_.display_color_space);
   swapchain_info_.swapchain_depth_stencil_format_ =
-      VulkanAPIUtils::GetVkDepthFormat(swapchain_format_.display_depth_format);
+      VulkanAPIUtils::GetVkDepthStencilFormat(swapchain_format_.display_depth_format,
+                                              swapchain_format_.display_stencil_format);
 
   VkSwapchainCreateInfoKHR swapchain_create_info{};
   swapchain_create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -1080,9 +1090,17 @@ void GraphicsAPIVulkan::RecreateSwapchain() {
                       DebugManager::kLog_Level_Error,
                       BGM_CLASS_TAG,
                       "CreateSwapchain in RecreateSwapchain failed!");
+    return;
   }
 
-  CreateSwapchainImages();
+  if (!CreateSwapchainImages()) {
+    DebugManager::Log(DebugManager::kLog_Channel_Default,
+                      DebugManager::kLog_Level_Error,
+                      BGM_CLASS_TAG,
+                      "CreateSwapchainImages in RecreateSwapchain failed!");
+    DestroySwapchain();
+    return;
+  }
 
   if (!PlatformUtilVulkan::ActivateSwapchain(vk_physical_device_,
                                              vk_device_,
@@ -1103,22 +1121,35 @@ void GraphicsAPIVulkan::DestroySwapchain() {
   vk_swapchain_ = VK_NULL_HANDLE;
 }
 
-void GraphicsAPIVulkan::CreateSwapchainImages() {
-  // Get the images and create the image views and framebuffers
-  vkGetSwapchainImagesKHR(vk_device_,
-                          vk_swapchain_,
-                          &swapchain_info_.swapchain_image_count_,
-                          nullptr);
-  swapchain_info_.swapchain_images_.resize(swapchain_info_.swapchain_image_count_);
-  vkGetSwapchainImagesKHR(vk_device_, vk_swapchain_, &swapchain_info_.swapchain_image_count_,
-                          swapchain_info_.swapchain_images_.data());
+bool GraphicsAPIVulkan::CreateSwapchainImages() {
+  // A new set of images: no image is acquired yet, and the image count may differ from the
+  // previous swapchain, so don't keep an index into the old image set
+  swapchain_info_.swapchain_current_image_index_ = 0;
+  swapchain_acquired_current_frame_image_ = false;
 
-  swapchain_info_.swapchain_image_views_.resize(swapchain_info_.swapchain_image_count_);
-  VkImageView *base_view = swapchain_info_.swapchain_image_views_.data();
+  // Get the images and create the image views and framebuffers
+  uint32_t image_count = 0;
+  if (!VulkanAPIUtils::CheckVkResult(
+      vkGetSwapchainImagesKHR(vk_device_, vk_swapchain_, &image_count, nullptr),
+      "vkGetSwapchainImagesKHR")) {
+    return false;
+  }
+  swapchain_info_.swapchain_images_.resize(image_count);
+  if (!VulkanAPIUtils::CheckVkResult(
+      vkGetSwapchainImagesKHR(vk_device_, vk_swapchain_, &image_count,
+                              swapchain_info_.swapchain_images_.data()),
+      "vkGetSwapchainImagesKHR")) {
+    swapchain_info_.swapchain_images_.clear();
+    return false;
+  }
+  swapchain_info_.swapchain_image_count_ = image_count;
+
+  // Views/images that fail to create stay VK_NULL_HANDLE, which DestroySwapchainImages skips
+  swapchain_info_.swapchain_image_views_.resize(image_count, VK_NULL_HANDLE);
   const VkFormat pixel_format = VulkanAPIUtils::GetVkPixelFormat(
       swapchain_format_.display_pixel_format, swapchain_format_.display_color_space);
 
-  for (size_t i = 0; i < swapchain_info_.swapchain_image_count_; ++i) {
+  for (size_t i = 0; i < image_count; ++i) {
     VkImageViewCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     create_info.image = swapchain_info_.swapchain_images_[i];
@@ -1133,26 +1164,25 @@ void GraphicsAPIVulkan::CreateSwapchainImages() {
     create_info.subresourceRange.levelCount = 1;
     create_info.subresourceRange.baseArrayLayer = 0;
     create_info.subresourceRange.layerCount = 1;
-    VulkanAPIUtils::CheckVkResult(
-        vkCreateImageView(vk_device_, &create_info, nullptr, &base_view[i]),
-        "vkCreateImageView");
+    if (!VulkanAPIUtils::CheckVkResult(
+        vkCreateImageView(vk_device_, &create_info, nullptr,
+                          &swapchain_info_.swapchain_image_views_[i]),
+        "vkCreateImageView")) {
+      swapchain_info_.swapchain_image_views_[i] = VK_NULL_HANDLE;
+      DestroySwapchainImages();
+      return false;
+    }
   }
 
   if (swapchain_info_.swapchain_depth_stencil_format_ != VK_FORMAT_UNDEFINED) {
-    // Create the image/imageviews for the depth/stencil buffer
-    swapchain_info_.swapchain_depth_stencil_images_.resize(
-        swapchain_info_.swapchain_image_count_);
-    swapchain_info_.swapchain_depth_stencil_image_views_.resize(
-        swapchain_info_.swapchain_image_count_);
-    swapchain_info_.swapchain_depth_stencil_allocs_.resize(
-        swapchain_info_.swapchain_image_count_);
+    // Create one depth/stencil image/imageview per swapchain image, used with that image
+    swapchain_info_.swapchain_depth_stencil_images_.resize(image_count, VK_NULL_HANDLE);
+    swapchain_info_.swapchain_depth_stencil_image_views_.resize(image_count, VK_NULL_HANDLE);
+    swapchain_info_.swapchain_depth_stencil_allocs_.resize(image_count, VK_NULL_HANDLE);
 
-    VkImage *swap_images = swapchain_info_.swapchain_depth_stencil_images_.data();
-    VkImageView *swap_image_views = swapchain_info_.swapchain_depth_stencil_image_views_.data();
-    VmaAllocation *swap_allocs = swapchain_info_.swapchain_depth_stencil_allocs_.data();
-
-    for (size_t i = 0; i < swapchain_info_.swapchain_image_count_; ++i) {
-      VkImageCreateInfo ds_image_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    for (size_t i = 0; i < image_count; ++i) {
+      VkImageCreateInfo ds_image_info{};
+      ds_image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
       ds_image_info.imageType = VK_IMAGE_TYPE_2D;
       if (pretransform_flags_ & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
           pretransform_flags_ & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
@@ -1177,50 +1207,67 @@ void GraphicsAPIVulkan::CreateSwapchainImages() {
       VmaAllocationCreateInfo ds_image_alloc_create_info = {};
       ds_image_alloc_create_info.usage = VMA_MEMORY_USAGE_AUTO;
 
-      VulkanAPIUtils::CheckVkResult(
-          vmaCreateImage(allocator_, &ds_image_info,
-                         &ds_image_alloc_create_info,
-                         &swap_images[i], &swap_allocs[i], nullptr),
-          "vmaCreateImage swap depth/stencil");
+      if (!VulkanAPIUtils::CheckVkResult(
+          vmaCreateImage(allocator_, &ds_image_info, &ds_image_alloc_create_info,
+                         &swapchain_info_.swapchain_depth_stencil_images_[i],
+                         &swapchain_info_.swapchain_depth_stencil_allocs_[i], nullptr),
+          "vmaCreateImage swap depth/stencil")) {
+        swapchain_info_.swapchain_depth_stencil_images_[i] = VK_NULL_HANDLE;
+        swapchain_info_.swapchain_depth_stencil_allocs_[i] = VK_NULL_HANDLE;
+        DestroySwapchainImages();
+        return false;
+      }
 
-      VkImageViewCreateInfo ds_image_view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-      ds_image_view_info.image = swap_images[i];
+      VkImageViewCreateInfo ds_image_view_info{};
+      ds_image_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+      ds_image_view_info.image = swapchain_info_.swapchain_depth_stencil_images_[i];
       ds_image_view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
       ds_image_view_info.format = swapchain_info_.swapchain_depth_stencil_format_;
-      ds_image_view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+      ds_image_view_info.subresourceRange.aspectMask =
+          VulkanAPIUtils::GetVkDepthStencilAspectMask(
+              swapchain_info_.swapchain_depth_stencil_format_);
       ds_image_view_info.subresourceRange.baseMipLevel = 0;
       ds_image_view_info.subresourceRange.levelCount = 1;
       ds_image_view_info.subresourceRange.baseArrayLayer = 0;
       ds_image_view_info.subresourceRange.layerCount = 1;
 
-      VulkanAPIUtils::CheckVkResult(vkCreateImageView(
-                                        vk_device_, &ds_image_view_info, nullptr, &swap_image_views[i]),
-                                    "vkCreateImageView swap depth/stencil");
+      if (!VulkanAPIUtils::CheckVkResult(
+          vkCreateImageView(vk_device_, &ds_image_view_info, nullptr,
+                            &swapchain_info_.swapchain_depth_stencil_image_views_[i]),
+          "vkCreateImageView swap depth/stencil")) {
+        swapchain_info_.swapchain_depth_stencil_image_views_[i] = VK_NULL_HANDLE;
+        DestroySwapchainImages();
+        return false;
+      }
     }
   }
+  return true;
 }
 
 void GraphicsAPIVulkan::DestroySwapchainImages() {
-  if (!swapchain_info_.swapchain_depth_stencil_image_views_.empty()) {
-    for (const VkImageView &view : swapchain_info_.swapchain_depth_stencil_image_views_) {
+  // Safe after a partial CreateSwapchainImages: anything not created is VK_NULL_HANDLE
+  for (const VkImageView view : swapchain_info_.swapchain_depth_stencil_image_views_) {
+    if (view != VK_NULL_HANDLE) {
       vkDestroyImageView(vk_device_, view, nullptr);
     }
   }
 
-  if (!swapchain_info_.swapchain_depth_stencil_images_.empty()) {
-    for (size_t i = 0; i < swapchain_info_.swapchain_depth_stencil_images_.size(); ++i) {
+  for (size_t i = 0; i < swapchain_info_.swapchain_depth_stencil_images_.size(); ++i) {
+    if (swapchain_info_.swapchain_depth_stencil_images_[i] != VK_NULL_HANDLE) {
       vmaDestroyImage(allocator_,
                       swapchain_info_.swapchain_depth_stencil_images_[i],
                       swapchain_info_.swapchain_depth_stencil_allocs_[i]);
     }
   }
 
-  if (!swapchain_info_.swapchain_image_views_.empty()) {
-    for (size_t i = 0; i < swapchain_info_.swapchain_image_count_; ++i) {
-      vkDestroyImageView(vk_device_, swapchain_info_.swapchain_image_views_[i], nullptr);
+  for (const VkImageView view : swapchain_info_.swapchain_image_views_) {
+    if (view != VK_NULL_HANDLE) {
+      vkDestroyImageView(vk_device_, view, nullptr);
     }
   }
 
+  // The swapchain images themselves are owned by the swapchain
+  swapchain_info_.swapchain_images_.clear();
   swapchain_info_.swapchain_image_views_.clear();
   swapchain_info_.swapchain_depth_stencil_images_.clear();
   swapchain_info_.swapchain_depth_stencil_image_views_.clear();
