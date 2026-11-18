@@ -17,91 +17,58 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
-#include "Controllers/TrivialKartPlayerController.h"
-#include "InputCoreTypes.h"
-#include "Styling/SlateTypes.h"
+#include "Widgets/TrivialKartTabbedModalWidget.h"
 #include "PGSWidget.generated.h"
 
-class UBorder;
+class UCheckBox;
 class UPGSLayoutText;
 class UScrollBox;
 class UVerticalBox;
-class UWidgetSwitcher;
-class UCheckBox;
-class UButton;
+
 /**
- * 
+ * Play Games Services modal widget managing Authentication, Achievements, and Leaderboard tabs.
  */
 UCLASS()
-class TRIVIALKART_UNREAL_API UPGSWidget : public UUserWidget
+class TRIVIALKART_UNREAL_API UPGSWidget : public UTrivialKartTabbedModalWidget
 {
 	GENERATED_BODY()
-	
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UButton> BackButton;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCheckBox> AuthenticationCheckBox;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCheckBox> AchievementsCheckBox;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCheckBox> LeaderboardCheckBox;
-	
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UWidgetSwitcher> ContentSwitcher;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UVerticalBox> AuthBox;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UScrollBox> AchievementsBox;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UScrollBox> LeaderboardBox;
-	
+
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UPGSLayoutText> PGSTextTemplate;
-	
+
 protected:
-	UPROPERTY()
-	TArray<UCheckBox*> CheckBoxes;
+	virtual EWidgetType GetModalWidgetType() const override { return EWidgetType::PGS; }
+	virtual void RegisterTabCheckBoxes(TArray<UCheckBox*>& OutCheckBoxes) override;
+	virtual void BindTabCheckBoxEvents() override;
+	virtual void UnbindTabCheckBoxEvents() override;
+	virtual void InitializeModalContent() override;
+	virtual UScrollBox* GetActiveReadOnlyScrollBox() const override;
 
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UBorder>> TabHighlightBorders;
-
-	int32 ActiveTabIndex = 0;
-	bool bBackButtonFocused = false;
-	bool bBackButtonPressed = false;
-	FButtonStyle OriginalBackButtonStyle;
-	FLinearColor OriginalBackButtonBgColor = FLinearColor::White;
-	bool bBackStyleCached = false;
-
-public:
-	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
-
-	bool HandleGamepadKey(const FKey& Key, bool bIsPressed = true);
-	void CancelPendingPress();
-	
 private:
 	UFUNCTION()
-	void OnBackButtonClicked();
-	UFUNCTION()
-	void OnBackButtonReleased();
-	void SetCheckBoxState(bool bIsChecked, UCheckBox* CheckBox, int ActiveWidgetIndex);
-	void SelectTabByIndex(int32 NewTabIndex);
-	void UpdateTabFocusVisuals();
-	void OnInputModeChanged(ETrivialKartInputMode NewInputMode);
-	bool IsNavigationVisualActive() const;
-	void RestoreViewportFocus() const;
+	void OnAuthCheckBoxStateChanged(bool bIsChecked);
 
 	UFUNCTION()
-	void OnAuthCheckBoxStateChanged(bool bIsChecked);
-	UFUNCTION()
 	void OnAchievementBoxStateChange(bool bIsChecked);
+
 	UFUNCTION()
 	void OnLeaderboardBoxStateChange(bool bIsChecked);
 };

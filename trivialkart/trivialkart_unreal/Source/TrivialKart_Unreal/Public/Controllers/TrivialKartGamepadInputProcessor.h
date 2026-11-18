@@ -17,6 +17,7 @@
 
 #include "CoreMinimal.h"
 #include "Framework/Application/IInputProcessor.h"
+#include "GenericPlatform/GenericPlatformInputDeviceMapper.h"
 #include "InputCoreTypes.h"
 #include "UObject/WeakObjectPtr.h"
 
@@ -29,6 +30,14 @@ enum class ETrivialKartStickDir : uint8
 	Down,
 	Left,
 	Right
+};
+
+enum class ETrivialKartDeviceTriggerSignature : uint8
+{
+	Unknown,
+	PlayStationHalfRest,
+	AnalogTriggerCapable,
+	SwitchDigitalOnly
 };
 
 class TRIVIALKART_UNREAL_API FTrivialKartGamepadInputProcessor : public IInputProcessor
@@ -46,11 +55,55 @@ public:
 	virtual bool HandleMouseMoveEvent(FSlateApplication& SlateApp, const FPointerEvent& MouseEvent) override;
 
 	void ResetState();
+	void ResetDeviceCapabilities();
+	void RemoveDeviceState(FInputDeviceId DeviceId);
+	float GetMaxTriggerAnalog(bool bRightTrigger) const;
+	bool IsDigitalTriggerHeld(bool bRightTrigger) const;
+	ETrivialKartDeviceTriggerSignature GetDeviceTriggerSignature(FInputDeviceId DeviceId) const;
+	bool IsPrimaryTouchHeld() const { return bIsPrimaryTouchHeld; }
+	bool IsPrimaryMouseHeld() const { return bIsPrimaryMouseHeld; }
+	void ClearPrimaryTouchHeld() { bIsPrimaryTouchHeld = false; }
+	void ClearPointerDriveHeld()
+	{
+		bIsPrimaryTouchHeld = false;
+		bIsPrimaryMouseHeld = false;
+	}
 	void ResetAnalogState();
 	void LatchStickUntilNeutral();
 
 private:
+	struct FTrivialKartDeviceKey
+	{
+		FInputDeviceId DeviceId = INPUTDEVICEID_NONE;
+		FKey Key;
+
+		bool operator==(const FTrivialKartDeviceKey& Other) const
+		{
+			return DeviceId == Other.DeviceId && Key == Other.Key;
+		}
+
+		friend uint32 GetTypeHash(const FTrivialKartDeviceKey& Entry)
+		{
+			return HashCombine(GetTypeHash(Entry.DeviceId.GetId()), GetTypeHash(Entry.Key));
+		}
+	};
+
+	struct FTrivialKartDeviceInputState
+	{
+		float LeftX = 0.0f;
+		float LeftY = 0.0f;
+		float LeftTriggerAnalog = 0.0f;
+		float RightTriggerAnalog = 0.0f;
+		bool bHasLeftTriggerAnalog = false;
+		bool bHasRightTriggerAnalog = false;
+		bool bSawSubHalfTrigger = false;
+		bool bDigitalLeftTriggerHeld = false;
+		bool bDigitalRightTriggerHeld = false;
+		ETrivialKartDeviceTriggerSignature TriggerSignature = ETrivialKartDeviceTriggerSignature::Unknown;
+	};
+
 	bool ProcessKeyEvent(const FKeyEvent& InKeyEvent, bool bIsPressed);
+	void GetDominantStickAxes(float& OutLeftX, float& OutLeftY) const;
 	ETrivialKartStickDir ComputeDesiredStickDir() const;
 	static FKey StickDirToKey(ETrivialKartStickDir Dir);
 	void OnApplicationActivationChanged(const bool bIsActive);
@@ -58,16 +111,15 @@ private:
 	TWeakObjectPtr<ATrivialKartPlayerController> OwnerController;
 	FDelegateHandle AppActivationHandle;
 
-	TSet<FKey> ConsumedPressedKeys;
-	TSet<FKey> HeldPhysicalKeys;
-	TSet<FKey> LatchedRepeatKeys;
+	TSet<FTrivialKartDeviceKey> ConsumedPressedKeys;
+	TSet<FTrivialKartDeviceKey> HeldPhysicalKeys;
+	TSet<FTrivialKartDeviceKey> LatchedRepeatKeys;
+	TMap<FInputDeviceId, FTrivialKartDeviceInputState> DeviceStates;
 	FVector2D AccumulatedMouseDelta = FVector2D::ZeroVector;
 	double LastGamepadActivityTimeSeconds = -100.0;
 
-	float CachedLeftX = 0.0f;
-	float CachedLeftY = 0.0f;
-	float CachedLeftTrigger = 0.0f;
-	float CachedRightTrigger = 0.0f;
+	bool bIsPrimaryTouchHeld = false;
+	bool bIsPrimaryMouseHeld = false;
 	ETrivialKartStickDir ActiveStickDir = ETrivialKartStickDir::None;
 	float StickRepeatRemaining = 0.0f;
 	bool bLatchUntilNeutral = false;

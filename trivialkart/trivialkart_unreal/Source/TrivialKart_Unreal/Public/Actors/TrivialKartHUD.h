@@ -23,6 +23,7 @@
 #include "TrivialKartHUD.generated.h"
 
 class UTexture2D;
+class UTrivialKartTabbedModalWidget;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateHUD, Log, All);
 
@@ -64,6 +65,7 @@ public:
 	UUserWidget* GetWidgetOfType(const EWidgetType WidgetType);
 
 	bool HandleGamepadKey(const FKey& Key, bool bIsPressed = true, bool bIsRepeat = false);
+	bool IsLoadingOpen() const;
 	bool IsSubMenuOpen() const;
 	bool IsUIBlockingInput() const;
 	bool IsStickNavigationEnabled() const;
@@ -78,6 +80,7 @@ public:
 
 private:
 	static bool IsSubMenuWidgetType(EWidgetType WidgetType);
+	UTrivialKartTabbedModalWidget* GetActiveSubMenuWidget() const;
 
 	template <typename T = UUserWidget>
 	T* GetActiveWidget(const EWidgetType WidgetType) const

@@ -35,8 +35,8 @@ By default, Google Play features are simulated or disabled unless the Google Pla
 
 ## Overview
 
-In TrivialKart, the player has a vehicle which they can drive by touching and holding on screen, holding a gamepad trigger / `A` / D-Pad Right / Left Stick Right, or holding `Spacebar` / clicking.
-Navigate menus (`Garage`, `Play Games Services`, `Store`) using D-Pad or Left Stick, switch tabs with `LB` / `RB` (or `Tab` / `Shift+Tab`), confirm with `A` (`Enter`), and go back with `B` (`Esc` or Android Back).
+In TrivialKart, the player has a vehicle which they can drive by touching and holding on screen, holding a gamepad trigger / primary face button (`A` on Xbox, `X` on PlayStation, `B` on Nintendo Switch) / D-Pad Right / Left Stick Right, or holding `Spacebar` / clicking.
+Navigate menus (`Garage`, `Play Games Services`, `Store`) using D-Pad or Left Stick, switch tabs with `LB` / `RB` (`L1` / `R1`, `L` / `R`, or `Tab` / `Shift+Tab`), confirm with the bottom face button (`Enter`), and go back with the right face button (`Esc` or Android Back).
 Driving the car uses gas. When the car runs out of gas, to continue driving,
 more must be purchased using in-game currency. If the player runs out of
 in-game currency, they may buy more via in-app purchases.

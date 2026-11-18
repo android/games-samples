@@ -20,8 +20,9 @@
 #include "Actors/TrivialKartHUD.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
+#include "Components/BorderSlot.h"
 #include "Components/Button.h"
-#include "Components/HorizontalBox.h"
+#include "Components/ButtonSlot.h"
 #include "Components/Image.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
@@ -32,14 +33,115 @@
 #include "Components/VerticalBoxSlot.h"
 #include "Engine/Texture2D.h"
 #include "Infos/TrivialKartPlayerState.h"
+#include "Styling/SlateTypes.h"
+#include "Widgets/TrivialKartUIStyle.h"
 
 TSharedRef<SWidget> UPlayBoardWidget::RebuildWidget()
 {
 	if (!IsDesignTime())
 	{
 		EnsureInputGuideWidget();
+		EnsureMenuButtonHighlightFrames();
 	}
 	return Super::RebuildWidget();
+}
+
+void UPlayBoardWidget::EnsureMenuButtonHighlightFrames()
+{
+	if (IsDesignTime() || !WidgetTree)
+	{
+		return;
+	}
+
+	UButton* Buttons[3] = { GarageButton.Get(), PGSButton.Get(), StoreButton.Get() };
+	for (int32 i = 0; i < 3; ++i)
+	{
+		UButton* Btn = Buttons[i];
+		if (!Btn)
+		{
+			continue;
+		}
+		if (MenuButtonHighlightBorders[i].IsValid() && Btn->GetContent() == MenuButtonHighlightBorders[i].Get())
+		{
+			continue;
+		}
+
+		UWidget* ExistingContent = Btn->GetContent();
+		if (!ExistingContent)
+		{
+			continue;
+		}
+
+		FMargin OrigPad(0.0f, 50.0f, 0.0f, 50.0f);
+		if (const UButtonSlot* OldBtnSlot = Cast<UButtonSlot>(Btn->GetContentSlot()))
+		{
+			OrigPad = OldBtnSlot->GetPadding();
+		}
+
+		UBorder* HighlightFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass());
+		if (!HighlightFrame)
+		{
+			continue;
+		}
+
+		// Use symmetric outer/inner vertical insets and generous horizontal insets so every button's
+		// label/icon stays dead-center inside its highlight box while clearing rounded phone screen corners.
+		constexpr float OuterHorizontal = 34.0f;
+		constexpr float OuterVertical = 18.0f;
+		constexpr float InnerHorizontal = 12.0f;
+
+		const float OrigVerticalAvg = 0.5f * (OrigPad.Top + OrigPad.Bottom);
+		float InnerVertical = FMath::Max(10.0f, OrigVerticalAvg - OuterVertical);
+		if (UImage* IconImage = Cast<UImage>(ExistingContent))
+		{
+			const FVector2D OrigSize = IconImage->GetBrush().ImageSize;
+			if (OrigSize.Y > 88.0f)
+			{
+				const float Aspect = (OrigSize.Y > KINDA_SMALL_NUMBER) ? (OrigSize.X / OrigSize.Y) : 1.0f;
+				IconImage->SetDesiredSizeOverride(FVector2D(88.0f * Aspect, 88.0f));
+			}
+			InnerVertical = 10.0f;
+		}
+		else if (UTextBlock* LabelText = Cast<UTextBlock>(ExistingContent))
+		{
+			LabelText->SetJustification(ETextJustify::Center);
+		}
+
+		const FMargin InnerPadding(InnerHorizontal, InnerVertical, InnerHorizontal, InnerVertical);
+
+		ExistingContent->RemoveFromParent();
+
+		HighlightFrame->SetBrush(TrivialKartUIStyle::GetEmptyBrush());
+		HighlightFrame->SetBrushColor(FLinearColor::Transparent);
+		HighlightFrame->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		HighlightFrame->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
+		HighlightFrame->SetHorizontalAlignment(HAlign_Center);
+		HighlightFrame->SetVerticalAlignment(VAlign_Center);
+		HighlightFrame->SetPadding(InnerPadding);
+
+		if (UBorderSlot* BorderSlot = Cast<UBorderSlot>(HighlightFrame->SetContent(ExistingContent)))
+		{
+			BorderSlot->SetHorizontalAlignment(HAlign_Center);
+			BorderSlot->SetVerticalAlignment(VAlign_Center);
+			BorderSlot->SetPadding(InnerPadding);
+		}
+
+		if (UButtonSlot* NewBtnSlot = Cast<UButtonSlot>(Btn->SetContent(HighlightFrame)))
+		{
+			NewBtnSlot->SetHorizontalAlignment(HAlign_Fill);
+			NewBtnSlot->SetVerticalAlignment(VAlign_Fill);
+			NewBtnSlot->SetPadding(FMargin(OuterHorizontal, OuterVertical, OuterHorizontal, OuterVertical));
+		}
+
+		FButtonStyle SteadyBarStyle = Btn->GetStyle();
+		SteadyBarStyle.SetHovered(SteadyBarStyle.Normal);
+		SteadyBarStyle.SetPressed(SteadyBarStyle.Normal);
+		SteadyBarStyle.SetNormalPadding(FMargin(12.0f, 0.0f, 12.0f, 0.0f));
+		SteadyBarStyle.SetPressedPadding(FMargin(12.0f, 0.0f, 12.0f, 0.0f));
+		Btn->SetStyle(SteadyBarStyle);
+
+		MenuButtonHighlightBorders[i] = HighlightFrame;
+	}
 }
 
 void UPlayBoardWidget::EnsureInputGuideWidget()
@@ -78,19 +180,15 @@ void UPlayBoardWidget::EnsureInputGuideWidget()
 		return;
 	}
 
-	InputGuideBorder = GuideBorder;
 	InputGuideText = GuideText;
 
 	GuideBorder->SetVisibility(ESlateVisibility::HitTestInvisible);
 	GuideBorder->SetPadding(FMargin(24.0f, 10.0f, 24.0f, 10.0f));
-	FSlateBrush BannerBrush;
-	BannerBrush.DrawAs = ESlateBrushDrawType::RoundedBox;
-	BannerBrush.TintColor = FSlateColor(FLinearColor(0.05f, 0.08f, 0.14f, 0.78f));
-	BannerBrush.OutlineSettings.CornerRadii = FVector4(12.0f, 12.0f, 12.0f, 12.0f);
-	BannerBrush.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
-	BannerBrush.OutlineSettings.Color = FSlateColor(FLinearColor(1.0f, 0.85f, 0.2f, 0.9f));
-	BannerBrush.OutlineSettings.Width = 2.5f;
-	GuideBorder->SetBrush(BannerBrush);
+	GuideBorder->SetBrush(TrivialKartUIStyle::MakeRoundedHighlightBrush(
+		12.0f,
+		2.5f,
+		FLinearColor(0.05f, 0.08f, 0.14f, 0.78f),
+		FLinearColor(1.0f, 0.85f, 0.2f, 0.9f)));
 	GuideBorder->SetBrushColor(FLinearColor::White);
 
 	GuideText->SetVisibility(ESlateVisibility::HitTestInvisible);
@@ -131,14 +229,11 @@ void UPlayBoardWidget::EnsureInputGuideWidget()
 		PadBorder->SetVerticalAlignment(VAlign_Center);
 		PadBorder->SetPadding(FMargin(18.0f));
 
-		FSlateBrush PadBrush;
-		PadBrush.DrawAs = ESlateBrushDrawType::RoundedBox;
-		PadBrush.TintColor = FSlateColor(FLinearColor(0.04f, 0.07f, 0.14f, 0.72f));
-		PadBrush.OutlineSettings.CornerRadii = FVector4(123.0f, 123.0f, 123.0f, 123.0f);
-		PadBrush.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
-		PadBrush.OutlineSettings.Color = FSlateColor(FLinearColor(1.0f, 0.85f, 0.2f, 0.9f));
-		PadBrush.OutlineSettings.Width = 4.5f;
-		PadBorder->SetBrush(PadBrush);
+		PadBorder->SetBrush(TrivialKartUIStyle::MakeRoundedHighlightBrush(
+			123.0f,
+			4.5f,
+			FLinearColor(0.04f, 0.07f, 0.14f, 0.72f),
+			FLinearColor(1.0f, 0.85f, 0.2f, 0.9f)));
 		PadBorder->SetBrushColor(FLinearColor::White);
 
 		HandIconImage->SetVisibility(ESlateVisibility::HitTestInvisible);
@@ -214,11 +309,17 @@ void UPlayBoardWidget::UpdateInputGuideText(ETrivialKartInputMode InputMode)
 		return;
 	}
 
-	if (LastRenderedGuideMode.IsSet() && LastRenderedGuideMode.GetValue() == InputMode)
+	const ATrivialKartPlayerController* PC = Cast<ATrivialKartPlayerController>(GetOwningPlayer());
+	const ETrivialKartGamepadStyle GamepadStyle = PC ? PC->GetActiveGamepadStyle() : ETrivialKartGamepadStyle::GenericXbox;
+
+	if (LastRenderedGuideMode.IsSet() && LastRenderedGuideMode.GetValue() == InputMode &&
+		(InputMode != ETrivialKartInputMode::Gamepad ||
+		 (LastRenderedGamepadStyle.IsSet() && LastRenderedGamepadStyle.GetValue() == GamepadStyle)))
 	{
 		return;
 	}
 	LastRenderedGuideMode = InputMode;
+	LastRenderedGamepadStyle = GamepadStyle;
 
 	const ESlateVisibility TouchPadVisibility = (InputMode == ETrivialKartInputMode::Touch)
 		? ESlateVisibility::HitTestInvisible
@@ -238,7 +339,18 @@ void UPlayBoardWidget::UpdateInputGuideText(ETrivialKartInputMode InputMode)
 		InputGuideText->SetText(NSLOCTEXT("TrivialKart", "GuideTouch", "Touch and hold to drive"));
 		break;
 	case ETrivialKartInputMode::Gamepad:
-		InputGuideText->SetText(NSLOCTEXT("TrivialKart", "GuideGamepad", "Hold Trigger, A, or D-Pad Right to drive"));
+		switch (GamepadStyle)
+		{
+		case ETrivialKartGamepadStyle::PlayStation:
+			InputGuideText->SetText(NSLOCTEXT("TrivialKart", "GuideGamepadPS", "Hold Trigger, X, or D-Pad Right to drive"));
+			break;
+		case ETrivialKartGamepadStyle::NintendoSwitch:
+			InputGuideText->SetText(NSLOCTEXT("TrivialKart", "GuideGamepadSwitch", "Hold Trigger, B, or D-Pad Right to drive"));
+			break;
+		default:
+			InputGuideText->SetText(NSLOCTEXT("TrivialKart", "GuideGamepad", "Hold Trigger, A, or D-Pad Right to drive"));
+			break;
+		}
 		break;
 	case ETrivialKartInputMode::KeyboardMouse:
 		InputGuideText->SetText(NSLOCTEXT("TrivialKart", "GuideKeyboardMouse", "Hold Spacebar or Click to drive"));
@@ -251,7 +363,9 @@ void UPlayBoardWidget::NativeConstruct()
 	Super::NativeConstruct();
 
 	LastRenderedGuideMode.Reset();
+	LastRenderedGamepadStyle.Reset();
 	EnsureInputGuideWidget();
+	EnsureMenuButtonHighlightFrames();
 
 	// If RebuildWidget ran before HUD was ready, ensure the cached hand texture is assigned now
 	if (TouchDrivePadBorder.IsValid())
@@ -277,24 +391,7 @@ void UPlayBoardWidget::NativeConstruct()
 		}
 	}
 
-	if (WidgetTree)
-	{
-		WidgetTree->ForEachWidget([](UWidget* Widget)
-		{
-			if (!Widget || Widget->GetVisibility() != ESlateVisibility::Visible)
-			{
-				return;
-			}
-			if (Cast<UImage>(Widget) || Cast<UTextBlock>(Widget))
-			{
-				Widget->SetVisibility(ESlateVisibility::HitTestInvisible);
-			}
-			else if (Cast<UOverlay>(Widget) || Cast<UHorizontalBox>(Widget) || Cast<UVerticalBox>(Widget))
-			{
-				Widget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			}
-		});
-	}
+	TrivialKartUIStyle::NormalizeWidgetTreeHitTesting(WidgetTree);
 
 	if (ATrivialKartPlayerController* PlayerController = Cast<ATrivialKartPlayerController>(GetOwningPlayer()))
 	{
@@ -337,20 +434,6 @@ void UPlayBoardWidget::NativeConstruct()
 		StoreButton->OnUnhovered.AddUniqueDynamic(this, &ThisClass::OnMenuButtonUnhovered);
 		StoreButton->OnPressed.AddUniqueDynamic(this, &ThisClass::OnStoreButtonPressed);
 		StoreButton->OnReleased.AddUniqueDynamic(this, &ThisClass::OnMenuButtonReleased);
-	}
-	
-	if (!bStylesCached)
-	{
-		UButton* Buttons[3] = { GarageButton.Get(), PGSButton.Get(), StoreButton.Get() };
-		for (int32 i = 0; i < 3; ++i)
-		{
-			if (Buttons[i])
-			{
-				OriginalButtonStyles[i] = Buttons[i]->GetStyle();
-				OriginalBackgroundColors[i] = Buttons[i]->GetBackgroundColor();
-			}
-		}
-		bStylesCached = true;
 	}
 
 	FocusedButtonIndex = -1;
@@ -679,15 +762,6 @@ bool UPlayBoardWidget::HandleGamepadKey(const FKey& Key, bool bIsPressed, bool b
 		return false;
 	}
 
-	if (Key == EKeys::Gamepad_RightTrigger || Key == EKeys::Gamepad_LeftTrigger)
-	{
-		if (FocusedButtonIndex >= 0)
-		{
-			ClearMenuFocus(false);
-		}
-		return false;
-	}
-
 	return false;
 }
 
@@ -697,40 +771,26 @@ void UPlayBoardWidget::UpdateButtonFocusVisuals()
 
 	for (int32 i = 0; i < 3; ++i)
 	{
-		if (!Buttons[i])
+		UButton* Btn = Buttons[i];
+		UBorder* HighlightFrame = MenuButtonHighlightBorders[i].Get();
+		if (!Btn || !HighlightFrame)
 		{
 			continue;
 		}
-		Buttons[i]->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
+
 		if (i == FocusedButtonIndex)
 		{
-			const bool bIsPressed = (i == PressedButtonIndex) || Buttons[i]->IsPressed();
-			FSlateBrush HighlightBrush;
-			HighlightBrush.DrawAs = ESlateBrushDrawType::RoundedBox;
-			HighlightBrush.TintColor = FSlateColor(bIsPressed
-				? FLinearColor(1.0f, 0.35f, 0.0f, 0.68f)
-				: FLinearColor(1.0f, 0.45f, 0.0f, 0.48f));
-			HighlightBrush.OutlineSettings.CornerRadii = FVector4(12.0f, 12.0f, 12.0f, 12.0f);
-			HighlightBrush.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
-			HighlightBrush.OutlineSettings.Color = FSlateColor(FLinearColor(1.0f, 0.9f, 0.0f, 1.0f));
-			HighlightBrush.OutlineSettings.Width = 6.0f;
-
-			FButtonStyle FocusedStyle = OriginalButtonStyles[i];
-			FocusedStyle.SetNormal(HighlightBrush);
-			FocusedStyle.SetHovered(HighlightBrush);
-			FocusedStyle.SetPressed(HighlightBrush);
-			Buttons[i]->SetStyle(FocusedStyle);
-			Buttons[i]->SetBackgroundColor(FLinearColor::White);
-			Buttons[i]->SetColorAndOpacity(FLinearColor::White);
-			const float TargetScale = bIsPressed ? 0.88f : 1.12f;
-			Buttons[i]->SetRenderScale(FVector2D(TargetScale, TargetScale));
+			const bool bIsPressed = (i == PressedButtonIndex) || Btn->IsPressed();
+			HighlightFrame->SetBrush(TrivialKartUIStyle::MakeButtonFocusBrush(bIsPressed, 16.0f));
+			HighlightFrame->SetBrushColor(FLinearColor::White);
+			const float TargetScale = bIsPressed ? 0.95f : 1.02f;
+			HighlightFrame->SetRenderScale(FVector2D(TargetScale, TargetScale));
 		}
 		else
 		{
-			Buttons[i]->SetStyle(OriginalButtonStyles[i]);
-			Buttons[i]->SetBackgroundColor(OriginalBackgroundColors[i]);
-			Buttons[i]->SetColorAndOpacity(FLinearColor::White);
-			Buttons[i]->SetRenderScale(FVector2D(1.0f, 1.0f));
+			HighlightFrame->SetBrush(TrivialKartUIStyle::GetEmptyBrush());
+			HighlightFrame->SetBrushColor(FLinearColor::Transparent);
+			HighlightFrame->SetRenderScale(FVector2D(1.0f, 1.0f));
 		}
 	}
 

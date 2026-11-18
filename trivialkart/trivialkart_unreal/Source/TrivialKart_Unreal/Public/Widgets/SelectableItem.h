@@ -39,10 +39,8 @@ enum class EPurchaseObject : uint8
 	Coin,
 	Subscription
 };
-class UButtonWidgetStyle;
 class UButton;
 class UBorder;
-class SButton;
 /**
  * 
  */

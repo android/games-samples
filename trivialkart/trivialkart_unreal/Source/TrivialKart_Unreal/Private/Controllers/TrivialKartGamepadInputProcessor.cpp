@@ -51,6 +51,8 @@ namespace
 			|| Key == EKeys::Gamepad_DPad_Down
 			|| Key == EKeys::Gamepad_DPad_Left
 			|| Key == EKeys::Gamepad_DPad_Right
+			|| Key == EKeys::Gamepad_LeftTrigger
+			|| Key == EKeys::Gamepad_RightTrigger
 			|| Key == EKeys::Up
 			|| Key == EKeys::Down
 			|| Key == EKeys::Left
@@ -60,10 +62,34 @@ namespace
 			|| Key == EKeys::Enter;
 	}
 
+	bool IsExplicitGamepadPromptSwitchKey(const FKey& Key)
+	{
+		if (!Key.IsGamepadKey() || Key.IsAxis1D() || Key.IsAxis2D())
+		{
+			return false;
+		}
+		// Ignore right-stick synthesized digital keys: TrivialKart does not use the right stick,
+		// and Android DualSense uncalibrated Z/RZ/RX/RY axes can synthesize right-stick events while idle.
+		if (Key == EKeys::Gamepad_RightStick_Up ||
+			Key == EKeys::Gamepad_RightStick_Down ||
+			Key == EKeys::Gamepad_RightStick_Left ||
+			Key == EKeys::Gamepad_RightStick_Right ||
+			Key == EKeys::Gamepad_RightThumbstick)
+		{
+			return false;
+		}
+		return true;
+	}
+
 	bool IsGamepadTriggerAxis(const FKey& Key)
 	{
 		return Key == EKeys::Gamepad_LeftTriggerAxis
 			|| Key == EKeys::Gamepad_RightTriggerAxis;
+	}
+
+	bool TouchPosIsCornerPhantom(const FVector2D& Pos)
+	{
+		return Pos.X <= 1.0f && Pos.Y <= 1.0f;
 	}
 
 	bool IsGenuineKeyboardKey(const FKey& Key)
@@ -72,8 +98,12 @@ namespace
 		{
 			return false;
 		}
-		const FString KeyName = Key.GetFName().ToString();
-		if (KeyName.StartsWith(TEXT("Android_")) || KeyName.StartsWith(TEXT("Steam_")) || KeyName.StartsWith(TEXT("Gesture_")))
+		TCHAR KeyName[NAME_SIZE];
+		Key.GetFName().GetPlainNameString(KeyName);
+		if (FCString::Strnicmp(KeyName, TEXT("Android_"), 8) == 0 ||
+			FCString::Strnicmp(KeyName, TEXT("Steam_"), 6) == 0 ||
+			FCString::Strnicmp(KeyName, TEXT("Gesture_"), 8) == 0 ||
+			FCString::Strnicmp(KeyName, TEXT("Touch"), 5) == 0)
 		{
 			return false;
 		}
@@ -102,10 +132,15 @@ FTrivialKartGamepadInputProcessor::~FTrivialKartGamepadInputProcessor()
 
 void FTrivialKartGamepadInputProcessor::ResetAnalogState()
 {
-	CachedLeftX = 0.0f;
-	CachedLeftY = 0.0f;
-	CachedLeftTrigger = 0.0f;
-	CachedRightTrigger = 0.0f;
+	for (TPair<FInputDeviceId, FTrivialKartDeviceInputState>& Pair : DeviceStates)
+	{
+		Pair.Value.LeftX = 0.0f;
+		Pair.Value.LeftY = 0.0f;
+		Pair.Value.LeftTriggerAnalog = 0.0f;
+		Pair.Value.RightTriggerAnalog = 0.0f;
+		Pair.Value.bDigitalLeftTriggerHeld = false;
+		Pair.Value.bDigitalRightTriggerHeld = false;
+	}
 	ActiveStickDir = ETrivialKartStickDir::None;
 	StickRepeatRemaining = 0.0f;
 	bLatchUntilNeutral = false;
@@ -122,7 +157,91 @@ void FTrivialKartGamepadInputProcessor::ResetState()
 	HeldPhysicalKeys.Empty();
 	LatchedRepeatKeys.Empty();
 	AccumulatedMouseDelta = FVector2D::ZeroVector;
+	bIsPrimaryTouchHeld = false;
+	bIsPrimaryMouseHeld = false;
 	ResetAnalogState();
+}
+
+void FTrivialKartGamepadInputProcessor::ResetDeviceCapabilities()
+{
+	DeviceStates.Empty();
+}
+
+void FTrivialKartGamepadInputProcessor::RemoveDeviceState(FInputDeviceId DeviceId)
+{
+	DeviceStates.Remove(DeviceId);
+	for (auto It = ConsumedPressedKeys.CreateIterator(); It; ++It)
+	{
+		if (It->DeviceId == DeviceId)
+		{
+			It.RemoveCurrent();
+		}
+	}
+	for (auto It = HeldPhysicalKeys.CreateIterator(); It; ++It)
+	{
+		if (It->DeviceId == DeviceId)
+		{
+			It.RemoveCurrent();
+		}
+	}
+	for (auto It = LatchedRepeatKeys.CreateIterator(); It; ++It)
+	{
+		if (It->DeviceId == DeviceId)
+		{
+			It.RemoveCurrent();
+		}
+	}
+}
+
+float FTrivialKartGamepadInputProcessor::GetMaxTriggerAnalog(bool bRightTrigger) const
+{
+	float MaxValue = 0.0f;
+	for (const TPair<FInputDeviceId, FTrivialKartDeviceInputState>& Pair : DeviceStates)
+	{
+		const float Candidate = bRightTrigger ? Pair.Value.RightTriggerAnalog : Pair.Value.LeftTriggerAnalog;
+		MaxValue = FMath::Max(MaxValue, Candidate);
+	}
+	return MaxValue;
+}
+
+bool FTrivialKartGamepadInputProcessor::IsDigitalTriggerHeld(bool bRightTrigger) const
+{
+	for (const TPair<FInputDeviceId, FTrivialKartDeviceInputState>& Pair : DeviceStates)
+	{
+		const bool bHasAnalog = bRightTrigger ? Pair.Value.bHasRightTriggerAnalog : Pair.Value.bHasLeftTriggerAnalog;
+		const bool bDigitalHeld = bRightTrigger ? Pair.Value.bDigitalRightTriggerHeld : Pair.Value.bDigitalLeftTriggerHeld;
+		if (!bHasAnalog && bDigitalHeld)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+ETrivialKartDeviceTriggerSignature FTrivialKartGamepadInputProcessor::GetDeviceTriggerSignature(FInputDeviceId DeviceId) const
+{
+	if (const FTrivialKartDeviceInputState* Found = DeviceStates.Find(DeviceId))
+	{
+		return Found->TriggerSignature;
+	}
+	return ETrivialKartDeviceTriggerSignature::Unknown;
+}
+
+void FTrivialKartGamepadInputProcessor::GetDominantStickAxes(float& OutLeftX, float& OutLeftY) const
+{
+	OutLeftX = 0.0f;
+	OutLeftY = 0.0f;
+	float BestMagSq = 0.0f;
+	for (const TPair<FInputDeviceId, FTrivialKartDeviceInputState>& Pair : DeviceStates)
+	{
+		const float MagSq = Pair.Value.LeftX * Pair.Value.LeftX + Pair.Value.LeftY * Pair.Value.LeftY;
+		if (MagSq > BestMagSq)
+		{
+			BestMagSq = MagSq;
+			OutLeftX = Pair.Value.LeftX;
+			OutLeftY = Pair.Value.LeftY;
+		}
+	}
 }
 
 void FTrivialKartGamepadInputProcessor::LatchStickUntilNeutral()
@@ -130,7 +249,10 @@ void FTrivialKartGamepadInputProcessor::LatchStickUntilNeutral()
 	ActiveStickDir = ETrivialKartStickDir::None;
 	StickRepeatRemaining = 0.0f;
 	LatchedRepeatKeys = HeldPhysicalKeys;
-	if (FMath::Abs(CachedLeftX) >= StickReleaseThreshold || FMath::Abs(CachedLeftY) >= StickReleaseThreshold)
+	float CurrentLeftX = 0.0f;
+	float CurrentLeftY = 0.0f;
+	GetDominantStickAxes(CurrentLeftX, CurrentLeftY);
+	if (FMath::Abs(CurrentLeftX) >= StickReleaseThreshold || FMath::Abs(CurrentLeftY) >= StickReleaseThreshold)
 	{
 		bLatchUntilNeutral = true;
 	}
@@ -146,6 +268,9 @@ void FTrivialKartGamepadInputProcessor::OnApplicationActivationChanged(const boo
 
 ETrivialKartStickDir FTrivialKartGamepadInputProcessor::ComputeDesiredStickDir() const
 {
+	float CachedLeftX = 0.0f;
+	float CachedLeftY = 0.0f;
+	GetDominantStickAxes(CachedLeftX, CachedLeftY);
 	const float AbsX = FMath::Abs(CachedLeftX);
 	const float AbsY = FMath::Abs(CachedLeftY);
 
@@ -228,7 +353,15 @@ void FTrivialKartGamepadInputProcessor::Tick(const float DeltaTime, FSlateApplic
 #if WITH_EDITOR
 	if (!OwnerController->IsGameViewportFocused())
 	{
-		if (ActiveStickDir != ETrivialKartStickDir::None || ConsumedPressedKeys.Num() > 0)
+		if (ActiveStickDir != ETrivialKartStickDir::None ||
+			ConsumedPressedKeys.Num() > 0 ||
+			HeldPhysicalKeys.Num() > 0 ||
+			bIsPrimaryMouseHeld ||
+			bIsPrimaryTouchHeld ||
+			GetMaxTriggerAnalog(false) > 0.0f ||
+			GetMaxTriggerAnalog(true) > 0.0f ||
+			IsDigitalTriggerHeld(false) ||
+			IsDigitalTriggerHeld(true))
 		{
 			ResetState();
 		}
@@ -236,9 +369,25 @@ void FTrivialKartGamepadInputProcessor::Tick(const float DeltaTime, FSlateApplic
 	}
 #endif
 
+	// Confirm digital-only trigger devices (e.g. Switch Pro) once a full frame passes with digital trigger held and zero analog trigger axis
+	for (TPair<FInputDeviceId, FTrivialKartDeviceInputState>& Pair : DeviceStates)
+	{
+		FTrivialKartDeviceInputState& DevState = Pair.Value;
+		if (DevState.TriggerSignature == ETrivialKartDeviceTriggerSignature::Unknown &&
+			(DevState.bDigitalLeftTriggerHeld || DevState.bDigitalRightTriggerHeld) &&
+			!DevState.bHasLeftTriggerAnalog && !DevState.bHasRightTriggerAnalog)
+		{
+			DevState.TriggerSignature = ETrivialKartDeviceTriggerSignature::SwitchDigitalOnly;
+			OwnerController->NotifyGamepadHardwareSignatureUpdated(Pair.Key);
+		}
+	}
+
 	if (bLatchUntilNeutral)
 	{
-		if (FMath::Abs(CachedLeftX) < StickReleaseThreshold && FMath::Abs(CachedLeftY) < StickReleaseThreshold)
+		float CurrentLeftX = 0.0f;
+		float CurrentLeftY = 0.0f;
+		GetDominantStickAxes(CurrentLeftX, CurrentLeftY);
+		if (FMath::Abs(CurrentLeftX) < StickReleaseThreshold && FMath::Abs(CurrentLeftY) < StickReleaseThreshold)
 		{
 			bLatchUntilNeutral = false;
 		}
@@ -328,24 +477,86 @@ bool FTrivialKartGamepadInputProcessor::HandleAnalogInputEvent(FSlateApplication
 	}
 #endif
 
+	const FInputDeviceId SourceDeviceId = InAnalogInputEvent.GetInputDeviceId();
+	const bool bIsNewlyDiscoveredGamepad = Key.IsGamepadKey() && SourceDeviceId.IsValid() && !DeviceStates.Contains(SourceDeviceId);
+	FTrivialKartDeviceInputState& DevState = DeviceStates.FindOrAdd(SourceDeviceId);
+	if (bIsNewlyDiscoveredGamepad)
+	{
+		OwnerController->NotifyGamepadDeviceDiscovered(SourceDeviceId);
+	}
+
 	const float Value = InAnalogInputEvent.GetAnalogValue();
 	const float AbsValue = FMath::Abs(Value);
 
 	if (Key == EKeys::Gamepad_LeftX)
 	{
-		CachedLeftX = Value;
+		DevState.LeftX = Value;
 	}
 	else if (Key == EKeys::Gamepad_LeftY)
 	{
-		CachedLeftY = Value;
+		DevState.LeftY = Value;
 	}
-	else if (Key == EKeys::Gamepad_LeftTriggerAxis)
+	else if (Key == EKeys::Gamepad_LeftTriggerAxis || Key == EKeys::Gamepad_RightTriggerAxis)
 	{
-		CachedLeftTrigger = Value;
-	}
-	else if (Key == EKeys::Gamepad_RightTriggerAxis)
-	{
-		CachedRightTrigger = Value;
+		const bool bIsLeft = (Key == EKeys::Gamepad_LeftTriggerAxis);
+		if (bIsLeft)
+		{
+			DevState.LeftTriggerAnalog = Value;
+		}
+		else
+		{
+			DevState.RightTriggerAnalog = Value;
+		}
+
+		if (AbsValue > KINDA_SMALL_NUMBER)
+		{
+			if (bIsLeft)
+			{
+				DevState.bHasLeftTriggerAnalog = true;
+				DevState.bDigitalLeftTriggerHeld = false;
+			}
+			else
+			{
+				DevState.bHasRightTriggerAnalog = true;
+				DevState.bDigitalRightTriggerHeld = false;
+			}
+
+			const FTrivialKartDeviceKey DigitalDevKey{ SourceDeviceId, bIsLeft ? EKeys::Gamepad_LeftTrigger : EKeys::Gamepad_RightTrigger };
+			if (HeldPhysicalKeys.Remove(DigitalDevKey) > 0)
+			{
+				LatchedRepeatKeys.Remove(DigitalDevKey);
+				ConsumedPressedKeys.Add(DigitalDevKey);
+			}
+		}
+
+		if ((DevState.bHasLeftTriggerAnalog || DevState.bHasRightTriggerAnalog) && Value >= 0.0f && Value < 0.30f)
+		{
+			DevState.bSawSubHalfTrigger = true;
+			if (DevState.TriggerSignature != ETrivialKartDeviceTriggerSignature::AnalogTriggerCapable)
+			{
+				DevState.TriggerSignature = ETrivialKartDeviceTriggerSignature::AnalogTriggerCapable;
+				OwnerController->NotifyGamepadHardwareSignatureUpdated(SourceDeviceId);
+			}
+		}
+		else if (!DevState.bSawSubHalfTrigger &&
+			DevState.bHasLeftTriggerAnalog &&
+			DevState.bHasRightTriggerAnalog &&
+			FMath::IsWithinInclusive(DevState.LeftTriggerAnalog, 0.46f, 0.54f) &&
+			FMath::IsWithinInclusive(DevState.RightTriggerAnalog, 0.46f, 0.54f))
+		{
+			if (DevState.TriggerSignature != ETrivialKartDeviceTriggerSignature::PlayStationHalfRest)
+			{
+				DevState.TriggerSignature = ETrivialKartDeviceTriggerSignature::PlayStationHalfRest;
+				OwnerController->NotifyGamepadHardwareSignatureUpdated(SourceDeviceId);
+			}
+		}
+		else if (DevState.TriggerSignature == ETrivialKartDeviceTriggerSignature::Unknown &&
+			AbsValue > KINDA_SMALL_NUMBER &&
+			!(!DevState.bSawSubHalfTrigger && FMath::IsWithinInclusive(Value, 0.46f, 0.54f)))
+		{
+			DevState.TriggerSignature = ETrivialKartDeviceTriggerSignature::AnalogTriggerCapable;
+			OwnerController->NotifyGamepadHardwareSignatureUpdated(SourceDeviceId);
+		}
 	}
 
 	const bool bIsStickActive = (Key == EKeys::Gamepad_LeftX || Key == EKeys::Gamepad_LeftY) && (AbsValue >= GamepadModeStickThreshold);
@@ -356,11 +567,12 @@ bool FTrivialKartGamepadInputProcessor::HandleAnalogInputEvent(FSlateApplication
 	{
 		LastGamepadActivityTimeSeconds = FPlatformTime::Seconds();
 		AccumulatedMouseDelta = FVector2D::ZeroVector;
-		OwnerController->NotifyExplicitDeviceInput(ETrivialKartInputMode::Gamepad);
+		OwnerController->NotifyExplicitGamepadInput(SourceDeviceId);
 
-		if (bIsTriggerPulled && !OwnerController->IsSubMenuOpen())
+		if (bIsTriggerPulled && !OwnerController->IsSubMenuOpen() && !OwnerController->IsLoadingOpen())
 		{
 			OwnerController->ClearPlayBoardMenuFocus();
+			OwnerController->RestoreFocusToGameViewport();
 		}
 	}
 
@@ -379,23 +591,65 @@ bool FTrivialKartGamepadInputProcessor::HandleMouseButtonDownEvent(FSlateApplica
 		return false;
 	}
 
+	const FVector2D ScreenPos = MouseEvent.GetScreenSpacePosition();
 #if WITH_EDITOR
-	if (!OwnerController->IsScreenPositionInGameViewport(MouseEvent.GetScreenSpacePosition()))
+	if (!OwnerController->IsScreenPositionInGameViewport(ScreenPos))
 	{
 		return false;
 	}
 #endif
 
 	AccumulatedMouseDelta = FVector2D::ZeroVector;
+	if (MouseEvent.IsTouchEvent())
+	{
+		if (OwnerController->IsGamepadAttached() && TouchPosIsCornerPhantom(ScreenPos))
+		{
+			return false;
+		}
+	}
+
 	OwnerController->NotifyPointerDeviceInput(MouseEvent.IsTouchEvent()
 		? ETrivialKartInputMode::Touch
 		: ETrivialKartInputMode::KeyboardMouse);
-	OwnerController->NotifyViewportPointerDown(MouseEvent.GetScreenSpacePosition());
+	if (!OwnerController->IsLoadingOpen())
+	{
+		OwnerController->NotifyViewportPointerDown(ScreenPos);
+	}
+
+	const bool bBlockedByUI = OwnerController->IsUIBlockingInput() || OwnerController->IsPointOverPlayBoardMenuButton(ScreenPos);
+	if (MouseEvent.IsTouchEvent())
+	{
+		bIsPrimaryMouseHeld = false;
+		if (MouseEvent.GetPointerIndex() >= 3 || bBlockedByUI)
+		{
+			bIsPrimaryTouchHeld = false;
+		}
+		else if (MouseEvent.GetPointerIndex() == 0)
+		{
+			bIsPrimaryTouchHeld = true;
+		}
+	}
+	else
+	{
+		bIsPrimaryTouchHeld = false;
+		if (MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+		{
+			bIsPrimaryMouseHeld = !bBlockedByUI;
+		}
+	}
 	return false;
 }
 
 bool FTrivialKartGamepadInputProcessor::HandleMouseButtonUpEvent(FSlateApplication& SlateApp, const FPointerEvent& MouseEvent)
 {
+	if (MouseEvent.IsTouchEvent() && MouseEvent.GetPointerIndex() == 0)
+	{
+		bIsPrimaryTouchHeld = false;
+	}
+	else if (!MouseEvent.IsTouchEvent() && MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+	{
+		bIsPrimaryMouseHeld = false;
+	}
 	return false;
 }
 
@@ -456,26 +710,96 @@ bool FTrivialKartGamepadInputProcessor::ProcessKeyEvent(const FKeyEvent& InKeyEv
 		return false;
 	}
 
+	const FInputDeviceId SourceDeviceId = InKeyEvent.GetInputDeviceId();
+	const FTrivialKartDeviceKey DevKey{ SourceDeviceId, RawKey };
+
 #if WITH_EDITOR
 	if (!OwnerController->IsGameViewportFocused())
 	{
 		if (!bIsPressed)
 		{
-			ConsumedPressedKeys.Remove(RawKey);
-			HeldPhysicalKeys.Remove(RawKey);
-			LatchedRepeatKeys.Remove(RawKey);
+			ConsumedPressedKeys.Remove(DevKey);
+			HeldPhysicalKeys.Remove(DevKey);
+			LatchedRepeatKeys.Remove(DevKey);
+			if (FTrivialKartDeviceInputState* DevState = DeviceStates.Find(SourceDeviceId))
+			{
+				if (RawKey == EKeys::Gamepad_LeftTrigger)
+				{
+					DevState->bDigitalLeftTriggerHeld = false;
+				}
+				else if (RawKey == EKeys::Gamepad_RightTrigger)
+				{
+					DevState->bDigitalRightTriggerHeld = false;
+				}
+			}
 		}
 		return false;
 	}
 #endif
 
-	// Block premature digital trigger keys synthesized on Android DualSense (+0.50f resting) before real trigger travel (>= 0.65f)
+	if (RawKey.IsGamepadKey() && SourceDeviceId.IsValid() && !DeviceStates.Contains(SourceDeviceId))
+	{
+		DeviceStates.Add(SourceDeviceId);
+		OwnerController->NotifyGamepadDeviceDiscovered(SourceDeviceId);
+	}
+
+	// Track trigger capabilities per FInputDeviceId so analog-trigger devices (DualSense +0.50f, Xbox) suppress
+	// their own redundant digital trigger keys without suppressing digital-only Switch Pro / Joy-Con triggers.
 	if (RawKey == EKeys::Gamepad_LeftTrigger || RawKey == EKeys::Gamepad_RightTrigger)
 	{
-		const float CachedAxis = (RawKey == EKeys::Gamepad_LeftTrigger) ? CachedLeftTrigger : CachedRightTrigger;
-		if (bIsPressed && CachedAxis < GamepadTriggerActiveThreshold)
+		FTrivialKartDeviceInputState& DevState = DeviceStates.FindOrAdd(SourceDeviceId);
+		const bool bIsLeft = (RawKey == EKeys::Gamepad_LeftTrigger);
+		const bool bHasDeviceAnalogAxis = bIsLeft ? DevState.bHasLeftTriggerAnalog : DevState.bHasRightTriggerAnalog;
+
+		if (bIsPressed)
 		{
-			return true;
+			if (bHasDeviceAnalogAxis || (InKeyEvent.IsRepeat() && !HeldPhysicalKeys.Contains(DevKey)))
+			{
+				HeldPhysicalKeys.Remove(DevKey);
+				LatchedRepeatKeys.Remove(DevKey);
+				ConsumedPressedKeys.Add(DevKey);
+				return true;
+			}
+
+			if (!InKeyEvent.IsRepeat())
+			{
+				if (bIsLeft)
+				{
+					DevState.bDigitalLeftTriggerHeld = true;
+				}
+				else
+				{
+					DevState.bDigitalRightTriggerHeld = true;
+				}
+			}
+		}
+		else
+		{
+			const bool bWasDigitalHeld = bIsLeft ? DevState.bDigitalLeftTriggerHeld : DevState.bDigitalRightTriggerHeld;
+			if (bIsLeft)
+			{
+				DevState.bDigitalLeftTriggerHeld = false;
+			}
+			else
+			{
+				DevState.bDigitalRightTriggerHeld = false;
+			}
+
+			if (bWasDigitalHeld &&
+				!DevState.bHasLeftTriggerAnalog &&
+				!DevState.bHasRightTriggerAnalog &&
+				DevState.TriggerSignature == ETrivialKartDeviceTriggerSignature::Unknown)
+			{
+				DevState.TriggerSignature = ETrivialKartDeviceTriggerSignature::SwitchDigitalOnly;
+				OwnerController->NotifyGamepadHardwareSignatureUpdated(SourceDeviceId);
+			}
+
+			if (bHasDeviceAnalogAxis && ConsumedPressedKeys.Remove(DevKey) > 0)
+			{
+				HeldPhysicalKeys.Remove(DevKey);
+				LatchedRepeatKeys.Remove(DevKey);
+				return true;
+			}
 		}
 	}
 
@@ -488,17 +812,20 @@ bool FTrivialKartGamepadInputProcessor::ProcessKeyEvent(const FKeyEvent& InKeyEv
 		|| RawKey == EKeys::Gamepad_LeftStick_Left
 		|| (RawKey == EKeys::Gamepad_LeftStick_Right && OwnerController->IsUIBlockingInput());
 
-	if (bIsSynthesizedStickMenuKey || (!bIsPressed && RawKey == EKeys::Gamepad_LeftStick_Right && ConsumedPressedKeys.Contains(RawKey)))
+	if (bIsSynthesizedStickMenuKey || (!bIsPressed && RawKey == EKeys::Gamepad_LeftStick_Right && ConsumedPressedKeys.Contains(DevKey)))
 	{
 		if (bIsPressed)
 		{
-			LastGamepadActivityTimeSeconds = FPlatformTime::Seconds();
-			AccumulatedMouseDelta = FVector2D::ZeroVector;
-			OwnerController->NotifyExplicitDeviceInput(ETrivialKartInputMode::Gamepad);
-			ConsumedPressedKeys.Add(RawKey);
+			if (!InKeyEvent.IsRepeat())
+			{
+				LastGamepadActivityTimeSeconds = FPlatformTime::Seconds();
+				AccumulatedMouseDelta = FVector2D::ZeroVector;
+				OwnerController->NotifyExplicitGamepadInput(SourceDeviceId);
+			}
+			ConsumedPressedKeys.Add(DevKey);
 			return true;
 		}
-		const bool bWasConsumed = ConsumedPressedKeys.Remove(RawKey) > 0;
+		const bool bWasConsumed = ConsumedPressedKeys.Remove(DevKey) > 0;
 		return (RawKey != EKeys::Gamepad_LeftStick_Right) || bWasConsumed;
 	}
 
@@ -508,10 +835,10 @@ bool FTrivialKartGamepadInputProcessor::ProcessKeyEvent(const FKeyEvent& InKeyEv
 		{
 			if (!InKeyEvent.IsRepeat())
 			{
-				HeldPhysicalKeys.Add(RawKey);
-				LatchedRepeatKeys.Remove(RawKey);
+				HeldPhysicalKeys.Add(DevKey);
+				LatchedRepeatKeys.Remove(DevKey);
 			}
-			if (InKeyEvent.IsRepeat() && (ConsumedPressedKeys.Contains(RawKey) || LatchedRepeatKeys.Contains(RawKey)))
+			if (InKeyEvent.IsRepeat() && (ConsumedPressedKeys.Contains(DevKey) || LatchedRepeatKeys.Contains(DevKey)))
 			{
 				return true;
 			}
@@ -526,14 +853,14 @@ bool FTrivialKartGamepadInputProcessor::ProcessKeyEvent(const FKeyEvent& InKeyEv
 			const bool bHandled = OwnerController->HandleUICancelKey(true);
 			if (bHandled)
 			{
-				ConsumedPressedKeys.Add(RawKey);
+				ConsumedPressedKeys.Add(DevKey);
 			}
 			return bHandled;
 		}
 
-		HeldPhysicalKeys.Remove(RawKey);
-		LatchedRepeatKeys.Remove(RawKey);
-		const bool bWasConsumed = ConsumedPressedKeys.Remove(RawKey) > 0;
+		HeldPhysicalKeys.Remove(DevKey);
+		LatchedRepeatKeys.Remove(DevKey);
+		const bool bWasConsumed = ConsumedPressedKeys.Remove(DevKey) > 0;
 		const bool bHandled = bWasConsumed ? OwnerController->HandleUICancelKey(false) : false;
 		return bHandled || bWasConsumed;
 	}
@@ -542,27 +869,27 @@ bool FTrivialKartGamepadInputProcessor::ProcessKeyEvent(const FKeyEvent& InKeyEv
 	{
 		if (!InKeyEvent.IsRepeat())
 		{
-			HeldPhysicalKeys.Add(RawKey);
-			LatchedRepeatKeys.Remove(RawKey);
+			HeldPhysicalKeys.Add(DevKey);
+			LatchedRepeatKeys.Remove(DevKey);
 		}
 
-		if (RawKey.IsGamepadKey())
+		if (!InKeyEvent.IsRepeat() && IsExplicitGamepadPromptSwitchKey(RawKey))
 		{
 			LastGamepadActivityTimeSeconds = FPlatformTime::Seconds();
 			AccumulatedMouseDelta = FVector2D::ZeroVector;
-			OwnerController->NotifyExplicitDeviceInput(ETrivialKartInputMode::Gamepad);
+			OwnerController->NotifyExplicitGamepadInput(SourceDeviceId);
 		}
 		else if (IsGenuineKeyboardKey(RawKey))
 		{
 			OwnerController->NotifyExplicitDeviceInput(ETrivialKartInputMode::KeyboardMouse);
 		}
 
-		if (InKeyEvent.IsRepeat() && LatchedRepeatKeys.Contains(RawKey))
+		if (InKeyEvent.IsRepeat() && LatchedRepeatKeys.Contains(DevKey))
 		{
 			return true;
 		}
 
-		if (InKeyEvent.IsRepeat() && ConsumedPressedKeys.Contains(RawKey) && !OwnerController->IsUIBlockingInput())
+		if (InKeyEvent.IsRepeat() && ConsumedPressedKeys.Contains(DevKey) && !OwnerController->IsUIBlockingInput())
 		{
 			return true;
 		}
@@ -573,20 +900,21 @@ bool FTrivialKartGamepadInputProcessor::ProcessKeyEvent(const FKeyEvent& InKeyEv
 		const bool bBlockSlateLeak = (OwnerController->IsUIBlockingInput() && IsSlateNavigationLeakKey(RawKey)) || bBlockUnfocusedActivationLeak;
 		if (bHandled || bBlockSlateLeak)
 		{
-			ConsumedPressedKeys.Add(RawKey);
+			ConsumedPressedKeys.Add(DevKey);
 			return true;
 		}
 
-		if (RawKey == EKeys::SpaceBar)
+		if (!OwnerController->IsUIBlockingInput() &&
+			(RawKey == EKeys::SpaceBar || RawKey == EKeys::Gamepad_LeftTrigger || RawKey == EKeys::Gamepad_RightTrigger))
 		{
 			OwnerController->RestoreFocusToGameViewport();
 		}
 		return false;
 	}
 
-	HeldPhysicalKeys.Remove(RawKey);
-	LatchedRepeatKeys.Remove(RawKey);
-	const bool bWasConsumed = ConsumedPressedKeys.Remove(RawKey) > 0;
+	HeldPhysicalKeys.Remove(DevKey);
+	LatchedRepeatKeys.Remove(DevKey);
+	const bool bWasConsumed = ConsumedPressedKeys.Remove(DevKey) > 0;
 	const bool bHandled = OwnerController->HandleGamepadKey(RawKey, false, false, InKeyEvent.IsShiftDown());
 	return bHandled || bWasConsumed;
 }

@@ -45,6 +45,7 @@ public class TrivialKart_Unreal : ModuleRules
 		
 		if (Target.Platform == UnrealTargetPlatform.Android)
 		{
+			PrivateDependencyModuleNames.Add("Launch");
 			DynamicallyLoadedModuleNames.Add("OnlineSubsystemGooglePlay");
 			string uplPath = Path.Combine(ModuleDirectory, "DEQP_UPL.xml");
 			AdditionalPropertiesForReceipt.Add("AndroidPlugin", uplPath);

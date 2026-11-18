@@ -17,92 +17,47 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
-#include "Controllers/TrivialKartPlayerController.h"
-#include "InputCoreTypes.h"
-#include "Styling/SlateTypes.h"
+#include "Widgets/TrivialKartTabbedModalWidget.h"
 #include "StoreWidget.generated.h"
 
-class UBorder;
-class UButton;
-class UWidgetSwitcher;
 class UCheckBox;
-class USelectableItem;
 
 /**
- * 
+ * Store modal widget managing Fuel, Coin, Car, and Subscription tabs.
  */
 UCLASS()
-class TRIVIALKART_UNREAL_API UStoreWidget : public UUserWidget
+class TRIVIALKART_UNREAL_API UStoreWidget : public UTrivialKartTabbedModalWidget
 {
 	GENERATED_BODY()
-	
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UButton> BackButton;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCheckBox> FuelCheckBox;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCheckBox> CoinCheckBox;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCheckBox> CarCheckBox;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCheckBox> SubscriptionCheckBox;
-	
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UWidgetSwitcher> ContentSwitcher;
-	
+
 protected:
-	UPROPERTY()
-	TArray<UCheckBox*> CheckBoxes;
+	virtual EWidgetType GetModalWidgetType() const override { return EWidgetType::Store; }
+	virtual void RegisterTabCheckBoxes(TArray<UCheckBox*>& OutCheckBoxes) override;
+	virtual void BindTabCheckBoxEvents() override;
+	virtual void UnbindTabCheckBoxEvents() override;
 
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<UBorder>> TabHighlightBorders;
-
-	TWeakObjectPtr<USelectableItem> GamepadPressedItem;
-	TWeakObjectPtr<USelectableItem> HoveredItem;
-
-	int32 ActiveTabIndex = 0;
-	int32 FocusedItemIndex = 0;
-	FButtonStyle OriginalBackButtonStyle;
-	FLinearColor OriginalBackButtonBgColor = FLinearColor::White;
-	bool bBackStyleCached = false;
-	bool bBackButtonPressed = false;
-
-public:
-	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
-
-	bool HandleGamepadKey(const FKey& Key, bool bIsPressed = true);
-	void RefreshGamepadFocus(bool bScrollIntoView = true);
-	void RefreshOwnershipAndFocus(bool bScrollIntoView = false);
-	void CancelPendingPress();
-	
 private:
 	UFUNCTION()
-	void OnBackButtonClicked();
-	UFUNCTION()
-	void OnBackButtonReleased();
-	void SetCheckBoxState(bool bIsChecked, UCheckBox* CheckBox, int ActiveWidgetIndex);
-	void SelectTabByIndex(int32 NewTabIndex);
-	void RefreshAllItemsOwnership() const;
-	void GatherSelectableItems(UWidget* RootWidget, TArray<USelectableItem*>& OutItems, bool bOnlySelectable) const;
-	void OnSelectableItemInteracted(USelectableItem* InteractedItem);
-	void OnSelectableItemUnhovered(USelectableItem* UnhoveredItem);
-	void OnSelectableItemClicked(USelectableItem* ClickedItem);
-	void OnInputModeChanged(ETrivialKartInputMode NewInputMode);
-	bool IsNavigationVisualActive() const;
-	void RestoreViewportFocus() const;
+	void OnFuelBoxStateChanged(bool bIsChecked);
 
 	UFUNCTION()
-	void OnFuelBoxStateChanged(bool bIsChecked);
-	UFUNCTION()
 	void OnCoinBoxStateChange(bool bIsChecked);
+
 	UFUNCTION()
 	void OnCarBoxStateChange(bool bIsChecked);
+
 	UFUNCTION()
 	void OnSubscriptionBoxStateChange(bool bIsChecked);
 };

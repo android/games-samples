@@ -21,7 +21,6 @@
 #include "Controllers/TrivialKartPlayerController.h"
 #include "InputCoreTypes.h"
 #include "Misc/Optional.h"
-#include "Styling/SlateTypes.h"
 #include "PlayBoardWidget.generated.h"
 
 class UBorder;
@@ -56,18 +55,16 @@ class TRIVIALKART_UNREAL_API UPlayBoardWidget : public UUserWidget
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UProgressBar> FuelBar;
 
-	TWeakObjectPtr<UBorder> InputGuideBorder;
 	TWeakObjectPtr<UTextBlock> InputGuideText;
 	TWeakObjectPtr<USizeBox> TouchDrivePadSizeBox;
 	TWeakObjectPtr<UBorder> TouchDrivePadBorder;
+	TWeakObjectPtr<UBorder> MenuButtonHighlightBorders[3];
 
 	int32 FocusedButtonIndex = -1;
 	int32 PressedButtonIndex = -1;
 	bool bFocusedByHover = false;
 	TOptional<ETrivialKartInputMode> LastRenderedGuideMode;
-	FButtonStyle OriginalButtonStyles[3];
-	FLinearColor OriginalBackgroundColors[3];
-	bool bStylesCached = false;
+	TOptional<ETrivialKartGamepadStyle> LastRenderedGamepadStyle;
 
 public:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
@@ -75,8 +72,8 @@ public:
 	virtual void NativeDestruct() override;
 
 	bool HandleGamepadKey(const FKey& Key, bool bIsPressed = true, bool bIsRepeat = false);
-	bool HasMenuFocus() const { return FocusedButtonIndex >= 0; }
 	bool HasBlockingMenuFocus() const { return FocusedButtonIndex >= 0 && !bFocusedByHover; }
+	bool IsPointOverAnyMenuButton(const FVector2D& ScreenSpacePosition) const;
 	void ClearMenuFocus(bool bOnlyIfNotHovered = false);
 	void CancelPendingPress();
 	void OnViewportPointerDown(const FVector2D& ScreenSpacePosition);
@@ -84,8 +81,8 @@ public:
 	
 private:
 	void EnsureInputGuideWidget();
+	void EnsureMenuButtonHighlightFrames();
 	bool IsAnyMenuButtonHovered() const;
-	bool IsPointOverAnyMenuButton(const FVector2D& ScreenSpacePosition) const;
 	void SetHoverFocus(int32 NewButtonIndex);
 	void SetKeyboardOrGamepadFocus(int32 NewButtonIndex);
 

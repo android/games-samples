@@ -26,6 +26,7 @@
 #include "GameInstances/TrivialKartGameInstance.h"
 #include "Infos/TrivialKartPlayerState.h"
 #include "Objects/TrivialKartSaveGame.h"
+#include "Widgets/TrivialKartUIStyle.h"
 
 void USelectableItem::NativePreConstruct()
 {
@@ -123,6 +124,7 @@ void USelectableItem::EnsureOverlayHitTestAndBorder()
 				{
 					OverlaySlot->SetHorizontalAlignment(HAlign_Fill);
 					OverlaySlot->SetVerticalAlignment(VAlign_Fill);
+					OverlaySlot->SetPadding(FMargin(2.0f));
 				}
 			}
 		}
@@ -171,6 +173,10 @@ void USelectableItem::OnSelectionButtonReleased()
 
 void USelectableItem::SetButtonPressed(bool bInPressed)
 {
+	if (bIsButtonPressed == bInPressed)
+	{
+		return;
+	}
 	bIsButtonPressed = bInPressed;
 	UpdateHighlightVisuals();
 }
@@ -214,11 +220,9 @@ void USelectableItem::OnSelectionButtonClicked()
 					switch (PurchaseObject)
 					{
 					case EPurchaseObject::Car:
-						if (!CarType.IsEmpty())
+						if (PlayerState->PurchaseCarWithCoins(CarType, CoinQuantity))
 						{
-							PlayerState->AddCarToInventory(CarType);
 							SetIsEnabled(false);
-							PlayerState->ConsumeCoins(CoinQuantity);
 						}
 						break;
 					case EPurchaseObject::Fuel:
@@ -267,6 +271,10 @@ void USelectableItem::OnSelectionButtonClicked()
 
 void USelectableItem::SetGamepadFocused(bool bInFocused, bool bInShowVisual)
 {
+	if (bIsGamepadFocused == bInFocused && bShowFocusVisual == bInShowVisual)
+	{
+		return;
+	}
 	bIsGamepadFocused = bInFocused;
 	bShowFocusVisual = bInShowVisual;
 	UpdateHighlightVisuals();
@@ -293,22 +301,16 @@ void USelectableItem::UpdateHighlightVisuals()
 	{
 		if (FocusHighlightBorder)
 		{
-			FSlateBrush OverlayBrush;
-			OverlayBrush.DrawAs = ESlateBrushDrawType::RoundedBox;
-			OverlayBrush.TintColor = FSlateColor(bIsButtonPressed
-				? FLinearColor(1.0f, 0.30f, 0.0f, 0.72f)
-				: FLinearColor(1.0f, 0.45f, 0.0f, 0.48f));
-			OverlayBrush.OutlineSettings.CornerRadii = FVector4(12.0f, 12.0f, 12.0f, 12.0f);
-			OverlayBrush.OutlineSettings.RoundingType = ESlateBrushRoundingType::FixedRadius;
-			OverlayBrush.OutlineSettings.Color = FSlateColor(bIsButtonPressed
-				? FLinearColor(1.0f, 1.0f, 0.2f, 1.0f)
-				: FLinearColor(1.0f, 0.9f, 0.0f, 1.0f));
-			OverlayBrush.OutlineSettings.Width = bIsButtonPressed ? 10.0f : 8.0f;
+			const FSlateBrush OverlayBrush = TrivialKartUIStyle::MakeRoundedHighlightBrush(
+				12.0f,
+				bIsButtonPressed ? 10.0f : 8.0f,
+				bIsButtonPressed ? FLinearColor(1.0f, 0.30f, 0.0f, 0.72f) : FLinearColor(1.0f, 0.45f, 0.0f, 0.48f),
+				bIsButtonPressed ? FLinearColor(1.0f, 1.0f, 0.2f, 1.0f) : FLinearColor(1.0f, 0.9f, 0.0f, 1.0f));
 			FocusHighlightBorder->SetBrush(OverlayBrush);
 			FocusHighlightBorder->SetBrushColor(FLinearColor::White);
 			FocusHighlightBorder->SetVisibility(ESlateVisibility::HitTestInvisible);
 		}
-		const float TargetScale = bIsButtonPressed ? 0.88f : 1.08f;
+		const float TargetScale = bIsButtonPressed ? 0.94f : 1.0f;
 		ScaleTarget->SetRenderScale(FVector2D(TargetScale, TargetScale));
 	}
 	else
