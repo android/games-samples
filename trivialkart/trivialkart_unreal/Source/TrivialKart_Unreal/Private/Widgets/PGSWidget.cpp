@@ -16,64 +16,91 @@
 
 #include "Widgets/PGSWidget.h"
 
-#include "OnlineSubsystem.h"
-#include "OnlineSubsystemUtils.h"
-#include "Actors/TrivialKartHUD.h"
-#include "Components/Button.h"
 #include "Components/CheckBox.h"
 #include "Components/ScrollBox.h"
 #include "Components/VerticalBox.h"
-#include "Components/WidgetSwitcher.h"
 #include "GameInstances/TrivialKartGameInstance.h"
 #include "Interfaces/OnlineAchievementsInterface.h"
+#include "OnlineSubsystem.h"
+#include "OnlineSubsystemUtils.h"
 #include "Widgets/PGSLayoutText.h"
 
-void UPGSWidget::NativeConstruct()
+void UPGSWidget::RegisterTabCheckBoxes(TArray<UCheckBox*>& OutCheckBoxes)
 {
-	Super::NativeConstruct();
-	BackButton->OnClicked.AddUniqueDynamic(this, &UPGSWidget::OnBackButtonClicked);
-	CheckBoxes.Empty();
-	CheckBoxes.Add(AuthenticationCheckBox);
-	CheckBoxes.Add(AchievementsCheckBox);
-	CheckBoxes.Add(LeaderboardCheckBox);
-	AuthenticationCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UPGSWidget::OnAuthCheckBoxStateChanged);
-	AchievementsCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UPGSWidget::OnAchievementBoxStateChange);
-	LeaderboardCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UPGSWidget::OnLeaderboardBoxStateChange);
-	if (TWeakObjectPtr Instance = Cast<UTrivialKartGameInstance>(GetGameInstance()); 
-		Instance.IsValid())
+	OutCheckBoxes.Add(AuthenticationCheckBox);
+	OutCheckBoxes.Add(AchievementsCheckBox);
+	OutCheckBoxes.Add(LeaderboardCheckBox);
+}
+
+void UPGSWidget::BindTabCheckBoxEvents()
+{
+	if (AuthenticationCheckBox)
+	{
+		AuthenticationCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UPGSWidget::OnAuthCheckBoxStateChanged);
+	}
+	if (AchievementsCheckBox)
+	{
+		AchievementsCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UPGSWidget::OnAchievementBoxStateChange);
+	}
+	if (LeaderboardCheckBox)
+	{
+		LeaderboardCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UPGSWidget::OnLeaderboardBoxStateChange);
+	}
+}
+
+void UPGSWidget::UnbindTabCheckBoxEvents()
+{
+	if (AuthenticationCheckBox)
+	{
+		AuthenticationCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UPGSWidget::OnAuthCheckBoxStateChanged);
+	}
+	if (AchievementsCheckBox)
+	{
+		AchievementsCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UPGSWidget::OnAchievementBoxStateChange);
+	}
+	if (LeaderboardCheckBox)
+	{
+		LeaderboardCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UPGSWidget::OnLeaderboardBoxStateChange);
+	}
+}
+
+void UPGSWidget::InitializeModalContent()
+{
+	if (TWeakObjectPtr<UTrivialKartGameInstance> Instance = Cast<UTrivialKartGameInstance>(GetGameInstance());
+		Instance.IsValid() && AuthBox && PGSTextTemplate)
 	{
 		const FString AuthStatus = Instance->GetLoginStatus() ? FString("Logged In") : FString("Logged Out");
-		if (const auto PgsAuthStatusText = Cast<UPGSLayoutText>(
-							CreateWidget(this, PGSTextTemplate)))
+		if (UPGSLayoutText* PgsAuthStatusText = Cast<UPGSLayoutText>(CreateWidget(this, PGSTextTemplate)))
 		{
 			PgsAuthStatusText->SetPGSText("Auth Status", AuthStatus);
 			AuthBox->AddChildToVerticalBox(PgsAuthStatusText);
 		}
-		if (const auto PgsUsernameText = Cast<UPGSLayoutText>(
-							CreateWidget(this, PGSTextTemplate)))
+		if (UPGSLayoutText* PgsUsernameText = Cast<UPGSLayoutText>(CreateWidget(this, PGSTextTemplate)))
 		{
 			PgsUsernameText->SetPGSText("Username", Instance->GetPlayerName());
 			AuthBox->AddChildToVerticalBox(PgsUsernameText);
 		}
 	}
-	if (const IOnlineIdentityPtr IdentityInterface = Online::GetIdentityInterface(GetWorld()); 
-		IdentityInterface.IsValid())
+
+	if (const IOnlineIdentityPtr IdentityInterface = Online::GetIdentityInterface(GetWorld());
+		IdentityInterface.IsValid() && AchievementsBox && PGSTextTemplate)
 	{
-		if (const IOnlineAchievementsPtr AchievementsInterface = 
-			Online::GetAchievementsInterface(GetWorld()); AchievementsInterface.IsValid())
+		if (const TSharedPtr<const FUniqueNetId> UniquePlayerId = IdentityInterface->GetUniquePlayerId(0); UniquePlayerId.IsValid())
 		{
-			TArray<FOnlineAchievement> Achievements;
-			if (AchievementsInterface->GetCachedAchievements(
-				*IdentityInterface->GetUniquePlayerId(0), Achievements) 
-				== EOnlineCachedResult::Success)
+			if (const IOnlineAchievementsPtr AchievementsInterface =
+				Online::GetAchievementsInterface(GetWorld()); AchievementsInterface.IsValid())
 			{
-				for (auto Achievement : Achievements)
+				TArray<FOnlineAchievement> Achievements;
+				if (AchievementsInterface->GetCachedAchievements(*UniquePlayerId, Achievements)
+					== EOnlineCachedResult::Success)
 				{
-					if (auto PGSText = Cast<UPGSLayoutText>(
-							CreateWidget(this, PGSTextTemplate)))
+					for (const FOnlineAchievement& Achievement : Achievements)
 					{
-						PGSText->SetPGSText(Achievement.Id, FString::Printf(TEXT("%.1f"), Achievement.Progress));
-						AchievementsBox->AddChild(PGSText);
+						if (UPGSLayoutText* PGSText = Cast<UPGSLayoutText>(CreateWidget(this, PGSTextTemplate)))
+						{
+							PGSText->SetPGSText(Achievement.Id, FString::Printf(TEXT("%.1f"), Achievement.Progress));
+							AchievementsBox->AddChild(PGSText);
+						}
 					}
 				}
 			}
@@ -81,47 +108,17 @@ void UPGSWidget::NativeConstruct()
 	}
 }
 
-void UPGSWidget::NativeDestruct()
+UScrollBox* UPGSWidget::GetActiveReadOnlyScrollBox() const
 {
-	BackButton->OnClicked.RemoveDynamic(this, &UPGSWidget::OnBackButtonClicked);
-	AuthenticationCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UPGSWidget::OnAuthCheckBoxStateChanged);
-	AchievementsCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UPGSWidget::OnAchievementBoxStateChange);
-	LeaderboardCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UPGSWidget::OnLeaderboardBoxStateChange);
-	Super::NativeDestruct();
-}
-
-void UPGSWidget::OnBackButtonClicked()
-{
-	if (TWeakObjectPtr PlayerController = GetOwningPlayer(); PlayerController.IsValid())
+	if (ActiveTabIndex == 1)
 	{
-		if (const TWeakObjectPtr CurrentHUD = Cast<ATrivialKartHUD>(PlayerController->GetHUD()); 
-			CurrentHUD.IsValid())
-		{
-			CurrentHUD->AddWidgetToScreen(EWidgetType::PlayBoard);
-			CurrentHUD->RemoveWidgetFromScreen(EWidgetType::PGS);
-		}
+		return AchievementsBox.Get();
 	}
-}
-
-void UPGSWidget::SetCheckBoxState(bool bIsChecked, UCheckBox* CheckBox, int ActiveWidgetIndex)
-{
-	if (CheckBox == nullptr)
-		return;
-	if (bIsChecked)
+	if (ActiveTabIndex == 2)
 	{
-		ContentSwitcher->SetActiveWidgetIndex(ActiveWidgetIndex);
-		for (auto CurrentCheckBox : CheckBoxes)
-		{
-			if (CurrentCheckBox != CheckBox)
-			{
-				CurrentCheckBox->SetCheckedState(ECheckBoxState::Unchecked);
-			}
-		}
+		return LeaderboardBox.Get();
 	}
-	else
-	{
-		CheckBox->SetCheckedState(ECheckBoxState::Checked);
-	}
+	return nullptr;
 }
 
 void UPGSWidget::OnAuthCheckBoxStateChanged(bool bIsChecked)

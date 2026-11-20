@@ -17,45 +17,37 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "Widgets/TrivialKartTabbedModalWidget.h"
 #include "GarageWidget.generated.h"
 
-class UWidgetSwitcher;
 class UCheckBox;
-class UButton;
+class USelectableItem;
+
 /**
- * 
+ * Garage modal widget managing Kart and Level selection tabs.
  */
 UCLASS()
-class TRIVIALKART_UNREAL_API UGarageWidget : public UUserWidget
+class TRIVIALKART_UNREAL_API UGarageWidget : public UTrivialKartTabbedModalWidget
 {
 	GENERATED_BODY()
-	
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UButton> BackButton;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCheckBox> KartCheckBox;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCheckBox> LevelCheckBox;
-	
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UWidgetSwitcher> ContentSwitcher;
 
 protected:
-	UPROPERTY()
-	TArray<UCheckBox*> CheckBoxes;
-public:
-	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
-	
+	virtual EWidgetType GetModalWidgetType() const override { return EWidgetType::Garage; }
+	virtual void RegisterTabCheckBoxes(TArray<UCheckBox*>& OutCheckBoxes) override;
+	virtual void BindTabCheckBoxEvents() override;
+	virtual void UnbindTabCheckBoxEvents() override;
+	virtual int32 GetDefaultItemIndexForTab(int32 TabIndex, const TArray<USelectableItem*>& ActiveItems) const override;
+
 private:
 	UFUNCTION()
-	void OnBackButtonClicked();
-	void SetCheckBoxState(bool bIsChecked, UCheckBox* CheckBox, int ActiveWidgetIndex);
-	UFUNCTION()
 	void OnKartBoxStateChanged(bool bIsChecked);
+
 	UFUNCTION()
 	void OnLevelBoxStateChange(bool bIsChecked);
 };

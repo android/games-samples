@@ -14,16 +14,21 @@
  *   limitations under the License.
  */
 
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Controllers/TrivialKartPlayerController.h"
+#include "InputCoreTypes.h"
+#include "Misc/Optional.h"
 #include "PlayBoardWidget.generated.h"
 
+class UBorder;
 class UProgressBar;
+class USizeBox;
 class UTextBlock;
 class UButton;
+
 /**
  * 
  */
@@ -34,28 +39,77 @@ class TRIVIALKART_UNREAL_API UPlayBoardWidget : public UUserWidget
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> GarageButton;
+	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> PGSButton;
+	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> StoreButton;
+	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UTextBlock> DistanceText;
+	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UTextBlock> CoinText;
+	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UProgressBar> FuelBar;
 
+	TWeakObjectPtr<UTextBlock> InputGuideText;
+	TWeakObjectPtr<USizeBox> TouchDrivePadSizeBox;
+	TWeakObjectPtr<UBorder> TouchDrivePadBorder;
+	TWeakObjectPtr<UBorder> MenuButtonHighlightBorders[3];
+
+	int32 FocusedButtonIndex = -1;
+	int32 PressedButtonIndex = -1;
+	bool bFocusedByHover = false;
+	TOptional<ETrivialKartInputMode> LastRenderedGuideMode;
+	TOptional<ETrivialKartGamepadStyle> LastRenderedGamepadStyle;
+
 public:
+	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+
+	bool HandleGamepadKey(const FKey& Key, bool bIsPressed = true, bool bIsRepeat = false);
+	bool HasBlockingMenuFocus() const { return FocusedButtonIndex >= 0 && !bFocusedByHover; }
+	bool IsPointOverAnyMenuButton(const FVector2D& ScreenSpacePosition) const;
+	void ClearMenuFocus(bool bOnlyIfNotHovered = false);
+	void CancelPendingPress();
+	void OnViewportPointerDown(const FVector2D& ScreenSpacePosition);
+	void UpdateInputGuideText(ETrivialKartInputMode InputMode);
 	
 private:
+	void EnsureInputGuideWidget();
+	void EnsureMenuButtonHighlightFrames();
+	bool IsAnyMenuButtonHovered() const;
+	void SetHoverFocus(int32 NewButtonIndex);
+	void SetKeyboardOrGamepadFocus(int32 NewButtonIndex);
+
 	UFUNCTION()
 	void OnGarageButtonClicked();
 	UFUNCTION()
 	void OnPGSButtonClicked();
 	UFUNCTION()
 	void OnStoreButtonClicked();
+
+	UFUNCTION()
+	void OnGarageButtonHovered();
+	UFUNCTION()
+	void OnPGSButtonHovered();
+	UFUNCTION()
+	void OnStoreButtonHovered();
+	UFUNCTION()
+	void OnMenuButtonUnhovered();
+
+	UFUNCTION()
+	void OnGarageButtonPressed();
+	UFUNCTION()
+	void OnPGSButtonPressed();
+	UFUNCTION()
+	void OnStoreButtonPressed();
+	UFUNCTION()
+	void OnMenuButtonReleased();
 	
 	UFUNCTION()
 	void UpdateFuelBar(const float FuelBarPercentage) const;
@@ -63,4 +117,6 @@ private:
 	void UpdateDistanceText(const float Distance) const;
 	UFUNCTION()
 	void UpdateCoinText(const int Quantity) const;
+
+	void UpdateButtonFocusVisuals();
 };
