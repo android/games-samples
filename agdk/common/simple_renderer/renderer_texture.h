@@ -245,20 +245,42 @@ class Texture {
    */
   virtual ~Texture() {}
 
+  /**
+   * @brief Check that texture creation parameters are usable: enums in range, a
+   * compression type that matches the format (`kTextureCompression_None` for uncompressed
+   * formats), nonzero dimensions, between 1 and `kMaxMipCount` mip levels and no more than
+   * a full mip chain, and enough data for each level. Logs the problem if not.
+   * @param params The creation parameters
+   * @return true if the parameters are valid
+   */
+  static bool ValidateCreationParams(const TextureCreationParams& params);
+
+  /**
+   * @brief Get the number of bytes of texel data a mip level of the given size needs.
+   * @return The required byte count, or 0 for an invalid format/compression combination.
+   */
+  static uint64_t GetRequiredMipSize(TextureFormat format, TextureCompressionType compression,
+                                     uint32_t width, uint32_t height);
+
  protected:
+  /** @brief Maximum number of mip levels a texture can have */
+  static constexpr uint32_t kMaxMipCount = 16;
+
+  /**
+   * @brief Whether the creation parameters passed validation. If not, the texture has no
+   * mip levels and subclasses must not create any API objects.
+   */
+  bool HasValidCreationParams() const { return valid_creation_params_; }
+
   Texture(const TextureCreationParams& params)
       : texture_format_(params.format),
         texture_compression_type_(params.compression_type),
         texture_base_width_(params.base_width),
         texture_base_height_(params.base_height),
         texture_debug_name_("noname)") {
-    texture_mip_count_ = params.mip_count;
-    if (params.mip_count > kMaxMipCount) {
-      texture_mip_count_ = kMaxMipCount;
-    }
-    if (params.texture_sizes == nullptr) {
-      texture_mip_count_ = 0;
-    }
+    valid_creation_params_ = ValidateCreationParams(params);
+    // An invalid texture reports no mip levels (and no level sizes)
+    texture_mip_count_ = valid_creation_params_ ? params.mip_count : 0;
     uint32_t i = 0;
     while (i < texture_mip_count_) {
       texture_sizes_[i] = params.texture_sizes[i];
@@ -274,19 +296,20 @@ class Texture {
   Texture()
   : texture_format_(kTextureFormat_Count),
     texture_compression_type_(kTextureCompression_Count),
-    texture_mip_count_(0) {
+    texture_mip_count_(0),
+    valid_creation_params_(false) {
       for (uint32_t i = 0; i < kMaxMipCount; ++i) {
         texture_sizes_[i] = 0;
       }
   }
 
-  static constexpr uint32_t kMaxMipCount = 16;
   TextureFormat texture_format_;
   TextureCompressionType texture_compression_type_;
   uint32_t texture_base_width_;
   uint32_t texture_base_height_;
   uint32_t texture_mip_count_;
   size_t texture_sizes_[kMaxMipCount];
+  bool valid_creation_params_;
 
   std::string texture_debug_name_;
 };

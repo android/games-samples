@@ -44,7 +44,9 @@ RendererVk::RendererVk() :
     descriptor_pools_(),
     descriptor_set_layouts_(),
     descriptor_set_vertex_table_(VertexBuffer::kVertexFormat_Count),
-    texture_descriptor_frame_cache_(kMaxSamplerDescriptors) {
+    texture_descriptor_frame_cache_() {
+  // Reserve space up front; the cache starts empty each frame
+  texture_descriptor_frame_cache_.reserve(kMaxSamplerDescriptors);
   DisplayManager& display_manager = DisplayManager::GetInstance();
   const GraphicsAPIFeatures& api_features = display_manager.GetGraphicsAPIFeatures();
   display_manager.GetGraphicsAPIResourcesVk(vk_);
@@ -101,11 +103,14 @@ void RendererVk::PrepareShutdown() {
 bool RendererVk::GetFeatureAvailable(const RendererFeature feature) {
   bool supported = false;
   switch (feature) {
-    case Renderer::kFeature_ASTC:
-      // Android Baseline Profile requires ASTC support, we wouldn't have
-      // initialized RendererVk without it
-      supported = true;
+    case Renderer::kFeature_ASTC: {
+      // Required by the Android Baseline Profile, but that isn't enforced at
+      // initialization, so ask the device
+      VkPhysicalDeviceFeatures device_features{};
+      vkGetPhysicalDeviceFeatures(vk_.physical_device, &device_features);
+      supported = (device_features.textureCompressionASTC_LDR == VK_TRUE);
       break;
+    }
     default:
       break;
   }
@@ -189,8 +194,7 @@ void RendererVk::EndFrame() {
 
   active_frame_pool_ = VK_NULL_HANDLE;
   texture_descriptor_frame_cache_.clear();
-  bound_descriptor_set_ = VK_NULL_HANDLE;
-  bound_image_view_ = VK_NULL_HANDLE;
+  ResetBoundDescriptorSet();
 }
 
 void RendererVk::SwapchainRecreated() {
@@ -202,14 +206,25 @@ void RendererVk::SwapchainRecreated() {
   }
 }
 
-void RendererVk::Draw(const uint32_t vertex_count, const uint32_t first_vertex) {
-  RenderStateVk& state = *(static_cast<RenderStateVk*>(render_state_.get()));
-  if (dirty_descriptor_set_) {
+void RendererVk::ResetBoundDescriptorSet() {
+  // Nothing pending either: a bind of a null set is invalid
+  bound_descriptor_set_ = VK_NULL_HANDLE;
+  bound_image_view_ = VK_NULL_HANDLE;
+  dirty_descriptor_set_ = false;
+}
+
+void RendererVk::BindDirtyDescriptorSet(const RenderStateVk& state) {
+  if (dirty_descriptor_set_ && bound_descriptor_set_ != VK_NULL_HANDLE) {
     vkCmdBindDescriptorSets(render_command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             state.GetPipelineLayout(), 0, 1, &bound_descriptor_set_,
                             0, nullptr);
-    dirty_descriptor_set_ = false;
   }
+  dirty_descriptor_set_ = false;
+}
+
+void RendererVk::Draw(const uint32_t vertex_count, const uint32_t first_vertex) {
+  RenderStateVk& state = *(static_cast<RenderStateVk*>(render_state_.get()));
+  BindDirtyDescriptorSet(state);
 
   // Update any uniform data that might have changed between draw calls
   state.UpdateUniformData(render_command_buffer_, true);
@@ -219,12 +234,7 @@ void RendererVk::Draw(const uint32_t vertex_count, const uint32_t first_vertex) 
 
 void RendererVk::DrawIndexed(const uint32_t index_count, const uint32_t first_index) {
   RenderStateVk& state = *(static_cast<RenderStateVk*>(render_state_.get()));
-  if (dirty_descriptor_set_) {
-    vkCmdBindDescriptorSets(render_command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            state.GetPipelineLayout(), 0, 1, &bound_descriptor_set_,
-                            0, nullptr);
-    dirty_descriptor_set_ = false;
-  }
+  BindDirtyDescriptorSet(state);
 
   // Update any uniform data that might have changed between draw calls
   state.UpdateUniformData(render_command_buffer_, true);
@@ -241,6 +251,8 @@ void RendererVk::SetRenderPass(std::shared_ptr<RenderPass> render_pass) {
     }
     render_pass_ = render_pass;
     render_state_ = nullptr;
+    // The next render state binds its own descriptor set
+    ResetBoundDescriptorSet();
     new_render_pass->BeginRenderPass();
   }
 }
@@ -250,8 +262,8 @@ void RendererVk::SetRenderState(std::shared_ptr<RenderState> render_state) {
     render_state_ = render_state;
     RenderStateVk& state = *(static_cast<RenderStateVk*>(render_state_.get()));
     vkCmdBindPipeline(render_command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, state.GetPipeline());
-    bound_descriptor_set_ = VK_NULL_HANDLE;
-    bound_image_view_ = VK_NULL_HANDLE;
+    // Textures are bound again for the new state (its descriptor set layout may differ)
+    ResetBoundDescriptorSet();
   }
 }
 
@@ -269,20 +281,39 @@ void RendererVk::BindVertexBuffer(std::shared_ptr<VertexBuffer> vertex_buffer) {
 }
 
 void RendererVk::BindTexture(std::shared_ptr<Texture> texture) {
-  if (texture.get() == nullptr) {
-    bound_descriptor_set_ = VK_NULL_HANDLE;
-    bound_image_view_ = VK_NULL_HANDLE;
-    dirty_descriptor_set_ = true;
+  const TextureVk* texture_vk = static_cast<const TextureVk*>(texture.get());
+  if (texture_vk == nullptr || texture_vk->GetImageView() == VK_NULL_HANDLE ||
+      texture_vk->GetSampler() == VK_NULL_HANDLE) {
+    // Nothing to bind (no texture, or one that failed to create). A null descriptor set
+    // can't be bound, so drop any pending bind; the last bound set stays bound.
+    ResetBoundDescriptorSet();
+    return;
   }
 
-  TextureVk& texture_vk = *(static_cast<TextureVk*>(texture.get()));
-  const VkImageView texture_image_view = texture_vk.GetImageView();
+  const VkImageView texture_image_view = texture_vk->GetImageView();
   if (texture_image_view == bound_image_view_) {
     return;
   }
-  bound_image_view_ = texture_image_view;
+  RENDERER_ASSERT(render_state_ != nullptr);
+  if (render_state_ == nullptr) {
+    // The descriptor set layout comes from the render state
+    return;
+  }
+
+  // Only textured vertex formats (P3T2, P3T2C4) have a sampler binding in their descriptor
+  // set layout; for the others there is nothing to bind the texture to
+  RenderStateVk& state = *(static_cast<RenderStateVk*>(render_state_.get()));
+  const VkDescriptorSetLayout layout = state.GetDescriptorSetLayout();
+  const VkDescriptorSetLayout textured_layout =
+      descriptor_set_vertex_table_[VertexBuffer::kVertexFormat_P3T2];
+  if (layout == VK_NULL_HANDLE || layout != textured_layout) {
+    return;
+  }
+
+  // Descriptor sets are cached per frame by texture and layout
   for (const TextureDescriptorFrameCache& cache : texture_descriptor_frame_cache_) {
-    if (cache.texture_image_view == texture_image_view) {
+    if (cache.texture_image_view == texture_image_view && cache.layout == layout) {
+      bound_image_view_ = texture_image_view;
       bound_descriptor_set_ = cache.descriptor_set;
       dirty_descriptor_set_ = true;
       return;
@@ -291,26 +322,27 @@ void RendererVk::BindTexture(std::shared_ptr<Texture> texture) {
 
   // Create a new descriptor/descriptor set for this texture for this frame and
   // write the descriptor data
-  RenderStateVk& state = *(static_cast<RenderStateVk*>(render_state_.get()));
-
-  VkDescriptorSetLayout descriptor_set_layouts[] = {state.GetDescriptorSetLayout() };
+  VkDescriptorSetLayout descriptor_set_layouts[] = {layout};
   VkDescriptorSetAllocateInfo descriptor_set_info = {};
   descriptor_set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   descriptor_set_info.descriptorPool = active_frame_pool_;
   descriptor_set_info.descriptorSetCount = 1;
   descriptor_set_info.pSetLayouts = descriptor_set_layouts;
+  VkDescriptorSet descriptor_set = VK_NULL_HANDLE;
   const VkResult allocate_result = vkAllocateDescriptorSets(vk_.device, &descriptor_set_info,
-                                                            &bound_descriptor_set_);
-  RENDERER_CHECK_VK(allocate_result, "vkAllocateDescriptorSets");
+                                                            &descriptor_set);
+  if (!RENDERER_CHECK_VK(allocate_result, "vkAllocateDescriptorSets")) {
+    return;
+  }
 
   VkDescriptorImageInfo descriptor_image_info = {};
   descriptor_image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  descriptor_image_info.imageView = texture_vk.GetImageView();
-  descriptor_image_info.sampler = texture_vk.GetSampler();
+  descriptor_image_info.imageView = texture_image_view;
+  descriptor_image_info.sampler = texture_vk->GetSampler();
 
   VkWriteDescriptorSet write_descriptor_set = {};
   write_descriptor_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  write_descriptor_set.dstSet = bound_descriptor_set_;
+  write_descriptor_set.dstSet = descriptor_set;
   write_descriptor_set.dstBinding = 1;
   write_descriptor_set.dstArrayElement = 0;
   write_descriptor_set.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -318,10 +350,11 @@ void RendererVk::BindTexture(std::shared_ptr<Texture> texture) {
   write_descriptor_set.pImageInfo = &descriptor_image_info;
 
   vkUpdateDescriptorSets(vk_.device, 1, &write_descriptor_set, 0, nullptr);
+  bound_image_view_ = texture_image_view;
+  bound_descriptor_set_ = descriptor_set;
   dirty_descriptor_set_ = true;
 
-  texture_descriptor_frame_cache_.push_back(
-      {texture_vk.GetImageView(), bound_descriptor_set_});
+  texture_descriptor_frame_cache_.push_back({texture_image_view, layout, descriptor_set});
 }
 
 std::shared_ptr<IndexBuffer> RendererVk::CreateIndexBuffer(

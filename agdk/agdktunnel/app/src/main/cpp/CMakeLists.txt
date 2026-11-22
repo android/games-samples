@@ -94,6 +94,7 @@ set(SIMPLE_RENDERER_SRCS
      ${SIMPLE_RENDERER_DIR}/renderer_resources.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_shader_program_gles.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_shader_program_vk.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_texture.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_texture_gles.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_texture_vk.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_uniform_buffer.cpp

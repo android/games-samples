@@ -25,6 +25,8 @@
 
 namespace simple_renderer {
 
+class RenderStateVk;
+
 /*
 struct RendererVkResources {
   VkDevice device = VK_NULL_HANDLE;
@@ -141,6 +143,7 @@ class RendererVk : public Renderer {
   // (samplers are baked into our texture class)
   struct TextureDescriptorFrameCache {
     VkImageView texture_image_view;
+    VkDescriptorSetLayout layout;
     VkDescriptorSet descriptor_set;
   };
 
@@ -151,6 +154,12 @@ class RendererVk : public Renderer {
   void DestroyCommandBuffers();
 
   void CreateDescriptorPools();
+
+  // Forget the bound texture descriptor set, including a pending (not yet drawn) bind
+  void ResetBoundDescriptorSet();
+
+  // Bind the pending texture descriptor set, if there is one, before a draw
+  void BindDirtyDescriptorSet(const RenderStateVk& state);
 
   RendererResources resources_;
 
