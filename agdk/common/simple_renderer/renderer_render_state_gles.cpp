@@ -180,15 +180,18 @@ void RenderStateGLES::InitializeAttributes(const GLuint program_handle) {
 }
 
 void RenderStateGLES::InitializeUniforms(const GLuint program_handle) {
-  const UniformBufferGLES& buffer = GetUniformBuffer();
   uint32_t i = 0;
-  RENDERER_ASSERT(buffer.GetBufferElementCount() <= UniformBuffer::kMaxUniforms);
-  while (i < buffer.GetBufferElementCount()) {
-    const char* element_name = buffer.GetElement(i).element_name;
-    uniform_locations_[i] = glGetUniformLocation(program_handle, element_name);
-    RENDERER_CHECK_GLES("glGetUniformLocation (shader uniform)");
-    RENDERER_ASSERT(uniform_locations_[i] >= 0);
-    ++i;
+  // A render state without a uniform buffer has no uniforms (other than the sampler)
+  if (state_uniform_ != nullptr) {
+    const UniformBufferGLES& buffer = GetUniformBuffer();
+    RENDERER_ASSERT(buffer.GetBufferElementCount() <= UniformBuffer::kMaxUniforms);
+    while (i < buffer.GetBufferElementCount()) {
+      const char* element_name = buffer.GetElement(i).element_name;
+      uniform_locations_[i] = glGetUniformLocation(program_handle, element_name);
+      RENDERER_CHECK_GLES("glGetUniformLocation (shader uniform)");
+      RENDERER_ASSERT(uniform_locations_[i] >= 0);
+      ++i;
+    }
   }
 
   while (i < UniformBuffer::kMaxUniforms) {
@@ -302,10 +305,14 @@ void RenderStateGLES::BindVertexAttributes() {
 }
 
 void RenderStateGLES::UpdateUniformData(bool force_update) {
-  UniformBufferGLES& buffer = *(static_cast<UniformBufferGLES *>(state_uniform_.get()));
   // We don't need to rebind vertex attributes if we didn't change the vertex buffer,
   // but at the moment we always do it
   BindVertexAttributes();
+  // A render state without a uniform buffer has no uniforms to update
+  if (state_uniform_ == nullptr) {
+    return;
+  }
+  UniformBufferGLES& buffer = *(static_cast<UniformBufferGLES *>(state_uniform_.get()));
   if (buffer.GetBufferDirty() || force_update) {
     const float* buffer_data = buffer.GetBufferData();
 

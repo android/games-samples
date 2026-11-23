@@ -15,69 +15,31 @@
  */
 
 #include "renderer_uniform_buffer_gles.h"
+#include <cstring>
 #include "renderer_debug.h"
 
 namespace simple_renderer {
 
 UniformBufferGLES::UniformBufferGLES(const UniformBuffer::UniformBufferCreationParams& params) :
   UniformBuffer(params) {
-  const uint32_t count = GetBufferElementCount();
-  uint32_t i = 0;
-  uint32_t offset = 0;
-
-  // Construct a list of offsets (32-bit float indexed, not byte indexed)
-  // into our internal data buffer for each uniform buffer element
-  while (i < count) {
-    element_offsets_[i] = offset;
+  // The base class lays out the elements
+  for (uint32_t i = 0; i < GetBufferElementCount(); ++i) {
     const UniformBufferElement& element = GetElement(i);
-
-    switch (element.element_type) {
-      case UniformBuffer::kBufferElement_Float4:
-        offset += 4;
-        break;
-      case UniformBuffer::kBufferElement_Matrix44:
-        offset += 16;
-        break;
-    }
     RENDERER_LOG("Element %u : name: %s type: %u set: %u index: %u",
                  i, element.element_name, element.element_type,
                  element.element_bind_set, element.element_bind_index);
-    ++i;
   }
-  while (i < kMaxUniforms) {
-    element_offsets_[i] = 0;
-    ++i;
-  }
+  memset(buffer_data_, 0, sizeof(buffer_data_));
   SetBufferDirty(true);
 }
 
 UniformBufferGLES::~UniformBufferGLES() {
-
-}
-
-uint32_t UniformBufferGLES::GetElementOffset(uint32_t index) const {
-  RENDERER_ASSERT(index < GetBufferElementCount());
-
-  if (index > GetBufferElementCount()) {
-    index = 0;
-  }
-  return element_offsets_[index];
 }
 
 void UniformBufferGLES::SetBufferElementData(const uint32_t index, const float* data,
                                          const size_t size) {
-  RENDERER_ASSERT(index < GetBufferElementCount());
-
-  if (index < GetBufferElementCount()) {
-    const uint32_t offset = element_offsets_[index];
-    const uint32_t end_offset = offset + (size / sizeof(float));
-    RENDERER_ASSERT(offset < kMaxUniformBufferFloatSize);
-    RENDERER_ASSERT(end_offset <= kMaxUniformBufferFloatSize);
-    if (offset < kMaxUniformBufferFloatSize && end_offset <= kMaxUniformBufferFloatSize) {
-      memcpy(&buffer_data_[offset], data, size);
-    }
+  if (CopyElementData(index, data, size, buffer_data_)) {
+    SetBufferDirty(true);
   }
-  SetBufferDirty(true);
 }
-
 }

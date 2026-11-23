@@ -182,7 +182,8 @@ class RenderState {
     std::shared_ptr<RenderPass> render_pass;
     /** @brief A pointer to the shader program (vertex+fragment) used for this render state */
     std::shared_ptr<ShaderProgram> state_program;
-    /** @brief A shared pointer to the uniform buffer used for this render state */
+    /** @brief A shared pointer to the uniform buffer used for this render state, or nullptr
+     * if the shader program uses no uniforms (or push constants) */
     std::shared_ptr<UniformBuffer> state_uniform;
     /** @brief The vertex format used by the shader program in this render state */
     VertexBuffer::VertexFormat state_vertex_layout;

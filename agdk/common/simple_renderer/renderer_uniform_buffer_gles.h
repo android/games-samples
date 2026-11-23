@@ -30,7 +30,6 @@ class UniformBufferGLES : public UniformBuffer {
   UniformBufferGLES(const UniformBuffer::UniformBufferCreationParams& params);
   virtual ~UniformBufferGLES();
 
-  virtual uint32_t GetElementOffset(uint32_t index) const;
 
   virtual void SetBufferElementData(const uint32_t index, const float* data, const size_t size);
 
@@ -41,7 +40,6 @@ class UniformBufferGLES : public UniformBuffer {
 
  private:
   float buffer_data_[kMaxUniformBufferFloatSize];
-  uint32_t element_offsets_[kMaxUniforms];
   bool buffer_dirty_;
 };
 } // namespace simple_renderer

@@ -206,7 +206,7 @@ RenderStateVk::RenderStateVk(const RenderStateCreationParams& params) :
   RENDERER_LOG("Render state program: %s / %s uniform %s vertex format %u",
                state_program_->GetVertexDebugName().c_str(),
                state_program_->GetFragmentDebugName().c_str(),
-               state_uniform_->GetBufferDebugName().c_str(),
+               state_uniform_ ? state_uniform_->GetBufferDebugName().c_str() : "(none)",
                state_vertex_layout_);
   const RenderPassVk& render_pass_vk = *(static_cast<RenderPassVk*>(render_pass_.get()));
   VkRenderPass render_pass = render_pass_vk.GetRenderPassVk();
@@ -326,28 +326,11 @@ RenderStateVk::~RenderStateVk() {
 }
 
 void RenderStateVk::CreatePipelineLayout(const RenderStateCreationParams& params) {
-  UniformBufferVk& buffer = *(static_cast<UniformBufferVk *>(state_uniform_.get()));
-  const UniformBuffer::UniformBufferStageRanges& stage_ranges = buffer.GetStageRanges();
-
-  uint32_t range_count = 0;
-
-  const uint32_t max_range_count = 2; // vertex and fragment
-  VkPushConstantRange push_constant_ranges[max_range_count];
-  memset(push_constant_ranges, 0, sizeof(VkPushConstantRange) * max_range_count);
-
-  if (stage_ranges.vertex_stage_offset != UniformBufferVk::kUnusedStageRange) {
-    push_constant_ranges[range_count].offset = stage_ranges.vertex_stage_offset;
-    push_constant_ranges[range_count].size = stage_ranges.vertex_stage_size;
-    push_constant_ranges[range_count].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    ++range_count;
-  }
-
-  if (stage_ranges.fragment_stage_offset != UniformBufferVk::kUnusedStageRange) {
-    push_constant_ranges[range_count].offset = stage_ranges.fragment_stage_offset;
-    push_constant_ranges[range_count].size = stage_ranges.fragment_stage_size;
-    push_constant_ranges[range_count].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    ++range_count;
-  }
+  // One range per used stage (the buffer validated them); none without a uniform buffer
+  VkPushConstantRange push_constant_ranges[UniformBufferVk::kMaxPushConstantRanges] = {};
+  const UniformBufferVk* buffer = static_cast<const UniformBufferVk*>(state_uniform_.get());
+  const uint32_t range_count = (buffer != nullptr) ?
+      buffer->GetPushConstantRanges(push_constant_ranges) : 0;
 
   VkDescriptorSetLayout descriptor_set_layouts[] = {descriptor_set_layout_};
   VkPipelineLayoutCreateInfo pipeline_layout_info{};
@@ -364,20 +347,15 @@ void RenderStateVk::CreatePipelineLayout(const RenderStateCreationParams& params
 }
 
 void RenderStateVk::UpdateUniformData(VkCommandBuffer command_buffer, bool force_update) {
-  UniformBufferVk& buffer = *(static_cast<UniformBufferVk *>(state_uniform_.get()));
-  if (buffer.GetBufferDirty() || force_update) {
-    const UniformBuffer::UniformBufferStageRanges& stage_ranges = buffer.GetStageRanges();
-    const uint8_t *buffer_data = reinterpret_cast<const uint8_t*>(buffer.GetBufferData());
-    vkCmdPushConstants(command_buffer, pipeline_layout_, VK_SHADER_STAGE_VERTEX_BIT,
-                       0, stage_ranges.vertex_stage_size, buffer_data);
-    if (stage_ranges.fragment_stage_offset != UniformBufferVk::kUnusedStageRange) {
-      vkCmdPushConstants(command_buffer, pipeline_layout_, VK_SHADER_STAGE_FRAGMENT_BIT,
-                         stage_ranges.fragment_stage_offset,
-                         stage_ranges.fragment_stage_size,
-                         buffer_data + stage_ranges.fragment_stage_offset);
-    }
-    buffer.SetBufferDirty(false);
+  // A render state without a uniform buffer has no push constants
+  UniformBufferVk* buffer = static_cast<UniformBufferVk*>(state_uniform_.get());
+  if (buffer != nullptr && (buffer->GetBufferDirty() || force_update)) {
+    // Each stage's data from its own range (previously the vertex stage was always pushed
+    // from offset 0, and pushed even when unused)
+    buffer->PushConstants(command_buffer, pipeline_layout_);
+    buffer->SetBufferDirty(false);
   }
 }
+
 
 }
