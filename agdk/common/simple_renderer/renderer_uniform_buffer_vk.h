@@ -28,7 +28,6 @@ class UniformBufferVk : public UniformBuffer {
   UniformBufferVk(const UniformBuffer::UniformBufferCreationParams& params);
   virtual ~UniformBufferVk();
 
-  virtual uint32_t GetElementOffset(uint32_t index) const;
 
   virtual void SetBufferElementData(const uint32_t index, const float* data, const size_t size);
 
@@ -43,10 +42,27 @@ class UniformBufferVk : public UniformBuffer {
 
   const UniformBufferStageRanges& GetStageRanges() const { return stage_ranges_; }
 
+  /** @brief Max number of push constant ranges (one each for the vertex and fragment stage) */
+  static constexpr uint32_t kMaxPushConstantRanges = 2;
+
+  /**
+   * @brief Get the push constant ranges for the used (and valid) stage ranges.
+   * @param ranges Array of kMaxPushConstantRanges that receives the ranges (vertex, then
+   * fragment), or nullptr to only get the count
+   * @return The number of ranges
+   */
+  uint32_t GetPushConstantRanges(VkPushConstantRange* ranges) const;
+
+  /**
+   * @brief Push the buffer data for all stage ranges. Byte ranges used by both stages
+   * (overlapping stage ranges) are pushed with both stage flags, as Vulkan requires.
+   * Nothing is pushed with a null command buffer or pipeline layout.
+   */
+  void PushConstants(VkCommandBuffer command_buffer, VkPipelineLayout pipeline_layout) const;
+
  private:
   UniformBufferStageRanges stage_ranges_;
   float buffer_data_[kMaxUniformBufferFloatSize];
-  uint32_t element_offsets_[kMaxUniforms];
   VkShaderStageFlags stage_flags_;
   uint32_t buffer_flags_;
   uint32_t buffer_size_;
