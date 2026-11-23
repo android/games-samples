@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "Containers/Ticker.h"
 #include "CoreMinimal.h"
 #include "Interfaces/OnlineExternalUIInterface.h"
 #include "Interfaces/OnlineStoreInterfaceV2.h"
@@ -57,6 +58,7 @@ public:
 	void CheckPendingPurchases();
 	UTrivialKartSaveGame* LoadGame();
 	void SaveGame(UTrivialKartSaveGame* SaveData);
+	bool IsCloudSyncInFlight() const { return bCloudSyncInFlight; }
 	
 protected:
 	UPROPERTY(EditAnywhere)
@@ -88,5 +90,12 @@ private:
 	void OnCloudReadComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& FileName);
 
 	void OnCloudWriteComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& FileName);
+
+	void ArmCloudSyncWatchdog();
+	void ClearCloudSyncWatchdog();
+	void DismissLoadingScreen();
+
+	FTSTicker::FDelegateHandle CloudSyncTimeoutHandle;
+	bool bCloudSyncInFlight = false;
 	
 };

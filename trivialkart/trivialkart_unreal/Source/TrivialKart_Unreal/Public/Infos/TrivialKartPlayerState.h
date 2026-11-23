@@ -66,6 +66,7 @@ public:
 	void AddDistance(const float DistanceTravelled);
 	void ConsumeCoins(const int CoinsUsed);
 	void AddCarToInventory(const FString& CarID);
+	bool PurchaseCarWithCoins(const FString& CarID, const int CoinsUsed);
 	
 	float GetFuel() const;
 	float GetDistance() const;

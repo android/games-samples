@@ -13,69 +13,62 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
+
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
-#include "Components/TextBlock.h"
+#include "Widgets/TrivialKartTabbedModalWidget.h"
 #include "PGSWidget.generated.h"
 
-class UVerticalBox;
+class UCheckBox;
 class UPGSLayoutText;
 class UScrollBox;
-class UWidgetSwitcher;
-class UCheckBox;
-class UButton;
+class UVerticalBox;
+
 /**
- * 
+ * Play Games Services modal widget managing Authentication, Achievements, and Leaderboard tabs.
  */
 UCLASS()
-class TRIVIALKART_UNREAL_API UPGSWidget : public UUserWidget
+class TRIVIALKART_UNREAL_API UPGSWidget : public UTrivialKartTabbedModalWidget
 {
 	GENERATED_BODY()
-	
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UButton> BackButton;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCheckBox> AuthenticationCheckBox;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCheckBox> AchievementsCheckBox;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCheckBox> LeaderboardCheckBox;
-	
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UWidgetSwitcher> ContentSwitcher;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UVerticalBox> AuthBox;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UScrollBox> AchievementsBox;
-	
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UScrollBox> LeaderboardBox;
-	
+
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UPGSLayoutText> PGSTextTemplate;
-	
+
 protected:
-	UPROPERTY()
-	TArray<UCheckBox*> CheckBoxes;
-public:
-	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
-	
+	virtual EWidgetType GetModalWidgetType() const override { return EWidgetType::PGS; }
+	virtual void RegisterTabCheckBoxes(TArray<UCheckBox*>& OutCheckBoxes) override;
+	virtual void BindTabCheckBoxEvents() override;
+	virtual void UnbindTabCheckBoxEvents() override;
+	virtual void InitializeModalContent() override;
+	virtual UScrollBox* GetActiveReadOnlyScrollBox() const override;
+
 private:
 	UFUNCTION()
-	void OnBackButtonClicked();
-	void SetCheckBoxState(bool bIsChecked, UCheckBox* CheckBox, int ActiveWidgetIndex);
-	UFUNCTION()
 	void OnAuthCheckBoxStateChanged(bool bIsChecked);
+
 	UFUNCTION()
 	void OnAchievementBoxStateChange(bool bIsChecked);
+
 	UFUNCTION()
 	void OnLeaderboardBoxStateChange(bool bIsChecked);
 };
