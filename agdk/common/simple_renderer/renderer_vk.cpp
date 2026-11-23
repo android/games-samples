@@ -15,6 +15,7 @@
  */
 
 #include "renderer_vk.h"
+#include <algorithm>
 #include "renderer_debug.h"
 #include "renderer_index_buffer_vk.h"
 #include "renderer_render_pass_vk.h"
@@ -38,6 +39,7 @@ RendererVk::RendererVk() :
     render_command_buffer_(VK_NULL_HANDLE),
     active_extent_{0, 0},
     active_frame_pool_(VK_NULL_HANDLE),
+    active_rotation_(DisplayManager::kSwapchain_Rotation_None),
     bound_descriptor_set_(VK_NULL_HANDLE),
     bound_image_view_(VK_NULL_HANDLE),
     dirty_descriptor_set_(false),
@@ -50,6 +52,13 @@ RendererVk::RendererVk() :
   DisplayManager& display_manager = DisplayManager::GetInstance();
   const GraphicsAPIFeatures& api_features = display_manager.GetGraphicsAPIFeatures();
   display_manager.GetGraphicsAPIResourcesVk(vk_);
+  // Viewport limits, for clamping render state viewports
+  VkPhysicalDeviceProperties device_properties{};
+  vkGetPhysicalDeviceProperties(vk_.physical_device, &device_properties);
+  max_viewport_dimensions_[0] = device_properties.limits.maxViewportDimensions[0];
+  max_viewport_dimensions_[1] = device_properties.limits.maxViewportDimensions[1];
+  viewport_bounds_range_[0] = device_properties.limits.viewportBoundsRange[0];
+  viewport_bounds_range_[1] = device_properties.limits.viewportBoundsRange[1];
   // Use a per-vertex-format lookup table to retrieve the descriptor set
   // (at the moment, sampler/no sampler)
   for (size_t i = 0; i < VertexBuffer::kVertexFormat_Count; ++i) {
@@ -128,6 +137,7 @@ void RendererVk::BeginFrame(
   if (frame_handle != DisplayManager::kInvalid_swapchain_handle) {
     display_manager.GetSwapchainFrameResourcesVk(frame_handle, swap_, true);
     active_extent_ = swap_.swapchain_extent;
+    active_rotation_ = display_manager.GetSwapchainRotationMode(swapchain_handle);
 
     RENDERER_ASSERT(swap_.swapchain_frame_index < descriptor_pools_.size());
     active_frame_pool_ = descriptor_pools_[swap_.swapchain_frame_index];
@@ -225,6 +235,10 @@ void RendererVk::BindDirtyDescriptorSet(const RenderStateVk& state) {
 void RendererVk::Draw(const uint32_t vertex_count, const uint32_t first_vertex) {
   RenderStateVk& state = *(static_cast<RenderStateVk*>(render_state_.get()));
   BindDirtyDescriptorSet(state);
+  // Viewport or scissor changed while the state was bound
+  if (state.GetViewportScissorDirty()) {
+    ApplyViewportAndScissor(state);
+  }
 
   // Update any uniform data that might have changed between draw calls
   state.UpdateUniformData(render_command_buffer_, true);
@@ -235,6 +249,10 @@ void RendererVk::Draw(const uint32_t vertex_count, const uint32_t first_vertex) 
 void RendererVk::DrawIndexed(const uint32_t index_count, const uint32_t first_index) {
   RenderStateVk& state = *(static_cast<RenderStateVk*>(render_state_.get()));
   BindDirtyDescriptorSet(state);
+  // Viewport or scissor changed while the state was bound
+  if (state.GetViewportScissorDirty()) {
+    ApplyViewportAndScissor(state);
+  }
 
   // Update any uniform data that might have changed between draw calls
   state.UpdateUniformData(render_command_buffer_, true);
@@ -243,28 +261,130 @@ void RendererVk::DrawIndexed(const uint32_t index_count, const uint32_t first_in
 }
 
 void RendererVk::SetRenderPass(std::shared_ptr<RenderPass> render_pass) {
-  RenderPass* new_render_pass = render_pass.get();
-  RenderPass* old_render_pass = render_pass_.get();
-  if (new_render_pass != old_render_pass) {
-    if (old_render_pass != nullptr) {
-      old_render_pass->EndRenderPass();
-    }
-    render_pass_ = render_pass;
-    render_state_ = nullptr;
-    // The next render state binds its own descriptor set
-    ResetBoundDescriptorSet();
-    new_render_pass->BeginRenderPass();
+  // Setting a render pass always ends the current one and begins the new one, even if it is
+  // the same pass (which loads/clears its attachments again), as RendererGLES does
+  if (render_pass_ != nullptr) {
+    render_pass_->EndRenderPass();
+  }
+  render_pass_ = render_pass;
+  render_state_ = nullptr;
+  // The next render state binds its own descriptor set
+  ResetBoundDescriptorSet();
+  if (render_pass_ != nullptr) {
+    render_pass_->BeginRenderPass();
   }
 }
 
 void RendererVk::SetRenderState(std::shared_ptr<RenderState> render_state) {
   if (render_state.get() != render_state_.get()) {
     render_state_ = render_state;
-    RenderStateVk& state = *(static_cast<RenderStateVk*>(render_state_.get()));
-    vkCmdBindPipeline(render_command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, state.GetPipeline());
     // Textures are bound again for the new state (its descriptor set layout may differ)
     ResetBoundDescriptorSet();
+    if (render_state_ == nullptr) {
+      return;
+    }
+    RenderStateVk& state = *(static_cast<RenderStateVk*>(render_state_.get()));
+    vkCmdBindPipeline(render_command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, state.GetPipeline());
+    ApplyViewportAndScissor(state);
   }
+}
+
+RendererVk::Rect64 RendererVk::DisplayRectToFramebuffer(const int64_t x, const int64_t y,
+                                                        const int64_t width,
+                                                        const int64_t height) const {
+  // The framebuffer has the swapchain's extent, which is the display size with width and
+  // height swapped for 90/270 degree pre-rotation
+  const bool swapped = (active_rotation_ == DisplayManager::kSwapchain_Rotation_90 ||
+                        active_rotation_ == DisplayManager::kSwapchain_Rotation_270);
+  const int64_t display_width = swapped ? active_extent_.height : active_extent_.width;
+  const int64_t display_height = swapped ? active_extent_.width : active_extent_.height;
+  // Where the content of display rect lands in the framebuffer. This follows from the Y
+  // flipped viewport and the pre-rotation matrix the application applies for each rotation
+  // (see agdktunnel's NativeEngine), which must match the presentation engine's rotation.
+  // Computed in 64 bits so that extreme int32_t rects can't wrap.
+  Rect64 rect;
+  switch (active_rotation_) {
+    case DisplayManager::kSwapchain_Rotation_90:
+      rect = {y, x, height, width};
+      break;
+    case DisplayManager::kSwapchain_Rotation_180:
+      rect = {display_width - x - width, y, width, height};
+      break;
+    case DisplayManager::kSwapchain_Rotation_270:
+      rect = {display_height - y - height, display_width - x - width, height, width};
+      break;
+    default:
+      rect = {x, display_height - y - height, width, height};
+      break;
+  }
+  rect.width = std::max<int64_t>(rect.width, 0);
+  rect.height = std::max<int64_t>(rect.height, 0);
+  return rect;
+}
+
+void RendererVk::ApplyViewportAndScissor(RenderStateVk& state) {
+  state.ClearViewportScissorDirty();
+  // Render state viewports and scissor rects follow GLES: bottom left origin, display
+  // orientation
+  const RenderState::Viewport& state_viewport = state.GetViewport();
+  const Rect64 viewport_rect = DisplayRectToFramebuffer(state_viewport.x, state_viewport.y,
+                                                        state_viewport.width,
+                                                        state_viewport.height);
+  // Like glViewport, clamp the size to the maximum viewport size (it must also be at least
+  // 1), and keep the viewport within the device's viewport bounds
+  const double max_width = std::max<uint32_t>(max_viewport_dimensions_[0], 1);
+  const double max_height = std::max<uint32_t>(max_viewport_dimensions_[1], 1);
+  const double width = std::min(std::max<double>(viewport_rect.width, 1.0), max_width);
+  const double height = std::min(std::max<double>(viewport_rect.height, 1.0), max_height);
+  const double x = std::min(std::max<double>(viewport_rect.x, viewport_bounds_range_[0]),
+                            viewport_bounds_range_[1] - width);
+  const double top = std::min(std::max<double>(viewport_rect.y, viewport_bounds_range_[0]),
+                              viewport_bounds_range_[1] - height);
+  // Flip Y with a negative height (VK_KHR_maintenance1), as in BeginFrame
+  VkViewport viewport{};
+  viewport.x = static_cast<float>(x);
+  viewport.width = static_cast<float>(width);
+  viewport.y = static_cast<float>(top + height);
+  viewport.height = -static_cast<float>(height);
+  // GLES clamps the depth range to [0, 1]; Vulkan requires it without
+  // VK_EXT_depth_range_unrestricted (a NaN becomes 0)
+  const auto clamp_depth = [](const float depth) {
+    return (depth >= 0.0f) ? std::min(depth, 1.0f) : 0.0f;
+  };
+  viewport.minDepth = clamp_depth(state_viewport.min_depth);
+  viewport.maxDepth = clamp_depth(state_viewport.max_depth);
+  vkCmdSetViewport(render_command_buffer_, 0, 1, &viewport);
+
+  // GLES clips primitives at the viewport, but Vulkan implementations may rasterize
+  // outside it (guard band clipping; the Pixel 10 Pro's PowerVR does), so the scissor is
+  // always limited to the viewport rect, intersected with the scissor rect when the
+  // scissor test is enabled, and clipped to the framebuffer (Vulkan scissor offsets can't
+  // be negative).
+  int64_t left = static_cast<int64_t>(x);
+  int64_t top_edge = static_cast<int64_t>(top);
+  int64_t right = left + static_cast<int64_t>(width);
+  int64_t bottom = top_edge + static_cast<int64_t>(height);
+  if (state.GetScissorTest()) {
+    const RenderState::ScissorRect& state_scissor = state.GetScissorRect();
+    const Rect64 rect = DisplayRectToFramebuffer(state_scissor.x, state_scissor.y,
+                                                 state_scissor.width, state_scissor.height);
+    left = std::max(left, rect.x);
+    top_edge = std::max(top_edge, rect.y);
+    right = std::min(right, rect.x + rect.width);
+    bottom = std::min(bottom, rect.y + rect.height);
+  }
+  const int64_t fb_width = active_extent_.width;
+  const int64_t fb_height = active_extent_.height;
+  left = std::min(std::max<int64_t>(left, 0), fb_width);
+  top_edge = std::min(std::max<int64_t>(top_edge, 0), fb_height);
+  right = std::min(right, fb_width);
+  bottom = std::min(bottom, fb_height);
+  VkRect2D scissor{};
+  scissor.offset.x = static_cast<int32_t>(left);
+  scissor.offset.y = static_cast<int32_t>(top_edge);
+  scissor.extent.width = static_cast<uint32_t>(right > left ? right - left : 0);
+  scissor.extent.height = static_cast<uint32_t>(bottom > top_edge ? bottom - top_edge : 0);
+  vkCmdSetScissor(render_command_buffer_, 0, 1, &scissor);
 }
 
 void RendererVk::BindIndexBuffer(std::shared_ptr<IndexBuffer> index_buffer) {

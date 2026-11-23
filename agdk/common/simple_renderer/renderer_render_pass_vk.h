@@ -42,13 +42,23 @@ class RenderPassVk : public RenderPass {
     VkFramebuffer framebuffer;
   };
 
+  // Attachment indices (attachment 0 is the swapchain color image), also used to index
+  // clear values
   enum ClearAttachment {
     kClearAttachmentColor = 0,
     kClearAttachmentDepthStencil,
     kClearAttachmentCount
   };
 
+  uint32_t GetAttachmentCount() const {
+    return has_depth_stencil_attachment_ ? kClearAttachmentCount : 1;
+  }
+
   VkRenderPass render_pass_;
+  // Whether the pass has a depth/stencil attachment (the swapchain's depth/stencil image)
+  bool has_depth_stencil_attachment_;
+  // Whether BeginRenderPass began the render pass (and EndRenderPass must end it)
+  bool pass_active_;
   VkClearValue clear_values_[kClearAttachmentCount];
   std::vector<FramebufferCache> framebuffer_cache_;
 };

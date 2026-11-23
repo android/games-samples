@@ -48,6 +48,25 @@ static constexpr VkCullModeFlagBits cull_modes[RenderState::kCullFaceCount] = {
     VK_CULL_MODE_FRONT_AND_BACK
 };
 
+// Same order as RenderState::BlendFunction (and the GLES table)
+static constexpr VkBlendFactor blend_factors[RenderState::kBlendFunctionCount] = {
+    VK_BLEND_FACTOR_ZERO,
+    VK_BLEND_FACTOR_ONE,
+    VK_BLEND_FACTOR_SRC_COLOR,
+    VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,
+    VK_BLEND_FACTOR_DST_COLOR,
+    VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,
+    VK_BLEND_FACTOR_SRC_ALPHA,
+    VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+    VK_BLEND_FACTOR_DST_ALPHA,
+    VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
+    VK_BLEND_FACTOR_CONSTANT_COLOR,
+    VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,
+    VK_BLEND_FACTOR_CONSTANT_ALPHA,
+    VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
+    VK_BLEND_FACTOR_SRC_ALPHA_SATURATE
+};
+
 static constexpr uint32_t kPositionAttributeSize = (3 * sizeof(float));
 static constexpr uint32_t kTextureAttributeSize = (2 * sizeof(float));
 static constexpr uint32_t kColorAttributeSize = (4 * sizeof(float));
@@ -69,12 +88,23 @@ static void ConfigureAttachmentStates(const RenderState::RenderStateCreationPara
           VK_COLOR_COMPONENT_G_BIT |
           VK_COLOR_COMPONENT_B_BIT |
           VK_COLOR_COMPONENT_A_BIT;
-  pipeline_color_blend_attachment_state.blendEnable = VK_FALSE;
-  pipeline_color_blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-  pipeline_color_blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+  // Blending as in GLES glBlendFunc: the same factors for color and alpha, added together.
+  // The blend constant color is (0, 0, 0, 0), the GLES default. The factors are only read
+  // when blending is enabled (the validation layers check them even when it isn't).
+  const bool blend_enabled = params.blend_enabled &&
+      static_cast<uint32_t>(params.blend_source_function) < RenderState::kBlendFunctionCount &&
+      static_cast<uint32_t>(params.blend_dest_function) < RenderState::kBlendFunctionCount;
+  RENDERER_ASSERT(blend_enabled == params.blend_enabled);
+  const VkBlendFactor src_factor = blend_enabled ? blend_factors[params.blend_source_function] :
+                                                   VK_BLEND_FACTOR_ONE;
+  const VkBlendFactor dst_factor = blend_enabled ? blend_factors[params.blend_dest_function] :
+                                                   VK_BLEND_FACTOR_ZERO;
+  pipeline_color_blend_attachment_state.blendEnable = blend_enabled ? VK_TRUE : VK_FALSE;
+  pipeline_color_blend_attachment_state.srcColorBlendFactor = src_factor;
+  pipeline_color_blend_attachment_state.dstColorBlendFactor = dst_factor;
   pipeline_color_blend_attachment_state.colorBlendOp = VK_BLEND_OP_ADD;
-  pipeline_color_blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-  pipeline_color_blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+  pipeline_color_blend_attachment_state.srcAlphaBlendFactor = src_factor;
+  pipeline_color_blend_attachment_state.dstAlphaBlendFactor = dst_factor;
   pipeline_color_blend_attachment_state.alphaBlendOp = VK_BLEND_OP_ADD;
 
   pipeline_color_blend_state_info.logicOpEnable = VK_FALSE;
@@ -150,29 +180,21 @@ static void ConfigureRasterizationState(const RenderState::RenderStateCreationPa
   pipeline_rasterization_state_info.depthBiasSlopeFactor = 0.f;
 }
 
-static void ConfigureViewport(const RenderState::RenderStateCreationParams& params,
-                              VkRect2D& scissor, VkViewport& viewport,
-                              VkPipelineViewportStateCreateInfo& pipeline_viewport_state_info) {
-  scissor.offset.x = params.scissor_rect.x;
-  scissor.offset.y = params.scissor_rect.y;
-  scissor.extent.width = params.scissor_rect.width;
-  scissor.extent.height = params.scissor_rect.height;
-
-  viewport.x = params.viewport.x;
-  viewport.y = params.viewport.y;
-  viewport.width = params.viewport.width;
-  viewport.height = params.viewport.height;
-  viewport.minDepth = params.viewport.min_depth;
-  viewport.maxDepth = params.viewport.max_depth;
-
+// Viewport and scissor are dynamic state (set by RendererVk::SetRenderState from the render
+// state's viewport and scissor rect), so the pipeline only needs the counts
+static void ConfigureViewport(VkPipelineViewportStateCreateInfo& pipeline_viewport_state_info) {
   pipeline_viewport_state_info.viewportCount = 1;
-  pipeline_viewport_state_info.pViewports = &viewport;
+  pipeline_viewport_state_info.pViewports = nullptr;
   pipeline_viewport_state_info.scissorCount = 1;
-  pipeline_viewport_state_info.pScissors = &scissor;
+  pipeline_viewport_state_info.pScissors = nullptr;
 }
 
 
 RenderStateVk::RenderStateVk(const RenderStateCreationParams& params) :
+    scissor_rect_(params.scissor_rect),
+    viewport_(params.viewport),
+    scissor_test_(params.scissor_test),
+    viewport_scissor_dirty_(false),
     render_pass_(params.render_pass),
     state_program_(params.state_program),
     state_uniform_(params.state_uniform),
@@ -238,11 +260,9 @@ vertex_pipeline_info,
 fragment_pipeline_info
   };
 
-  VkRect2D scissor = {};
-  VkViewport viewport = {};
   VkPipelineViewportStateCreateInfo pipeline_viewport_state_info =
       {VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
-  ConfigureViewport(params, scissor, viewport, pipeline_viewport_state_info);
+  ConfigureViewport(pipeline_viewport_state_info);
 
   VkPipelineRasterizationStateCreateInfo pipeline_rasterization_state_info =
       {VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };

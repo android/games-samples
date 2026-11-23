@@ -45,13 +45,20 @@ class RenderStateGLES : public RenderState {
 
   GLenum GetPrimitiveType() const { return primitive_type_;}
 
+  // Applied when the state is bound, and again before the next draw if they change while
+  // the state is bound
   virtual void SetViewport(const RenderState::Viewport& viewport) {
     viewport_ = viewport;
+    viewport_scissor_dirty_ = true;
   }
 
   virtual void SetScissorRect(const RenderState::ScissorRect& scissor_rect) {
     scissor_rect_ = scissor_rect;
+    viewport_scissor_dirty_ = true;
   }
+
+  bool GetViewportScissorDirty() const { return viewport_scissor_dirty_; }
+  void ApplyViewportAndScissor();
 
  private:
   void InitializeAttributes(const GLuint program_handle);
@@ -60,6 +67,7 @@ class RenderStateGLES : public RenderState {
 
   RenderState::ScissorRect scissor_rect_;
   RenderState::Viewport viewport_;
+  bool viewport_scissor_dirty_;
   std::shared_ptr<ShaderProgram> state_program_;
   std::shared_ptr<UniformBuffer> state_uniform_;
   VertexBuffer::VertexFormat state_vertex_layout_;

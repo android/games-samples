@@ -125,6 +125,10 @@ void RendererGLES::EndRenderPass() {
 void RendererGLES::Draw(const uint32_t vertex_count, const uint32_t first_vertex) {
   // Update any uniform data that might have changed between draw calls
   RenderStateGLES& state = *(static_cast<RenderStateGLES*>(render_state_.get()));
+  // Viewport or scissor changed while the state was bound
+  if (state.GetViewportScissorDirty()) {
+    state.ApplyViewportAndScissor();
+  }
   state.UpdateUniformData(true);
 
   glDrawArrays(state.GetPrimitiveType(), first_vertex, vertex_count);
@@ -134,6 +138,10 @@ void RendererGLES::Draw(const uint32_t vertex_count, const uint32_t first_vertex
 void RendererGLES::DrawIndexed(const uint32_t index_count, const uint32_t first_index) {
   // Update any uniform data that might have changed between draw calls
   RenderStateGLES& state = *(static_cast<RenderStateGLES*>(render_state_.get()));
+  // Viewport or scissor changed while the state was bound
+  if (state.GetViewportScissorDirty()) {
+    state.ApplyViewportAndScissor();
+  }
   state.UpdateUniformData(true);
 
   // Currently fixed to 16-bit index values
@@ -166,8 +174,11 @@ void RendererGLES::SetRenderState(std::shared_ptr<RenderState> render_state) {
     previous_state.UnbindRenderState();
   }
 
-  // Set the new state and bind its resources
+  // Set the new state and bind its resources (none for a null state)
   render_state_ = render_state;
+  if (render_state == nullptr) {
+    return;
+  }
   RenderStateGLES& state = *(static_cast<RenderStateGLES*>(render_state.get()));
   state.BindRenderState();
 }
