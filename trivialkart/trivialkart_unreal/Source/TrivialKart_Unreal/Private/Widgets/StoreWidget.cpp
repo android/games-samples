@@ -16,69 +16,53 @@
 
 #include "Widgets/StoreWidget.h"
 
-#include "Actors/TrivialKartHUD.h"
-#include "Components/Button.h"
 #include "Components/CheckBox.h"
-#include "Components/WidgetSwitcher.h"
 
-void UStoreWidget::NativeConstruct()
+void UStoreWidget::RegisterTabCheckBoxes(TArray<UCheckBox*>& OutCheckBoxes)
 {
-	Super::NativeConstruct();
-	
-	BackButton->OnClicked.AddUniqueDynamic(this, &UStoreWidget::OnBackButtonClicked);
-	CheckBoxes.Empty();
-	CheckBoxes.Add(FuelCheckBox);
-	CheckBoxes.Add(CoinCheckBox);
-	CheckBoxes.Add(CarCheckBox);
-	CheckBoxes.Add(SubscriptionCheckBox);
-	FuelCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UStoreWidget::OnFuelBoxStateChanged);
-	CoinCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UStoreWidget::OnCoinBoxStateChange);
-	CarCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UStoreWidget::OnCarBoxStateChange);
-	SubscriptionCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UStoreWidget::OnSubscriptionBoxStateChange);
+	OutCheckBoxes.Add(FuelCheckBox);
+	OutCheckBoxes.Add(CoinCheckBox);
+	OutCheckBoxes.Add(CarCheckBox);
+	OutCheckBoxes.Add(SubscriptionCheckBox);
 }
 
-void UStoreWidget::NativeDestruct()
+void UStoreWidget::BindTabCheckBoxEvents()
 {
-	BackButton->OnClicked.RemoveDynamic(this, &UStoreWidget::OnBackButtonClicked);
-	FuelCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UStoreWidget::OnFuelBoxStateChanged);
-	CoinCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UStoreWidget::OnCoinBoxStateChange);
-	CarCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UStoreWidget::OnCarBoxStateChange);
-	SubscriptionCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UStoreWidget::OnSubscriptionBoxStateChange);
-	CheckBoxes.Empty();
-	Super::NativeDestruct();
-}
-
-void UStoreWidget::OnBackButtonClicked()
-{
-	if (TWeakObjectPtr PlayerController = GetOwningPlayer(); PlayerController.IsValid())
+	if (FuelCheckBox)
 	{
-		if (const TWeakObjectPtr CurrentHUD = Cast<ATrivialKartHUD>(PlayerController->GetHUD()); 
-			CurrentHUD.IsValid())
-		{
-			CurrentHUD->AddWidgetToScreen(EWidgetType::PlayBoard);
-			CurrentHUD->RemoveWidgetFromScreen(EWidgetType::Store);
-		}
+		FuelCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UStoreWidget::OnFuelBoxStateChanged);
+	}
+	if (CoinCheckBox)
+	{
+		CoinCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UStoreWidget::OnCoinBoxStateChange);
+	}
+	if (CarCheckBox)
+	{
+		CarCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UStoreWidget::OnCarBoxStateChange);
+	}
+	if (SubscriptionCheckBox)
+	{
+		SubscriptionCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UStoreWidget::OnSubscriptionBoxStateChange);
 	}
 }
 
-void UStoreWidget::SetCheckBoxState(bool bIsChecked, UCheckBox* CheckBox, int ActiveWidgetIndex)
+void UStoreWidget::UnbindTabCheckBoxEvents()
 {
-	if (CheckBox == nullptr)
-		return;
-	if (bIsChecked)
+	if (FuelCheckBox)
 	{
-		ContentSwitcher->SetActiveWidgetIndex(ActiveWidgetIndex);
-		for (auto CurrentCheckBox : CheckBoxes)
-		{
-			if (CurrentCheckBox != CheckBox)
-			{
-				CurrentCheckBox->SetCheckedState(ECheckBoxState::Unchecked);
-			}
-		}
+		FuelCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UStoreWidget::OnFuelBoxStateChanged);
 	}
-	else
+	if (CoinCheckBox)
 	{
-		CheckBox->SetCheckedState(ECheckBoxState::Checked);
+		CoinCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UStoreWidget::OnCoinBoxStateChange);
+	}
+	if (CarCheckBox)
+	{
+		CarCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UStoreWidget::OnCarBoxStateChange);
+	}
+	if (SubscriptionCheckBox)
+	{
+		SubscriptionCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UStoreWidget::OnSubscriptionBoxStateChange);
 	}
 }
 

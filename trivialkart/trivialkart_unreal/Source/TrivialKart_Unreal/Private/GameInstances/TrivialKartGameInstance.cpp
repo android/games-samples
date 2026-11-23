@@ -23,9 +23,9 @@
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Interfaces/OnlinePurchaseInterface.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/ConfigCacheIni.h"
 #include "Objects/TrivialKartSaveGame.h"
 #include "Actors/TrivialKartHUD.h"
-#include "GameFramework/PlayerState.h"
 #include "Actors/KartPawn.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateGameInstance);
@@ -63,14 +63,41 @@ void UTrivialKartGameInstance::Shutdown()
 		CloudInterface->ClearOnWriteUserFileCompleteDelegate_Handle(WriteSaveHandle);
 	}
 	FCoreDelegates::ApplicationHasEnteredForegroundDelegate.RemoveAll(this);
+	ClearCloudSyncWatchdog();
 	Super::Shutdown();
 }
 
 void UTrivialKartGameInstance::InitiateAutoLogin()
 {
-	if (const IOnlineIdentityPtr IdentityInterface = Online::GetIdentityInterface(GetWorld()))
+	bool bPlayGamesConfigured = true;
+#if PLATFORM_ANDROID
+	if (GConfig)
 	{
-		IdentityInterface->AutoLogin(0);
+		FString GamesAppID;
+		FString PlayGamesClientId;
+		GConfig->GetString(TEXT("/Script/AndroidRuntimeSettings.AndroidRuntimeSettings"), TEXT("GamesAppID"), GamesAppID, GEngineIni);
+		GConfig->GetString(TEXT("/Script/AndroidRuntimeSettings.AndroidRuntimeSettings"), TEXT("PlayGamesClientId"), PlayGamesClientId, GEngineIni);
+		bPlayGamesConfigured = !GamesAppID.TrimStartAndEnd().IsEmpty() || !PlayGamesClientId.TrimStartAndEnd().IsEmpty();
+	}
+#endif
+
+	const IOnlineIdentityPtr IdentityInterface = Online::GetIdentityInterface(GetWorld());
+	const IOnlineUserCloudPtr CloudInterface = Online::GetUserCloudInterface(GetWorld());
+	if (IdentityInterface.IsValid() && bPlayGamesConfigured)
+	{
+		if (CloudInterface.IsValid())
+		{
+			bCloudSyncInFlight = true;
+			ArmCloudSyncWatchdog();
+		}
+		if (!IdentityInterface->AutoLogin(0))
+		{
+			DismissLoadingScreen();
+		}
+	}
+	else
+	{
+		DismissLoadingScreen();
 	}
 }
 
@@ -99,19 +126,23 @@ void UTrivialKartGameInstance::AddAchievementProgress(const float Progress, cons
 	if (const IOnlineIdentityPtr IdentityInterface = Online::GetIdentityInterface(GetWorld()); 
 		IdentityInterface.IsValid())
 	{
+		const FUniqueNetIdPtr UserId = IdentityInterface->GetUniquePlayerId(0);
+		if (IdentityInterface->GetLoginStatus(0) != ELoginStatus::LoggedIn || !UserId.IsValid())
+		{
+			return;
+		}
 		if (const IOnlineAchievementsPtr AchievementsInterface = 
 			Online::GetAchievementsInterface(GetWorld()); AchievementsInterface.IsValid())
 		{
 			FOnlineAchievement CurrentAchievement;
-			AchievementsInterface->GetCachedAchievement(*IdentityInterface->GetUniquePlayerId(0), AchievementName, CurrentAchievement);
+			AchievementsInterface->GetCachedAchievement(*UserId, AchievementName, CurrentAchievement);
 			if (CurrentAchievement.Progress < 100.0)
 			{
 				const float CurrentProgress = CurrentAchievement.Progress + Progress;
 				const FOnlineAchievementsWritePtr AchievementPtr = MakeShareable(new FOnlineAchievementsWrite());
 				AchievementPtr->SetFloatStat(AchievementName, CurrentProgress);
 				FOnlineAchievementsWriteRef AchievementRef = AchievementPtr.ToSharedRef();
-				AchievementsInterface->WriteAchievements(*IdentityInterface->GetUniquePlayerId(0),
-					AchievementRef);
+				AchievementsInterface->WriteAchievements(*UserId, AchievementRef);
 			}
 		}
 	}
@@ -123,6 +154,11 @@ void UTrivialKartGameInstance::StartPurchasing(const FUniqueOfferId& OfferID, co
 	{
 		if (const IOnlineIdentityPtr IdentityInterface = Online::GetIdentityInterface(GetWorld()))
 		{
+			const FUniqueNetIdPtr UserId = IdentityInterface->GetUniquePlayerId(0);
+			if (IdentityInterface->GetLoginStatus(0) != ELoginStatus::LoggedIn || !UserId.IsValid())
+			{
+				return;
+			}
 			if (const IOnlineStoreV2Ptr StoreV2Interface = Subsystem->GetStoreV2Interface())
 			{
 				if (const TSharedPtr<FOnlineStoreOffer> CurrentOrder = StoreV2Interface->GetOffer(OfferID);
@@ -131,7 +167,7 @@ void UTrivialKartGameInstance::StartPurchasing(const FUniqueOfferId& OfferID, co
 					if (const IOnlinePurchasePtr PurchaseInterface =
 						Online::GetPurchaseInterface(GetWorld()); PurchaseInterface.IsValid())
 					{
-						if (PurchaseInterface->IsAllowedToPurchase(*IdentityInterface->GetUniquePlayerId(0)))
+						if (PurchaseInterface->IsAllowedToPurchase(*UserId))
 						{
 							FPurchaseCheckoutRequest CheckoutRequest;
 
@@ -142,7 +178,7 @@ void UTrivialKartGameInstance::StartPurchasing(const FUniqueOfferId& OfferID, co
 								Quantity,
 								bIsConsumable
 							);
-							PurchaseInterface->Checkout(*IdentityInterface->GetUniquePlayerId(0),
+							PurchaseInterface->Checkout(*UserId,
 								CheckoutRequest,
 								FOnPurchaseCheckoutComplete::CreateWeakLambda(this, 
 									[this, IdentityInterface, OfferID, Quantity]
@@ -155,7 +191,12 @@ void UTrivialKartGameInstance::StartPurchasing(const FUniqueOfferId& OfferID, co
 										OnPurchaseReceived.Broadcast(OfferID, Quantity);
 									}
 									// The Purchase Token is passed as the ReceiptId to tell the platform which purchase to finalize (consume/acknowledge).
-									Online::GetPurchaseInterface(GetWorld())->FinalizePurchase(*IdentityInterface->GetUniquePlayerId(0), PurchaseReceipt->TransactionId);
+									const FUniqueNetIdPtr ActiveUserId = IdentityInterface.IsValid() ? IdentityInterface->GetUniquePlayerId(0) : nullptr;
+									const IOnlinePurchasePtr ActivePurchaseInterface = Online::GetPurchaseInterface(GetWorld());
+									if (ActiveUserId.IsValid() && ActivePurchaseInterface.IsValid())
+									{
+										ActivePurchaseInterface->FinalizePurchase(*ActiveUserId, PurchaseReceipt->TransactionId);
+									}
 								}));
 						}
 					}
@@ -227,19 +268,28 @@ void UTrivialKartGameInstance::SaveGame(UTrivialKartSaveGame* SaveData)
 
 	if (const IOnlineIdentityPtr IdentityInterface = Online::GetIdentityInterface(GetWorld()))
 	{
-		if (const IOnlineUserCloudPtr CloudInterface = Online::GetUserCloudInterface(GetWorld()))
+		const FUniqueNetIdPtr UserId = IdentityInterface->GetUniquePlayerId(0);
+		if (IdentityInterface->GetLoginStatus(0) == ELoginStatus::LoggedIn && UserId.IsValid())
 		{
-			if (TWeakObjectPtr PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0); PlayerController.IsValid())
+			if (const IOnlineUserCloudPtr CloudInterface = Online::GetUserCloudInterface(GetWorld()))
 			{
-				if (TWeakObjectPtr PlayerHUD = Cast<ATrivialKartHUD>(PlayerController->GetHUD()); PlayerHUD.IsValid())
+				bCloudSyncInFlight = true;
+				ArmCloudSyncWatchdog();
+				if (TWeakObjectPtr PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0); PlayerController.IsValid())
 				{
-					PlayerHUD->AddWidgetToScreen(EWidgetType::Loading, 10);
+					if (TWeakObjectPtr PlayerHUD = Cast<ATrivialKartHUD>(PlayerController->GetHUD()); PlayerHUD.IsValid())
+					{
+						PlayerHUD->AddWidgetToScreen(EWidgetType::Loading, 10);
+					}
+				}
+				TArray<uint8> ObjectBytes;
+				UGameplayStatics::SaveGameToMemory(SaveData, ObjectBytes);
+
+				if (!CloudInterface->WriteUserFile(*UserId, "TrivialKartCloudSave", ObjectBytes))
+				{
+					DismissLoadingScreen();
 				}
 			}
-			TArray<uint8> ObjectBytes;
-			UGameplayStatics::SaveGameToMemory(SaveData, ObjectBytes);
-
-			CloudInterface->WriteUserFile(*IdentityInterface->GetUniquePlayerId(0), "TrivialKartCloudSave", ObjectBytes);
 		}
 	}
 }
@@ -249,32 +299,44 @@ void UTrivialKartGameInstance::OnLoginCompleted(int32 LocalUserNum, bool bWasSuc
 {
 	UE_LOG(LogTemplateGameInstance, Log, TEXT("Local User: %d of Unique ID: %s has logged in with Status: %s"), 
 		LocalUserNum, *UserId.ToDebugString(), bWasSuccessful ? TEXT("Success") : *Error);
+	bool bStartedCloudRead = false;
 	if (bWasSuccessful)
 	{
 		if (const IOnlineIdentityPtr IdentityInterface = Online::GetIdentityInterface(GetWorld()))
 		{
-			if (const IOnlineAchievementsPtr AchievementsInterface =
-				Online::GetAchievementsInterface(GetWorld()))
+			if (const FUniqueNetIdPtr PlayerId = IdentityInterface->GetUniquePlayerId(0); PlayerId.IsValid())
 			{
-				AchievementsInterface->QueryAchievements(*IdentityInterface->GetUniquePlayerId(0),
-					FOnQueryAchievementsCompleteDelegate::CreateUObject(this,
-						&UTrivialKartGameInstance::OnQueryAchievementsCompleted));
-			}
-			if (const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld()))
-			{
-				if (const IOnlineStoreV2Ptr StoreInterface = Subsystem->GetStoreV2Interface())
+				if (const IOnlineAchievementsPtr AchievementsInterface =
+					Online::GetAchievementsInterface(GetWorld()))
 				{
-					StoreInterface->QueryOffersById(*IdentityInterface->GetUniquePlayerId(0), StoreListItemIDs,
-						FOnQueryOnlineStoreOffersComplete::CreateUObject(this, &UTrivialKartGameInstance::OnQueryOnlineStoreOfferCompleted));
+					AchievementsInterface->QueryAchievements(*PlayerId,
+						FOnQueryAchievementsCompleteDelegate::CreateUObject(this,
+							&UTrivialKartGameInstance::OnQueryAchievementsCompleted));
 				}
-			}
-			if (const IOnlineUserCloudPtr CloudInterface = Online::GetUserCloudInterface(GetWorld()))
-			{
-				CloudInterface->ReadUserFile(*IdentityInterface->GetUniquePlayerId(0), "TrivialKartCloudSave");
+				if (const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld()))
+				{
+					if (const IOnlineStoreV2Ptr StoreInterface = Subsystem->GetStoreV2Interface())
+					{
+						StoreInterface->QueryOffersById(*PlayerId, StoreListItemIDs,
+							FOnQueryOnlineStoreOffersComplete::CreateUObject(this, &UTrivialKartGameInstance::OnQueryOnlineStoreOfferCompleted));
+					}
+				}
+				if (const IOnlineUserCloudPtr CloudInterface = Online::GetUserCloudInterface(GetWorld()))
+				{
+					bStartedCloudRead = CloudInterface->ReadUserFile(*PlayerId, "TrivialKartCloudSave");
+				}
 			}
 		}
 		// Check unacknowledged purchases on start or foreground
 		CheckPendingPurchases();
+	}
+	if (bStartedCloudRead)
+	{
+		ArmCloudSyncWatchdog();
+	}
+	else
+	{
+		DismissLoadingScreen();
 	}
 }
 
@@ -326,34 +388,73 @@ void UTrivialKartGameInstance::OnCloudReadComplete(bool bWasSuccessful, const FU
 		{
 			CurrentPawn->SwitchCar(SaveGameInstance->ActiveCarType);
 		}
-		if (TWeakObjectPtr PlayerHUD = Cast<ATrivialKartHUD>(PlayerController->GetHUD()); PlayerHUD.IsValid())
-		{
-			PlayerHUD->RemoveWidgetFromScreen(EWidgetType::Loading);
-		}
 	}
+	DismissLoadingScreen();
 	UE_LOG(LogTemplateGameInstance, Log, TEXT("Cloud Save %s for file: %s"), bWasSuccessful ? *FString("was successful") : *FString("has failed"), *FileName);
 }
 
 void UTrivialKartGameInstance::OnCloudWriteComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& FileName)
 {
+	bool bStartedCloudRead = false;
 	if (bWasSuccessful)
 	{
 		if (const IOnlineIdentityPtr IdentityInterface = Online::GetIdentityInterface(GetWorld()))
 		{
-			if (const IOnlineUserCloudPtr CloudInterface = Online::GetUserCloudInterface(GetWorld()))
+			if (const FUniqueNetIdPtr PlayerId = IdentityInterface->GetUniquePlayerId(0); PlayerId.IsValid())
 			{
-				CloudInterface->ReadUserFile(*IdentityInterface->GetUniquePlayerId(0), "TrivialKartCloudSave");
+				if (const IOnlineUserCloudPtr CloudInterface = Online::GetUserCloudInterface(GetWorld()))
+				{
+					bStartedCloudRead = CloudInterface->ReadUserFile(*PlayerId, "TrivialKartCloudSave");
+				}
 			}
 		}
 	}
+	if (bStartedCloudRead)
+	{
+		ArmCloudSyncWatchdog();
+	}
 	else
 	{
-		if (TWeakObjectPtr PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0); PlayerController.IsValid())
+		DismissLoadingScreen();
+	}
+}
+
+void UTrivialKartGameInstance::ArmCloudSyncWatchdog()
+{
+	ClearCloudSyncWatchdog();
+	TWeakObjectPtr<UTrivialKartGameInstance> WeakThis(this);
+	CloudSyncTimeoutHandle = FTSTicker::GetCoreTicker().AddTicker(
+		FTickerDelegate::CreateLambda([WeakThis](float)
 		{
-			if (TWeakObjectPtr PlayerHUD = Cast<ATrivialKartHUD>(PlayerController->GetHUD()); PlayerHUD.IsValid())
+			if (UTrivialKartGameInstance* StrongThis = WeakThis.Get())
 			{
-				PlayerHUD->RemoveWidgetFromScreen(EWidgetType::Loading);
+				StrongThis->CloudSyncTimeoutHandle.Reset();
+				UE_LOG(LogTemplateGameInstance, Warning, TEXT("Cloud sync timed out; dismissing Loading screen."));
+				StrongThis->DismissLoadingScreen();
 			}
+			return false;
+		}),
+		10.0f);
+}
+
+void UTrivialKartGameInstance::ClearCloudSyncWatchdog()
+{
+	if (CloudSyncTimeoutHandle.IsValid())
+	{
+		FTSTicker::GetCoreTicker().RemoveTicker(CloudSyncTimeoutHandle);
+		CloudSyncTimeoutHandle.Reset();
+	}
+}
+
+void UTrivialKartGameInstance::DismissLoadingScreen()
+{
+	ClearCloudSyncWatchdog();
+	bCloudSyncInFlight = false;
+	if (TWeakObjectPtr PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0); PlayerController.IsValid())
+	{
+		if (TWeakObjectPtr PlayerHUD = Cast<ATrivialKartHUD>(PlayerController->GetHUD()); PlayerHUD.IsValid())
+		{
+			PlayerHUD->RemoveWidgetFromScreen(EWidgetType::Loading);
 		}
 	}
 }

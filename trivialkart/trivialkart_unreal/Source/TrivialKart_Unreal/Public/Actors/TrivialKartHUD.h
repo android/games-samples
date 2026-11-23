@@ -19,8 +19,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
+#include "InputCoreTypes.h"
 #include "TrivialKartHUD.generated.h"
 
+class UTexture2D;
+class UTrivialKartTabbedModalWidget;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateHUD, Log, All);
 
@@ -34,6 +37,7 @@ enum class EWidgetType : uint8
 	PGS,
 	Store
 };
+
 /**
  * 
  */
@@ -47,6 +51,9 @@ class TRIVIALKART_UNREAL_API ATrivialKartHUD : public AHUD
 	
 	UPROPERTY()
 	TMap<EWidgetType, TWeakObjectPtr<UUserWidget>> ActiveWidgets;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTexture2D> CachedTouchHandTexture;
 	
 public:
 	virtual void BeginPlay() override;
@@ -56,6 +63,29 @@ public:
 	void RemoveWidgetFromScreen(const EWidgetType WidgetType);
 	
 	UUserWidget* GetWidgetOfType(const EWidgetType WidgetType);
-	
-	
+
+	bool HandleGamepadKey(const FKey& Key, bool bIsPressed = true, bool bIsRepeat = false);
+	bool IsLoadingOpen() const;
+	bool IsSubMenuOpen() const;
+	bool IsUIBlockingInput() const;
+	bool IsStickNavigationEnabled() const;
+	void SyncGameplayInputContext() const;
+
+	void ClearPlayBoardMenuFocus();
+	void NotifyViewportPointerDown(const FVector2D& ScreenSpacePosition);
+	void CancelPendingPresses();
+	void RefreshActiveSubMenu();
+
+	UTexture2D* GetOrCreateTouchHandTexture();
+
+private:
+	static bool IsSubMenuWidgetType(EWidgetType WidgetType);
+	UTrivialKartTabbedModalWidget* GetActiveSubMenuWidget() const;
+
+	template <typename T = UUserWidget>
+	T* GetActiveWidget(const EWidgetType WidgetType) const
+	{
+		const TWeakObjectPtr<UUserWidget>* Ptr = ActiveWidgets.Find(WidgetType);
+		return Ptr ? Cast<T>(Ptr->Get()) : nullptr;
+	}
 };

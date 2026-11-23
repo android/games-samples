@@ -105,6 +105,28 @@ void ATrivialKartPlayerState::AddCarToInventory(const FString& CarID)
 	}
 }
 
+bool ATrivialKartPlayerState::PurchaseCarWithCoins(const FString& CarID, const int CoinsUsed)
+{
+	if (CarID.IsEmpty() || CarsOwned.Contains(CarID) || CoinCount < CoinsUsed)
+	{
+		return false;
+	}
+	CarsOwned.Add(CarID);
+	CoinCount = FMath::Max(0, CoinCount - CoinsUsed);
+	OnCoinUpdated.ExecuteIfBound(CoinCount);
+	if (TWeakObjectPtr Instance = Cast<UTrivialKartGameInstance>(GetGameInstance());
+			Instance.IsValid())
+	{
+		if (TWeakObjectPtr Save = Instance->LoadGame(); Save.IsValid())
+		{
+			Save->CarsOwned = CarsOwned;
+			Save->CurrentCoins = CoinCount;
+			Instance->SaveGame(Save.Get());
+		}
+	}
+	return true;
+}
+
 float ATrivialKartPlayerState::GetFuel() const
 {
 	return Fuel;

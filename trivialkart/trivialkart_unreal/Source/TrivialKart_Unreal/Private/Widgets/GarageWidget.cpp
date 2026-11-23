@@ -14,66 +14,65 @@
  *   limitations under the License.
  */
 
-
 #include "Widgets/GarageWidget.h"
 
-#include "Actors/TrivialKartHUD.h"
-#include "Components/Button.h"
 #include "Components/CheckBox.h"
-#include "Components/WidgetSwitcher.h"
+#include "GameInstances/TrivialKartGameInstance.h"
+#include "Objects/TrivialKartSaveGame.h"
+#include "Widgets/SelectableItem.h"
 
-void UGarageWidget::NativeConstruct()
+void UGarageWidget::RegisterTabCheckBoxes(TArray<UCheckBox*>& OutCheckBoxes)
 {
-	Super::NativeConstruct();
-	
-	BackButton->OnClicked.AddUniqueDynamic(this, &UGarageWidget::OnBackButtonClicked);
-	CheckBoxes.Empty();
-	CheckBoxes.Add(KartCheckBox);
-	CheckBoxes.Add(LevelCheckBox);
-	KartCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UGarageWidget::OnKartBoxStateChanged);
-	LevelCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UGarageWidget::OnLevelBoxStateChange);
+	OutCheckBoxes.Add(KartCheckBox);
+	OutCheckBoxes.Add(LevelCheckBox);
 }
 
-void UGarageWidget::NativeDestruct()
+void UGarageWidget::BindTabCheckBoxEvents()
 {
-	BackButton->OnClicked.RemoveDynamic(this, &UGarageWidget::OnBackButtonClicked);
-	KartCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UGarageWidget::OnKartBoxStateChanged);
-	LevelCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UGarageWidget::OnLevelBoxStateChange);
-	Super::NativeDestruct();
-}
-
-void UGarageWidget::OnBackButtonClicked()
-{
-	if (TWeakObjectPtr PlayerController = GetOwningPlayer(); PlayerController.IsValid())
+	if (KartCheckBox)
 	{
-		if (const TWeakObjectPtr CurrentHUD = Cast<ATrivialKartHUD>(PlayerController->GetHUD()); 
-			CurrentHUD.IsValid())
-		{
-			CurrentHUD->AddWidgetToScreen(EWidgetType::PlayBoard);
-			CurrentHUD->RemoveWidgetFromScreen(EWidgetType::Garage);
-		}
+		KartCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UGarageWidget::OnKartBoxStateChanged);
+	}
+	if (LevelCheckBox)
+	{
+		LevelCheckBox->OnCheckStateChanged.AddUniqueDynamic(this, &UGarageWidget::OnLevelBoxStateChange);
 	}
 }
 
-void UGarageWidget::SetCheckBoxState(bool bIsChecked, UCheckBox* CheckBox, int ActiveWidgetIndex)
+void UGarageWidget::UnbindTabCheckBoxEvents()
 {
-	if (CheckBox == nullptr)
-		return;
-	if (bIsChecked)
+	if (KartCheckBox)
 	{
-		ContentSwitcher->SetActiveWidgetIndex(ActiveWidgetIndex);
-		for (auto CurrentCheckBox : CheckBoxes)
+		KartCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UGarageWidget::OnKartBoxStateChanged);
+	}
+	if (LevelCheckBox)
+	{
+		LevelCheckBox->OnCheckStateChanged.RemoveDynamic(this, &UGarageWidget::OnLevelBoxStateChange);
+	}
+}
+
+int32 UGarageWidget::GetDefaultItemIndexForTab(int32 TabIndex, const TArray<USelectableItem*>& ActiveItems) const
+{
+	if (TabIndex == 0)
+	{
+		if (UTrivialKartGameInstance* Instance = Cast<UTrivialKartGameInstance>(GetGameInstance()))
 		{
-			if (CurrentCheckBox != CheckBox)
+			if (UTrivialKartSaveGame* Save = Instance->LoadGame())
 			{
-				CurrentCheckBox->SetCheckedState(ECheckBoxState::Unchecked);
+				if (!Save->ActiveCarType.IsEmpty())
+				{
+					for (int32 i = 0; i < ActiveItems.Num(); ++i)
+					{
+						if (ActiveItems[i] && ActiveItems[i]->GetCarType().Equals(Save->ActiveCarType, ESearchCase::IgnoreCase))
+						{
+							return i;
+						}
+					}
+				}
 			}
 		}
 	}
-	else
-	{
-		CheckBox->SetCheckedState(ECheckBoxState::Checked);
-	}
+	return 0;
 }
 
 void UGarageWidget::OnKartBoxStateChanged(bool bIsChecked)
