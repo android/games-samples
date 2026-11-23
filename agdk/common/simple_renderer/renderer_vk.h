@@ -161,6 +161,21 @@ class RendererVk : public Renderer {
   // Bind the pending texture descriptor set, if there is one, before a draw
   void BindDirtyDescriptorSet(const RenderStateVk& state);
 
+  // A rect with 64 bit coordinates (doesn't wrap for any int32_t input rect)
+  struct Rect64 {
+    int64_t x;
+    int64_t y;
+    int64_t width;
+    int64_t height;
+  };
+
+  // Set the dynamic viewport and scissor from a render state
+  void ApplyViewportAndScissor(RenderStateVk& state);
+
+  // Map a GLES style rect (bottom left origin, in display orientation) to a framebuffer rect
+  // (top left origin, in the swapchain's pre-rotated orientation)
+  Rect64 DisplayRectToFramebuffer(int64_t x, int64_t y, int64_t width, int64_t height) const;
+
   RendererResources resources_;
 
   std::shared_ptr<RenderPass> render_pass_;
@@ -174,6 +189,11 @@ class RendererVk : public Renderer {
   VkCommandBuffer render_command_buffer_;
   VkExtent2D active_extent_;
   VkDescriptorPool active_frame_pool_;
+  // Pre-rotation of the swapchain this frame (see DisplayManager::GetSwapchainRotationMode)
+  base_game_framework::DisplayManager::SwapchainRotationMode active_rotation_;
+  // Device viewport limits (VkPhysicalDeviceLimits)
+  uint32_t max_viewport_dimensions_[2] = {0, 0};
+  float viewport_bounds_range_[2] = {0.0f, 0.0f};
 
   // Active draw resources
   VkDescriptorSet bound_descriptor_set_;

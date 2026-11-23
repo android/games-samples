@@ -27,13 +27,23 @@ class RenderStateVk : public RenderState {
   RenderStateVk(const RenderStateCreationParams& params);
   virtual ~RenderStateVk();
 
+  // Viewport and scissor are dynamic state, applied by RendererVk when the state is set, and
+  // again before the next draw if they change while the state is bound
   virtual void SetViewport(const RenderState::Viewport& viewport) {
     viewport_ = viewport;
+    viewport_scissor_dirty_ = true;
   }
 
   virtual void SetScissorRect(const RenderState::ScissorRect& scissor_rect) {
     scissor_rect_ = scissor_rect;
+    viewport_scissor_dirty_ = true;
   }
+
+  const RenderState::Viewport& GetViewport() const { return viewport_; }
+  const RenderState::ScissorRect& GetScissorRect() const { return scissor_rect_; }
+  bool GetScissorTest() const { return scissor_test_; }
+  bool GetViewportScissorDirty() const { return viewport_scissor_dirty_; }
+  void ClearViewportScissorDirty() { viewport_scissor_dirty_ = false; }
 
   VkDescriptorSetLayout GetDescriptorSetLayout() const { return descriptor_set_layout_; }
 
@@ -48,6 +58,8 @@ class RenderStateVk : public RenderState {
 
   RenderState::ScissorRect scissor_rect_;
   RenderState::Viewport viewport_;
+  bool scissor_test_;
+  bool viewport_scissor_dirty_;
   std::shared_ptr<RenderPass> render_pass_;
   std::shared_ptr<ShaderProgram> state_program_;
   std::shared_ptr<UniformBuffer> state_uniform_;

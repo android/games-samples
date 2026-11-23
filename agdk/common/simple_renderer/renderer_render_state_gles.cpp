@@ -93,6 +93,7 @@ static const char* sampler_name = "u_Sampler";
 RenderStateGLES::RenderStateGLES(const RenderStateCreationParams& params) :
     scissor_rect_(params.scissor_rect),
     viewport_(params.viewport),
+    viewport_scissor_dirty_(false),
     state_program_(params.state_program),
     state_uniform_(params.state_uniform),
     state_vertex_layout_(params.state_vertex_layout),
@@ -100,14 +101,22 @@ RenderStateGLES::RenderStateGLES(const RenderStateCreationParams& params) :
     cull_function_(cull_function_values[params.cull_face]),
     depth_function_(depth_function_values[params.depth_function]),
     front_face_(front_facing_values[params.front_face]),
-    src_blend_(blend_function_values[params.blend_source_function]),
-    dst_blend_(blend_function_values[params.blend_dest_function]),
+    // The blend functions are only read when blending is enabled
+    src_blend_(GL_ONE),
+    dst_blend_(GL_ZERO),
     line_width_(params.line_width),
-    blend_enabled_(params.blend_enabled),
+    blend_enabled_(params.blend_enabled &&
+        static_cast<uint32_t>(params.blend_source_function) < kBlendFunctionCount &&
+        static_cast<uint32_t>(params.blend_dest_function) < kBlendFunctionCount),
     cull_enabled_(params.cull_enabled),
     depth_test_(params.depth_test),
     depth_write_(params.depth_write),
     scissor_test_(params.scissor_test) {
+  RENDERER_ASSERT(blend_enabled_ == params.blend_enabled);
+  if (blend_enabled_) {
+    src_blend_ = blend_function_values[params.blend_source_function];
+    dst_blend_ = blend_function_values[params.blend_dest_function];
+  }
   for (uint32_t i = 0; i < kAttribute_Count; ++i) {
     vertex_attribute_enabled_[i] = false;
   }
@@ -212,6 +221,17 @@ void RenderStateGLES::BindRenderState() {
   }
   glDepthMask(depth_write_);
 
+  glLineWidth(line_width_);
+
+  ApplyViewportAndScissor();
+
+  const ShaderProgramGLES& program = GetShaderProgram();
+  const GLuint program_handle = program.GetProgramHandle();
+  glUseProgram(program_handle);
+  RENDERER_CHECK_GLES("glUseProgram");
+}
+
+void RenderStateGLES::ApplyViewportAndScissor() {
   if (scissor_test_) {
     glEnable(GL_SCISSOR_TEST);
     glScissor(scissor_rect_.x, scissor_rect_.y,
@@ -219,16 +239,9 @@ void RenderStateGLES::BindRenderState() {
   } else {
     glDisable(GL_SCISSOR_TEST);
   }
-
-  glLineWidth(line_width_);
-
   glViewport(viewport_.x, viewport_.y, viewport_.width, viewport_.height);
   glDepthRangef(viewport_.min_depth, viewport_.max_depth);
-
-  const ShaderProgramGLES& program = GetShaderProgram();
-  const GLuint program_handle = program.GetProgramHandle();
-  glUseProgram(program_handle);
-  RENDERER_CHECK_GLES("glUseProgram");
+  viewport_scissor_dirty_ = false;
 }
 
 void RenderStateGLES::UnbindRenderState() {
