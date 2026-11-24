@@ -131,7 +131,18 @@ static std::shared_ptr<simple_renderer::Texture> CreateFromASTCFile(const char* 
                                                                     const size_t fileSize) {
     std::shared_ptr<simple_renderer::Texture> texture = nullptr;
     const ASTCHeader* header = reinterpret_cast<const ASTCHeader *>(fileData);
-    if (header->blockDepth == 1 && header->texDepth[0] == 1) {
+    // 24-bit little endian sizes
+    const uint32_t texWidth = static_cast<uint32_t>(header->texWidth[0]) |
+        (static_cast<uint32_t>(header->texWidth[1]) << 8) |
+        (static_cast<uint32_t>(header->texWidth[2]) << 16);
+    const uint32_t texHeight = static_cast<uint32_t>(header->texHeight[0]) |
+        (static_cast<uint32_t>(header->texHeight[1]) << 8) |
+        (static_cast<uint32_t>(header->texHeight[2]) << 16);
+    const uint32_t texDepth = static_cast<uint32_t>(header->texDepth[0]) |
+        (static_cast<uint32_t>(header->texDepth[1]) << 8) |
+        (static_cast<uint32_t>(header->texDepth[2]) << 16);
+    // Only 2D textures (a single slice) are supported
+    if (header->blockDepth == 1 && texDepth == 1) {
         const uint32_t texture_size = static_cast<const uint32_t>(fileSize - sizeof(ASTCHeader));
         Texture::TextureCreationParams params;
         params.format = Texture::kTextureFormat_ASTC;
@@ -140,12 +151,8 @@ static std::shared_ptr<simple_renderer::Texture> CreateFromASTCFile(const char* 
         params.mag_filter = Texture::kMagFilter_Linear;
         params.wrap_s = Texture::kWrapS_Repeat;
         params.wrap_t = Texture::kWrapT_Repeat;
-        params.base_width =
-            header->texWidth[0] | (header->texWidth[1] << 8) |
-                (header->texWidth[2] << 8);
-        params.base_height =
-            header->texHeight[0] | (header->texHeight[1] << 8) |
-                (header->texHeight[2] << 8);
+        params.base_width = texWidth;
+        params.base_height = texHeight;
         params.mip_count = 1;
         params.texture_sizes = &texture_size;
         params.texture_data = (fileData + sizeof(ASTCHeader));
@@ -267,12 +274,19 @@ bool TextureManager::LoadTexture(const char *textureName) {
     if (!IsTextureLoaded(textureName)) {
         GameAssetManager *gameAssetManager = TunnelEngine::GetInstance()->GetGameAssetManager();
         uint64_t fileSize = gameAssetManager->GetGameAssetSize(textureName);
-        if (fileSize > 0) {
+        // (size_t is 32 bits on 32-bit ABIs)
+        if (fileSize > SIZE_MAX) {
+            ALOGE("TextureManager: texture file too large: %s", textureName);
+        } else if (fileSize > 0) {
             uint8_t *fileBuffer = static_cast<uint8_t *>(malloc(fileSize));
-            if (gameAssetManager->LoadGameAsset(textureName, fileSize, fileBuffer)) {
+            if (fileBuffer == nullptr) {
+                ALOGE("TextureManager: out of memory loading texture file: %s", textureName);
+            } else if (gameAssetManager->LoadGameAsset(textureName, fileSize, fileBuffer)) {
+                // CreateTexture frees the buffer
                 success = CreateTexture(textureName, fileSize, fileBuffer);
             } else {
                 ALOGE("TextureManager: failed to load texture file: %s", textureName);
+                free(fileBuffer);
             }
         }
     }

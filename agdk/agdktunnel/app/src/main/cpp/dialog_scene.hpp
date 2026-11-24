@@ -53,6 +53,8 @@ protected:
 
     virtual bool OnBackKeyPressed();
 
+    virtual bool HandlesBack() { return true; }
+
 public:
     // (action) return to main screen
     static const int ACTION_RETURN = 1000;

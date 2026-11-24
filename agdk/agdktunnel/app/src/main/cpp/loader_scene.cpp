@@ -63,6 +63,10 @@ class LoaderScene::TextureLoader {
             ALOGE("Timed-out waiting for textures to load");
             exit(1);
         }
+        // Free loaded files that weren't handed to CreateTextures
+        for (int i = 0; i < _currentLoadIndex; ++i) {
+            free(_loadedTextures[i].textureData);
+        }
     }
 
     int TotalNumberToLoad() const { return _totalLoadCount; }
@@ -76,10 +80,14 @@ class LoaderScene::TextureLoader {
                 _loadedTextures[_currentLoadIndex].textureData = message->loadBuffer;
                 _loadedTextures[_currentLoadIndex].textureName = message->assetName;
                 ++_currentLoadIndex;
+            } else {
+                ALOGE("Too many textures, dropping %s", message->assetName);
+                free(message->loadBuffer);
             }
             ALOGI("Finished async load %s", message->assetName);
         } else {
             ALOGE("Async load failed for %s", message->assetName);
+            free(message->loadBuffer);
         }
         --_remainingLoadCount;
     }
@@ -125,16 +133,20 @@ class LoaderScene::TextureLoader {
                 uint64_t fileSize = gameAssetManager->GetGameAssetSize(assetPackFiles[i]);
                 ALOGI("TextureLoader: the size of asset %s is %d",
                       assetPackFiles[i], (int)fileSize);
-                if (fileSize > 0) {
-                    uint8_t *fileBuffer = static_cast<uint8_t *>(malloc(fileSize));
-                    if (gameAssetManager->LoadGameAssetAsync(assetPackFiles[i], fileSize,
-                                                             fileBuffer, LoadingCallbackProxy,
-                                                             this)) {
-                        ALOGI("TextureLoader: started async load %s", assetPackFiles[i]);
-                    } else {
-                        ALOGE("TextureLoader: can't load asset %s", assetPackFiles[i]);
-                        --_remainingLoadCount;
-                    }
+                // (size_t is 32 bits on 32-bit ABIs)
+                uint8_t *fileBuffer = (fileSize > 0 && fileSize <= SIZE_MAX) ?
+                        static_cast<uint8_t *>(malloc(fileSize)) : NULL;
+                if (fileBuffer == NULL) {
+                    ALOGE("TextureLoader: can't allocate asset %s", assetPackFiles[i]);
+                    --_remainingLoadCount;
+                } else if (gameAssetManager->LoadGameAssetAsync(assetPackFiles[i], fileSize,
+                                                                fileBuffer, LoadingCallbackProxy,
+                                                                this)) {
+                    ALOGI("TextureLoader: started async load %s", assetPackFiles[i]);
+                } else {
+                    ALOGE("TextureLoader: can't load asset %s", assetPackFiles[i]);
+                    free(fileBuffer);
+                    --_remainingLoadCount;
                 }
             }
         } else {
@@ -160,6 +172,8 @@ class LoaderScene::TextureLoader {
                 _loadedTextures[i].textureSize,
                 static_cast<const uint8_t *>(_loadedTextures[i].textureData));
         }
+        // CreateTexture frees each file
+        _currentLoadIndex = 0;
     }
 }; // class LoaderScene::TextureLoader
 

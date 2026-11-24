@@ -16,19 +16,18 @@
 
 #include "data_loader_machine.hpp"
 
-DataLoaderStateMachine::DataLoaderStateMachine(bool isCloudSaveEnabled, char *savePath) {
+DataLoaderStateMachine::DataLoaderStateMachine(bool isCloudSaveEnabled, const char *savePath) {
     mIsCloudSaveEnabled = isCloudSaveEnabled;
-    int len = strlen(savePath) + strlen(SAVE_FILE_NAME) + 2;
-    mSaveFileName = new char[len];
-    strcpy(mSaveFileName, savePath);
-    strcat(mSaveFileName, "/");
-    strcat(mSaveFileName, SAVE_FILE_NAME);
+    if (savePath == nullptr) {
+        ALOGE("DataLoaderStateMachine: no save path");
+        savePath = "";
+    }
+    mSaveFileName = std::string(savePath) + "/" + SAVE_FILE_NAME;
     mLevelLoaded = 0;
     mCurrentState = LOAD_NOT_STARTED;
 }
 
 DataLoaderStateMachine::~DataLoaderStateMachine() {
-    delete mSaveFileName;
 }
 
 int DataLoaderStateMachine::getTotalSteps() {
@@ -89,9 +88,9 @@ void DataLoaderStateMachine::savedStateLoadingFailed() {
 }
 
 void DataLoaderStateMachine::LoadLocalProgress() {
-    ALOGI("Attempting to load locally: %s", mSaveFileName);
+    ALOGI("Attempting to load locally: %s", mSaveFileName.c_str());
     mLevelLoaded = 0;
-    FILE *f = fopen(mSaveFileName, "r");
+    FILE *f = fopen(mSaveFileName.c_str(), "r");
     if (f) {
         ALOGI("Local file found. Loading data.");
         if (1 != fscanf(f, "v1 %d", &mLevelLoaded)) {
@@ -109,8 +108,8 @@ void DataLoaderStateMachine::LoadLocalProgress() {
 
 void DataLoaderStateMachine::SaveLocalProgress(int level) {
     mLevelLoaded = level;
-    ALOGI("Saving progress (level %d) to file: %s", level, mSaveFileName);
-    FILE *f = fopen(mSaveFileName, "w");
+    ALOGI("Saving progress (level %d) to file: %s", level, mSaveFileName.c_str());
+    FILE *f = fopen(mSaveFileName.c_str(), "w");
     if (!f) {
         ALOGE("Error writing to save game file.");
         return;

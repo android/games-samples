@@ -28,6 +28,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.WindowManager.LayoutParams;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.Keep;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -46,6 +47,51 @@ public class AGDKTunnelActivity extends GameActivity {
     private final String mPlayGamesPCSystemFeature =
             "com.google.android.play.feature.HPE_EXPERIENCE";
     private static final String TAG = "AGDKTunnelActivity";
+
+    // Forwards back presses to the game (see onCreate). Only enabled while the game's current
+    // scene uses back presses (see setBackHandledByGame); otherwise Back gets the system
+    // behavior, with its predictive back animation.
+    private final OnBackPressedCallback mBackPressedCallback = new OnBackPressedCallback(false) {
+        @Override
+        public void handleOnBackPressed() {
+            nativeOnBackPressed();
+        }
+    };
+
+    // Whether the game's current scene uses back presses (UI thread)
+    private boolean mBackHandledByGame = false;
+
+    // Queues a back press for the game thread
+    private native void nativeOnBackPressed();
+
+    // Called by the game (from its thread) when its current scene starts or stops using back
+    // presses
+    @Keep
+    public void setBackHandledByGame(boolean handled) {
+        runOnUiThread(() -> {
+            mBackHandledByGame = handled;
+            if (!isFinishing() && !isDestroyed()) {
+                mBackPressedCallback.setEnabled(handled);
+            }
+        });
+    }
+
+    // Called by the game (from its thread) when it didn't use a forwarded back press (e.g. the
+    // scene changed after it was forwarded, or it came as a key event): do what Back does
+    // without the game's callback (e.g. leave the game)
+    @Keep
+    public void onBackNotHandledByGame() {
+        runOnUiThread(() -> {
+            if (isFinishing() || isDestroyed()) {
+                return;
+            }
+            mBackPressedCallback.setEnabled(false);
+            getOnBackPressedDispatcher().onBackPressed();
+            if (!isFinishing() && !isDestroyed()) {
+                mBackPressedCallback.setEnabled(mBackHandledByGame);
+            }
+        });
+    }
 
     // Some code to load our native library:
     static {
@@ -80,6 +126,13 @@ public class AGDKTunnelActivity extends GameActivity {
         // super.setImeEditorInfoFields(InputType.TYPE_CLASS_TEXT,
         //     IME_ACTION_NONE, IME_FLAG_NO_FULLSCREEN );
         super.onCreate(savedInstanceState);
+
+        // With predictive back (targetSdk 36+ on Android 16+), Back isn't delivered as a key
+        // event, so the game would never see it and Back would always leave the game. While
+        // the game's scene uses back presses (e.g. during play), forward them to the game;
+        // if one isn't used after all, the game calls onBackNotHandledByGame for the default
+        // behavior.
+        getOnBackPressedDispatcher().addCallback(this, mBackPressedCallback);
 
         if (isPlayGamesServicesLinked()) {
             // Initialize Play Games Services

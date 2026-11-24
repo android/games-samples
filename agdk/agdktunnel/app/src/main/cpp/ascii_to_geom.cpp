@@ -200,7 +200,7 @@ SimpleGeom *AsciiArtToGeom(const char *art, float scale) {
   GEOM_DEBUG("Deallocating working space.");
   // get rid of the working arrays
   for (r = 0; r < rows; r++) {
-    delete v[r];
+    delete[] v[r];
   }
   delete[] v;
 

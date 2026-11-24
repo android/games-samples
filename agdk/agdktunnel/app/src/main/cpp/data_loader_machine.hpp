@@ -18,6 +18,8 @@
 
 #include "common.hpp"
 
+#include <string>
+
 // save file name
 #define SAVE_FILE_NAME "tunnel.dat"
 
@@ -47,14 +49,14 @@ private:
     int mLevelLoaded;
 
     // name of the save file
-    char *mSaveFileName;
+    std::string mSaveFileName;
 
     // flag to know if cloud save is enabled
     bool mIsCloudSaveEnabled;
 
 public:
 
-    DataLoaderStateMachine(bool isCloudSaveEnabled, char *savePath);
+    DataLoaderStateMachine(bool isCloudSaveEnabled, const char *savePath);
 
     ~DataLoaderStateMachine();
 

@@ -53,6 +53,11 @@ public:
 
     virtual bool OnBackKeyPressed();
 
+    virtual bool HandlesBack() { return true; }
+
+    // The stick steers with OnJoy during play; its directional keys only navigate menus
+    virtual bool WantsStickDirectionKeys() { return mMenu != MENU_NONE; }
+
     virtual void OnScreenResized(int width, int height);
 
     virtual void OnJoy(float joyX, float joyY);

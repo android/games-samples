@@ -59,6 +59,19 @@ public:
 protected:
     bool ProcessCookedEvent(struct CookedEvent *event);
 
+    // Handle the back presses the Activity forwarded since the last call (call each loop)
+    void ProcessPendingBackPresses();
+
+    // Send a back press to the scene; if it doesn't use it, the Activity handles it
+    void HandleBackPress();
+
+    // Tell the Activity whether the current scene uses back presses, if that changed (call
+    // each loop)
+    void UpdateBackHandling();
+
+    // What the Activity was last told by UpdateBackHandling
+    bool mBackHandledByGame;
+
     // variables to track Android lifecycle:
     // variables to track Android lifecycle:
     bool mHasFocus, mHasStarted, mDisplayInitialized;

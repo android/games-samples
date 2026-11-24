@@ -45,6 +45,10 @@ private:
     bool mHasGraphics;
     Scene *mSceneToInstall;
 
+    // Stick derived key downs that were delivered to the current scene (so their key ups are
+    // too, and only theirs)
+    bool mStickKeyDelivered[OURKEY_COUNT];
+
     void InstallScene(Scene *newScene);
 
 public:
@@ -97,14 +101,18 @@ public:
     // Reports that a pointer (e.g. touchscreen, touchpad, etc) moved
     void OnPointerMove(int pointerId, const struct PointerCoords *coords);
 
-    // Reports that the back key was pressed
+    // Reports that the back key was pressed. Returns whether it was used.
     bool OnBackKeyPressed();
 
-    // Reports that the given key went down
-    void OnKeyDown(int ourKeycode);
+    // Whether the current scene uses back presses (see Scene::HandlesBack)
+    bool HandlesBack();
+
+    // Reports that the given key went down. fromStick: derived from the game controller's
+    // stick position (see Scene::WantsStickDirectionKeys).
+    void OnKeyDown(int ourKeycode, bool fromStick = false);
 
     // Reports that the given key went up
-    void OnKeyUp(int ourKeycode);
+    void OnKeyUp(int ourKeycode, bool fromStick = false);
 
     // Reports a joystick update
     void UpdateJoy(float joyX, float joyY);

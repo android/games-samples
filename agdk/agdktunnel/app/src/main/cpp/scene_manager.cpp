@@ -31,14 +31,27 @@ SceneManager::SceneManager() {
     mSceneToInstall = NULL;
 
     mHasGraphics = false;
+
+    for (int i = 0; i < OURKEY_COUNT; ++i) {
+        mStickKeyDelivered[i] = false;
+    }
 }
 
 void SceneManager::PrepareShutdown() {
+    if (mSceneToInstall) {
+        delete mSceneToInstall;
+        mSceneToInstall = NULL;
+    }
     InstallScene(NULL);
 }
 
 void SceneManager::RequestNewScene(Scene *newScene) {
     ALOGI("SceneManager: requesting new scene %p", newScene);
+    if (mSceneToInstall != NULL && mSceneToInstall != newScene) {
+        // The last request wins; don't leak the one it replaces
+        ALOGW("SceneManager: replacing pending scene %p", mSceneToInstall);
+        delete mSceneToInstall;
+    }
     mSceneToInstall = newScene;
 }
 
@@ -58,8 +71,11 @@ void SceneManager::InstallScene(Scene *newScene) {
         mCurScene = NULL;
     }
 
-    // install the new scene
+    // install the new scene; it hasn't seen any stick key downs
     mCurScene = newScene;
+    for (int i = 0; i < OURKEY_COUNT; ++i) {
+        mStickKeyDelivered[i] = false;
+    }
     if (mCurScene) {
         // Specify the controls to use to the Input SDK
         mCurScene->SetInputSdkContext();
@@ -78,8 +94,11 @@ Scene *SceneManager::GetScene() {
 
 void SceneManager::DoFrame() {
     if (mSceneToInstall) {
-        InstallScene(mSceneToInstall);
+        // Clear the request first, so a scene requested while installing isn't lost (or,
+        // see RequestNewScene, deleted as a replaced request)
+        Scene *scene = mSceneToInstall;
         mSceneToInstall = NULL;
+        InstallScene(scene);
     }
 
     if (mHasGraphics && mCurScene) {
@@ -125,33 +144,49 @@ SceneManager *SceneManager::GetInstance() {
 }
 
 void SceneManager::OnPointerDown(int pointerId, const struct PointerCoords *coords) {
-    if (mHasGraphics && mCurScene) {
+    // Once a scene change is pending, the current scene gets no more input (it could
+    // otherwise request another scene, e.g. on a repeated key)
+    if (mHasGraphics && mCurScene && !mSceneToInstall) {
         mCurScene->OnPointerDown(pointerId, coords);
     }
 }
 
 void SceneManager::OnPointerUp(int pointerId, const struct PointerCoords *coords) {
-    if (mHasGraphics && mCurScene) {
+    if (mHasGraphics && mCurScene && !mSceneToInstall) {
         mCurScene->OnPointerUp(pointerId, coords);
     }
 }
 
 void SceneManager::OnPointerMove(int pointerId, const struct PointerCoords *coords) {
-    if (mHasGraphics && mCurScene) {
+    if (mHasGraphics && mCurScene && !mSceneToInstall) {
         mCurScene->OnPointerMove(pointerId, coords);
     }
 }
 
 bool SceneManager::OnBackKeyPressed() {
+    if (mSceneToInstall) {
+        // A scene change is pending: consume the press (don't leave the game)
+        return true;
+    }
     if (mHasGraphics && mCurScene) {
         return mCurScene->OnBackKeyPressed();
     }
     return false;
 }
 
-void SceneManager::OnKeyDown(int ourKeyCode) {
+bool SceneManager::HandlesBack() {
+    return mHasGraphics && mCurScene && mCurScene->HandlesBack();
+}
+
+void SceneManager::OnKeyDown(int ourKeyCode, bool fromStick) {
     if ((ourKeyCode >= 0 && ourKeyCode < OURKEY_COUNT &&
-            mHasGraphics && mCurScene)) {
+            mHasGraphics && mCurScene && !mSceneToInstall)) {
+        if (fromStick) {
+            if (!mCurScene->WantsStickDirectionKeys()) {
+                return;
+            }
+            mStickKeyDelivered[ourKeyCode] = true;
+        }
         mCurScene->OnKeyDown(ourKeyCode);
 
         // if our "escape" key (normally corresponding to joystick button B or Y)
@@ -162,9 +197,15 @@ void SceneManager::OnKeyDown(int ourKeyCode) {
     }
 }
 
-void SceneManager::OnKeyUp(int ourKeyCode) {
+void SceneManager::OnKeyUp(int ourKeyCode, bool fromStick) {
     if ((ourKeyCode >= 0 && ourKeyCode < OURKEY_COUNT &&
             mHasGraphics && mCurScene)) {
+        if (fromStick) {
+            if (!mStickKeyDelivered[ourKeyCode]) {
+                return;
+            }
+            mStickKeyDelivered[ourKeyCode] = false;
+        }
         mCurScene->OnKeyUp(ourKeyCode);
     }
 }
