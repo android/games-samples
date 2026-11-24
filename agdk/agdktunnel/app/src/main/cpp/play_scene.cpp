@@ -888,7 +888,9 @@ void PlayScene::OnKeyUp(int ourKeyCode) {
 }
 
 void PlayScene::OnKeyDown(int ourKeyCode) {
-    if (isDirectionalKey(ourKeyCode)) {
+    // Directional keys steer during play; in a menu they only navigate it (so the ship
+    // doesn't start steering from a key pressed in the menu)
+    if (isDirectionalKey(ourKeyCode) && !mMenu) {
         mSteering = STEERING_KEY;
 
         if (ourKeyCode == OURKEY_UP) {

@@ -24,6 +24,9 @@
 #include "android/platform_util_android.h"
 #include "simple_renderer/renderer_interface.h"
 
+#include <atomic>
+#include <jni.h>
+
 using namespace base_game_framework;
 
 // verbose debug logs on?
@@ -37,6 +40,15 @@ using namespace base_game_framework;
 
 // Set to true to force GLES always
 static bool s_disable_vulkan = false;
+
+// Back presses forwarded by the Activity (on the UI thread, see AGDKTunnelActivity), handled
+// on the game thread by NativeEngine::ProcessPendingBackPresses
+static std::atomic<int> s_pending_back_presses{0};
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_google_sample_agdktunnel_AGDKTunnelActivity_nativeOnBackPressed(JNIEnv *, jobject) {
+    s_pending_back_presses.fetch_add(1);
+}
 
 // workaround for internal bug b/149866792
 static NativeEngineSavedState appState = {false};
@@ -56,6 +68,7 @@ NativeEngine::NativeEngine(struct android_app *app) {
     mSwapchainHandle = DisplayManager::kInvalid_swapchain_handle;
     mIsVulkan = false;
     mIsFirstFrame = true;
+    mBackHandledByGame = false;
 
     SystemEventManager& event_manager = SystemEventManager::GetInstance();
     event_manager.SetFocusEventCallback(std::bind(&NativeEngine::FocusEvent,
@@ -87,6 +100,12 @@ NativeEngine::NativeEngine(struct android_app *app) {
 
 NativeEngine::~NativeEngine() {
     VLOGD("NativeEngine: destructor running");
+
+    // Don't leave back presses for the next Activity's engine. (Not reset in the constructor:
+    // the new Activity can forward a back press before its engine is constructed. The old
+    // engine is destroyed before the old Activity's onDestroy returns, so before the new
+    // Activity is created.)
+    s_pending_back_presses.store(0);
 
     if (mDisplayInitialized) {
         // Temp destruct code until rest of BaseGameFramework refactoring goes in
@@ -340,10 +359,11 @@ bool NativeEngine::ProcessCookedEvent(struct CookedEvent *event) {
             mgr->OnPointerMove(event->motionPointerId, &coords);
         return true;
         case COOKED_EVENT_TYPE_KEY_DOWN:
-            mgr->OnKeyDown(getOurKeyFromAndroidKey(event->keyCode));
+            // keyCode is one of our key codes (OURKEY_*)
+            mgr->OnKeyDown(event->keyCode, event->keyFromStick);
         return true;
         case COOKED_EVENT_TYPE_KEY_UP:
-            mgr->OnKeyUp(getOurKeyFromAndroidKey(event->keyCode));
+            mgr->OnKeyUp(event->keyCode, event->keyFromStick);
         return true;
         case COOKED_EVENT_TYPE_BACK:
             return mgr->OnBackKeyPressed();
@@ -442,7 +462,38 @@ void NativeEngine::ReadSaveStateEvent(const SystemEventManager::SaveState& save_
 }
 
 bool NativeEngine::KeyEventCallback(const KeyEvent &key_event, void *user_data) {
-    return false;
+    struct CookedEvent cooked_event;
+    memset(&cooked_event, 0, sizeof(cooked_event));
+    if (key_event.key_code == AKEYCODE_BACK) {
+        // Back, when the platform delivers it as a key event (before predictive back):
+        // handled once per press, on the down event
+        if (key_event.key_action == kKeyEvent_Down && key_event.key_repeat_count == 0) {
+            HandleBackPress();
+        }
+        return true;
+    }
+    // WASD, Enter and Escape map to our keys; other keys aren't used
+    const int32_t our_key_code = getOurKeyFromAndroidKey(key_event.key_code);
+    if (our_key_code < 0 || our_key_code >= OURKEY_COUNT) {
+        return false;
+    }
+    switch (key_event.key_action) {
+        case kKeyEvent_Down:
+            if (key_event.key_repeat_count > 0) {
+                // Holding a key repeats its down event; the game acts on presses (a repeated
+                // Escape would toggle the pause menu, a repeated Enter click again)
+                return true;
+            }
+            cooked_event.type = COOKED_EVENT_TYPE_KEY_DOWN;
+            break;
+        case kKeyEvent_Up:
+            cooked_event.type = COOKED_EVENT_TYPE_KEY_UP;
+            break;
+        default:
+            return false;
+    }
+    cooked_event.keyCode = our_key_code;
+    return ProcessCookedEvent(&cooked_event);
 }
 
 bool NativeEngine::TouchEventCallback(const TouchEvent &touch_event, void *user_data) {
@@ -468,4 +519,56 @@ bool NativeEngine::TouchEventCallback(const TouchEvent &touch_event, void *user_
     cooked_event.motionMaxY = SceneManager::GetInstance()->GetScreenHeight();
     ProcessCookedEvent(&cooked_event);
     return true;
+}
+void NativeEngine::ProcessPendingBackPresses() {
+    int back_presses = s_pending_back_presses.exchange(0);
+    while (back_presses-- > 0) {
+        HandleBackPress();
+    }
+}
+
+void NativeEngine::HandleBackPress() {
+    VLOGD("NativeEngine: back pressed");
+    struct CookedEvent cooked_event;
+    memset(&cooked_event, 0, sizeof(cooked_event));
+    cooked_event.type = COOKED_EVENT_TYPE_BACK;
+    if (!ProcessCookedEvent(&cooked_event)) {
+        // The game didn't use it (e.g. on the main menu): let the Activity do what Back does
+        // without the game (leave it)
+        JNIEnv *env = GetJniEnv();
+        jobject activity = mApp->activity->javaGameActivity;
+        jclass activity_class = env->GetObjectClass(activity);
+        jmethodID method = env->GetMethodID(activity_class, "onBackNotHandledByGame", "()V");
+        if (method != nullptr) {
+            env->CallVoidMethod(activity, method);
+        }
+        if (env->ExceptionCheck()) {
+            env->ExceptionDescribe();
+            env->ExceptionClear();
+        }
+        env->DeleteLocalRef(activity_class);
+    }
+}
+
+void NativeEngine::UpdateBackHandling() {
+    // The Activity's back callback is only enabled while the scene uses back presses, so
+    // otherwise (e.g. on the main menu) Back gets the system behavior and its predictive back
+    // animation
+    const bool handled = SceneManager::GetInstance()->HandlesBack();
+    if (handled == mBackHandledByGame) {
+        return;
+    }
+    mBackHandledByGame = handled;
+    JNIEnv *env = GetJniEnv();
+    jobject activity = mApp->activity->javaGameActivity;
+    jclass activity_class = env->GetObjectClass(activity);
+    jmethodID method = env->GetMethodID(activity_class, "setBackHandledByGame", "(Z)V");
+    if (method != nullptr) {
+        env->CallVoidMethod(activity, method, static_cast<jboolean>(handled));
+    }
+    if (env->ExceptionCheck()) {
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+    }
+    env->DeleteLocalRef(activity_class);
 }

@@ -76,9 +76,10 @@ TunnelEngine::TunnelEngine(struct android_app *app) : NativeEngine(app) {
   mCloudSaveEnabled = (bool) GetJniEnv()->CallBooleanMethod(
       mApp->activity->javaGameActivity, isPlayGamesServicesLinkedID);
 
-  char *internalStorage = (char *)FilesystemManager::GetInstance().GetRootPath(
-  FilesystemManager::kRootPathInternalStorage).c_str();
-  mDataStateMachine = new DataLoaderStateMachine(mCloudSaveEnabled, internalStorage);
+  // The state machine copies the path
+  const std::string &internalStorage = FilesystemManager::GetInstance().GetRootPath(
+      FilesystemManager::kRootPathInternalStorage);
+  mDataStateMachine = new DataLoaderStateMachine(mCloudSaveEnabled, internalStorage.c_str());
 
   GameActivity_setImeEditorInfo(app->activity, TYPE_CLASS_TEXT,
                                 IME_ACTION_NONE, IME_FLAG_NO_FULLSCREEN);
@@ -87,6 +88,7 @@ TunnelEngine::TunnelEngine(struct android_app *app) : NativeEngine(app) {
 
   for (int i = 0; i < OURKEY_COUNT; ++i) {
     mJoyKeyState[i] = false;
+    mStickKeyState[i] = false;
   }
 }
 
@@ -120,6 +122,7 @@ void TunnelEngine::GameLoop() {
   while (!mQuitting) {
     if (!mDisplayInitialized) {
       PlatformEventLoop::GetInstance().PollEvents();
+      ProcessPendingBackPresses();
       if (mApp->window == NULL || !AttemptDisplayInitialization()) {
         usleep(1000);
         continue;
@@ -127,6 +130,7 @@ void TunnelEngine::GameLoop() {
       mHasStarted = true;
     } else {
       PlatformEventLoop::GetInstance().PollEvents();
+      ProcessPendingBackPresses();
       PollGameController();
       mGameAssetManager->UpdateGameAssetManager();
       if (mApp->textInputState) {
@@ -140,6 +144,8 @@ void TunnelEngine::GameLoop() {
       if (IsAnimating()) {
         DoFrame();
       }
+      // After DoFrame, which installs requested scenes
+      UpdateBackHandling();
     }
   }
 }
@@ -232,13 +238,15 @@ void TunnelEngine::SaveGameToCloud(int level) {
       mApp->activity->javaGameActivity, saveCloudCheckpointID, (jint)level);
 }
 
-void TunnelEngine::ReportJoyKeyState(int keyCode, bool state) {
-  bool wentDown = !mJoyKeyState[keyCode] && state;
-  bool wentUp = mJoyKeyState[keyCode] && !state;
-  mJoyKeyState[keyCode] = state;
+void TunnelEngine::ReportJoyKeyState(int keyCode, bool state, bool fromStick) {
+  bool *keyState = fromStick ? mStickKeyState : mJoyKeyState;
+  bool wentDown = !keyState[keyCode] && state;
+  bool wentUp = keyState[keyCode] && !state;
+  keyState[keyCode] = state;
 
   struct CookedEvent ev{0};
   ev.keyCode = keyCode;
+  ev.keyFromStick = fromStick;
 
   if (wentUp) {
     ev.type = COOKED_EVENT_TYPE_KEY_UP;
@@ -250,50 +258,72 @@ void TunnelEngine::ReportJoyKeyState(int keyCode, bool state) {
 }
 
 void TunnelEngine::ReportJoyKeyStatesFromAxis(float x, float y) {
-  ReportJoyKeyState(OURKEY_LEFT, x < -0.5f);
-  ReportJoyKeyState(OURKEY_RIGHT, x > 0.5f);
-  ReportJoyKeyState(OURKEY_UP, y < -0.5f);
-  ReportJoyKeyState(OURKEY_DOWN, y > 0.5f);
+  ReportJoyKeyState(OURKEY_LEFT, x < -0.5f, true);
+  ReportJoyKeyState(OURKEY_RIGHT, x > 0.5f, true);
+  ReportJoyKeyState(OURKEY_UP, y < -0.5f, true);
+  ReportJoyKeyState(OURKEY_DOWN, y > 0.5f, true);
 }
 
 void TunnelEngine::CheckControllerButton(const uint32_t buttonsDown,
                                          const InputAction &inputAction) {
   if (buttonsDown & inputAction.buttonMask) {
-    ReportJoyKeyState(inputAction.actionCode, true);
+    ReportJoyKeyState(inputAction.actionCode, true, false);
   } else if (mPrevButtonsDown & inputAction.buttonMask) {
-    ReportJoyKeyState(inputAction.actionCode, false);
+    ReportJoyKeyState(inputAction.actionCode, false, false);
   }
+}
+
+void TunnelEngine::ReleaseControllerInput() {
+  for (int i = 0; i < OURKEY_COUNT; ++i) {
+    ReportJoyKeyState(i, false, false);
+    ReportJoyKeyState(i, false, true);
+  }
+  mPrevButtonsDown = 0;
+
+  // Center the stick, so joystick steering doesn't keep its last velocity
+  struct CookedEvent ev;
+  memset(&ev, 0, sizeof(ev));
+  ev.type = COOKED_EVENT_TYPE_JOY;
+  ProcessCookedEvent(&ev);
 }
 
 void TunnelEngine::PollGameController() {
   GameControllerManager &gcManager = UserInputManager::GetInstance().GetGameControllerManager();
 
-  if (gcManager.GetControllerSupport()) {
-    // We only read game controller index 0
-    GameController &gc = gcManager.GetGameController(0);
-    if (gc.GetControllerActive()) {
-      const GameController::GameControllerData &controllerData = gc.GetControllerData();
-
-      // Generate events from buttons
-      for (int i = 0; i < INPUT_ACTION_COUNT; ++i) {
-        CheckControllerButton(controllerData.buttons_down, INPUT_ACTIONS[i]);
-      }
-
-      // Generate an event for the stick position
-      struct CookedEvent ev;
-      memset(&ev, 0, sizeof(ev));
-      ev.type = COOKED_EVENT_TYPE_JOY;
-      ev.joyX = controllerData.left_stick.stick_x;
-      ev.joyY = controllerData.left_stick.stick_y;
-      ProcessCookedEvent(&ev);
-
-      // Also generate directional button events from the stick position
-      ReportJoyKeyStatesFromAxis(ev.joyX, ev.joyY);
-
-      // Update our prev variable so we can detect delta changes from down to up
-      mPrevButtonsDown = controllerData.buttons_down;
+  // We only read game controller index 0
+  const bool active = gcManager.GetControllerSupport() &&
+      gcManager.GetGameController(0).GetControllerActive();
+  if (!active) {
+    if (mControllerWasActive) {
+      // Disconnected (or support went away) with buttons or the stick possibly held
+      mControllerWasActive = false;
+      ReleaseControllerInput();
     }
+    return;
   }
+  mControllerWasActive = true;
+
+  GameController &gc = gcManager.GetGameController(0);
+  const GameController::GameControllerData &controllerData = gc.GetControllerData();
+
+  // Generate events from buttons
+  for (int i = 0; i < INPUT_ACTION_COUNT; ++i) {
+    CheckControllerButton(controllerData.buttons_down, INPUT_ACTIONS[i]);
+  }
+
+  // Generate an event for the stick position
+  struct CookedEvent ev;
+  memset(&ev, 0, sizeof(ev));
+  ev.type = COOKED_EVENT_TYPE_JOY;
+  ev.joyX = controllerData.left_stick.stick_x;
+  ev.joyY = controllerData.left_stick.stick_y;
+  ProcessCookedEvent(&ev);
+
+  // Also generate directional key events from the stick position (for menu navigation)
+  ReportJoyKeyStatesFromAxis(ev.joyX, ev.joyY);
+
+  // Update our prev variable so we can detect delta changes from down to up
+  mPrevButtonsDown = controllerData.buttons_down;
 }
 
 // TODO: rename the methods according to your package name

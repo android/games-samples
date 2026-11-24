@@ -54,6 +54,15 @@ public:
     // Called when the device's back key is pressed
     virtual bool OnBackKeyPressed();
 
+    // Whether OnBackKeyPressed uses back presses. If not, Back is left to the system (e.g.
+    // leaving the game, with the predictive back animation).
+    virtual bool HandlesBack();
+
+    // Whether directional keys derived from the game controller's stick should be delivered
+    // as key events (e.g. for menu navigation). Scenes that steer with the stick (OnJoy) can
+    // return false so the stick doesn't also act as digital keys.
+    virtual bool WantsStickDirectionKeys();
+
     // Called when a key goes down
     virtual void OnKeyDown(int ourKeyCode);
 

@@ -103,9 +103,13 @@ class TunnelEngine : public NativeEngine {
   // is cloud save enabled
   bool mCloudSaveEnabled;
 
-  // Util functions, action mapping and state data for game controller inputs
+  // Util functions, action mapping and state data for game controller inputs.
+  // Key states reported for the controller's buttons and, separately, for its stick
+  // directions (so a centered stick doesn't release a held dpad button, and vice versa).
   bool mJoyKeyState[OURKEY_COUNT];
+  bool mStickKeyState[OURKEY_COUNT];
   uint32_t mPrevButtonsDown = 0;
+  bool mControllerWasActive = false;
 
   struct InputAction {
     uint32_t buttonMask;
@@ -121,9 +125,11 @@ class TunnelEngine : public NativeEngine {
       {GameController::kButton_Dpad_Right, OURKEY_RIGHT}
   };
 
-  void ReportJoyKeyState(int keyCode, bool state);
+  void ReportJoyKeyState(int keyCode, bool state, bool fromStick);
   void ReportJoyKeyStatesFromAxis(float x, float y);
   void CheckControllerButton(const uint32_t buttonsDown, const InputAction &inputAction);
+  // Release everything the controller holds (e.g. when it disconnects)
+  void ReleaseControllerInput();
 };
 
 #endif // agdktunnel_tunnel_engine_hpp

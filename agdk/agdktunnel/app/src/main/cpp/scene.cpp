@@ -37,6 +37,10 @@ void Scene::OnPointerMove(int /*pointerId*/, const struct PointerCoords */*coord
 
 bool Scene::OnBackKeyPressed() { return false; }
 
+bool Scene::HandlesBack() { return false; }
+
+bool Scene::WantsStickDirectionKeys() { return true; }
+
 void Scene::OnKeyDown(int /*ourKeycode*/) {}
 
 void Scene::OnKeyUp(int /*ourKeycode*/) {}

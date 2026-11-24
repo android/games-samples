@@ -59,8 +59,11 @@ struct CookedEvent {
     float motionMinX, motionMaxX;
     float motionMinY, motionMaxY;
 
-    // for key events
+    // for key events: one of our key codes (OURKEY_*, see getOurKeyFromAndroidKey)
     int keyCode;
+
+    // for key events: derived from the game controller's stick position (not a button or key)
+    bool keyFromStick;
 
     // whether a text input has occurred
     bool textInputState;
