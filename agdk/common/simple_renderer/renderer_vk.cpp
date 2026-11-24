@@ -37,6 +37,8 @@ RendererVk& RendererVk::GetInstanceVk() {
 RendererVk::RendererVk() :
     staging_command_buffer_(VK_NULL_HANDLE),
     render_command_buffer_(VK_NULL_HANDLE),
+    frame_active_(false),
+    frame_acquired_(false),
     active_extent_{0, 0},
     active_frame_pool_(VK_NULL_HANDLE),
     active_rotation_(DisplayManager::kSwapchain_Rotation_None),
@@ -92,8 +94,12 @@ RendererVk::~RendererVk() {
 }
 
 void RendererVk::PrepareShutdown() {
+  // The GPU may still be using the resources released below
+  vkDeviceWaitIdle(vk_.device);
   render_pass_ = nullptr;
   render_state_ = nullptr;
+  frame_active_ = false;
+  frame_acquired_ = false;
   resources_.ProcessDeleteQueue();
 
   DestroyCommandBuffers();
@@ -129,23 +135,45 @@ bool RendererVk::GetFeatureAvailable(const RendererFeature feature) {
 void RendererVk::BeginFrame(
     const base_game_framework::DisplayManager::SwapchainHandle swapchain_handle) {
   resources_.ProcessDeleteQueue();
+  frame_active_ = false;
+  frame_acquired_ = false;
   // At the moment, we don't support render targets, so grab a swapchain image
   // as soon as we start a frame
   DisplayManager& display_manager = DisplayManager::GetInstance();
-  const DisplayManager::SwapchainFrameHandle frame_handle =
+  DisplayManager::SwapchainFrameHandle frame_handle =
       display_manager.GetCurrentSwapchainFrame(swapchain_handle);
-  if (frame_handle != DisplayManager::kInvalid_swapchain_handle) {
-    display_manager.GetSwapchainFrameResourcesVk(frame_handle, swap_, true);
-    active_extent_ = swap_.swapchain_extent;
-    active_rotation_ = display_manager.GetSwapchainRotationMode(swapchain_handle);
-
-    RENDERER_ASSERT(swap_.swapchain_frame_index < descriptor_pools_.size());
-    active_frame_pool_ = descriptor_pools_[swap_.swapchain_frame_index];
-    VkResult reset_result = vkResetDescriptorPool(vk_.device, active_frame_pool_, 0);
-    RENDERER_CHECK_VK(reset_result, "vkResetDescriptorPool");
+  bool acquired = (frame_handle != DisplayManager::kInvalid_swapchain_handle) &&
+      display_manager.GetSwapchainFrameResourcesVk(frame_handle, swap_, true);
+  if (!acquired) {
+    // An out of date swapchain is recreated when acquiring fails, so try again with the new one
+    frame_handle = display_manager.GetCurrentSwapchainFrame(swapchain_handle);
+    acquired = (frame_handle != DisplayManager::kInvalid_swapchain_handle) &&
+        display_manager.GetSwapchainFrameResourcesVk(frame_handle, swap_, true);
   }
+  if (!acquired) {
+    // No image to render to: skip the frame. The frame's resources (swap_) weren't updated
+    // and may refer to a destroyed swapchain, and nothing signals the image available
+    // semaphore, so nothing may be recorded or submitted.
+    RENDERER_LOG("BeginFrame: no swapchain image acquired, skipping the frame");
+    return;
+  }
+  // The image is acquired: the frame must be submitted (EndFrame), even if nothing can be
+  // recorded, to signal its semaphores and fence for the present and the next frame
+  frame_acquired_ = true;
+  active_extent_ = swap_.swapchain_extent;
+  active_rotation_ = display_manager.GetSwapchainRotationMode(swapchain_handle);
 
-  render_command_buffer_ = command_buffers_[swap_.swapchain_frame_index];
+  // Per in-flight frame resources (sized from the same display buffer mode as the swapchain)
+  const uint32_t frame_index = swap_.swapchain_frame_index;
+  RENDERER_ASSERT(frame_index < descriptor_pools_.size() && frame_index < command_buffers_.size());
+  if (frame_index >= descriptor_pools_.size() || frame_index >= command_buffers_.size()) {
+    return;
+  }
+  active_frame_pool_ = descriptor_pools_[frame_index];
+  VkResult reset_result = vkResetDescriptorPool(vk_.device, active_frame_pool_, 0);
+  RENDERER_CHECK_VK(reset_result, "vkResetDescriptorPool");
+
+  render_command_buffer_ = command_buffers_[frame_index];
 
   const VkResult reset_command_result = vkResetCommandBuffer(render_command_buffer_, 0);
   RENDERER_CHECK_VK(reset_command_result, "vkResetCommandBuffer");
@@ -155,7 +183,11 @@ void RendererVk::BeginFrame(
   command_buffer_begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   const VkResult begin_command_result = vkBeginCommandBuffer(render_command_buffer_,
                                                              &command_buffer_begin_info);
-  RENDERER_CHECK_VK(begin_command_result, "vkBeginCommandBuffer");
+  if (!RENDERER_CHECK_VK(begin_command_result, "vkBeginCommandBuffer")) {
+    // Not recording: nothing is recorded, EndFrame submits without the command buffer
+    return;
+  }
+  frame_active_ = true;
 
   // We enabled dynamic viewport and width in the pipeline object,
   // so set them at the beginning of our render command buffer
@@ -177,13 +209,29 @@ void RendererVk::BeginFrame(
 }
 
 void RendererVk::EndFrame() {
-  if (render_pass_.get() != nullptr) {
-    render_pass_.get()->EndRenderPass();
-    render_pass_ = nullptr;
+  const bool recorded = frame_active_;
+  const bool acquired = frame_acquired_;
+  frame_active_ = false;
+  frame_acquired_ = false;
+  if (recorded) {
+    if (render_pass_.get() != nullptr) {
+      render_pass_.get()->EndRenderPass();
+    }
+    vkEndCommandBuffer(render_command_buffer_);
   }
+  render_pass_ = nullptr;
   render_state_ = nullptr;
-  vkEndCommandBuffer(render_command_buffer_);
+  active_frame_pool_ = VK_NULL_HANDLE;
+  texture_descriptor_frame_cache_.clear();
+  ResetBoundDescriptorSet();
+  if (!acquired) {
+    // Skipped frame (see BeginFrame): no image, nothing to submit
+    return;
+  }
 
+  // Submit the frame; without a recorded command buffer (recording couldn't start), still
+  // wait on the image available semaphore and signal the render complete semaphore and frame
+  // fence, which the present and the next use of this frame's resources wait on
   VkSubmitInfo submit_info{};
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -194,20 +242,23 @@ void RendererVk::EndFrame() {
   submit_info.waitSemaphoreCount = 1;
   submit_info.pWaitSemaphores = wait_semaphores;
   submit_info.pWaitDstStageMask = wait_stages;
-  submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers = &render_command_buffer_;
+  submit_info.commandBufferCount = recorded ? 1 : 0;
+  submit_info.pCommandBuffers = recorded ? &render_command_buffer_ : nullptr;
   submit_info.signalSemaphoreCount = 1;
   submit_info.pSignalSemaphores = signal_semaphores;
 
   const VkResult queue_result = vkQueueSubmit(vk_.render_queue, 1, &submit_info, swap_.frame_fence);
   RENDERER_CHECK_VK(queue_result, "vkQueueSubmit");
-
-  active_frame_pool_ = VK_NULL_HANDLE;
-  texture_descriptor_frame_cache_.clear();
-  ResetBoundDescriptorSet();
 }
 
 void RendererVk::SwapchainRecreated() {
+  // The swapchain images may still be in use, e.g. if a frame was in flight
+  vkDeviceWaitIdle(vk_.device);
+  // If this happens during a frame, the frame's swapchain resources (fence, semaphores, image
+  // views) were destroyed with the old swapchain: abandon the frame (the command buffer is
+  // reset by the next BeginFrame), and don't submit or record anything else in it
+  frame_active_ = false;
+  frame_acquired_ = false;
   // Our cached framebuffers were associated with image view from the old
   // swapchain, purge the cache to rebuild them using the new swapchain
   for (auto &render_pass : resources_.GetRenderPasses()) {
@@ -233,6 +284,9 @@ void RendererVk::BindDirtyDescriptorSet(const RenderStateVk& state) {
 }
 
 void RendererVk::Draw(const uint32_t vertex_count, const uint32_t first_vertex) {
+  if (!frame_active_) {
+    return;
+  }
   RenderStateVk& state = *(static_cast<RenderStateVk*>(render_state_.get()));
   BindDirtyDescriptorSet(state);
   // Viewport or scissor changed while the state was bound
@@ -247,6 +301,9 @@ void RendererVk::Draw(const uint32_t vertex_count, const uint32_t first_vertex) 
 }
 
 void RendererVk::DrawIndexed(const uint32_t index_count, const uint32_t first_index) {
+  if (!frame_active_) {
+    return;
+  }
   RenderStateVk& state = *(static_cast<RenderStateVk*>(render_state_.get()));
   BindDirtyDescriptorSet(state);
   // Viewport or scissor changed while the state was bound
@@ -261,6 +318,10 @@ void RendererVk::DrawIndexed(const uint32_t index_count, const uint32_t first_in
 }
 
 void RendererVk::SetRenderPass(std::shared_ptr<RenderPass> render_pass) {
+  if (!frame_active_) {
+    // Skipped frame: no command buffer to record the pass into
+    return;
+  }
   // Setting a render pass always ends the current one and begins the new one, even if it is
   // the same pass (which loads/clears its attachments again), as RendererGLES does
   if (render_pass_ != nullptr) {
@@ -276,6 +337,9 @@ void RendererVk::SetRenderPass(std::shared_ptr<RenderPass> render_pass) {
 }
 
 void RendererVk::SetRenderState(std::shared_ptr<RenderState> render_state) {
+  if (!frame_active_) {
+    return;
+  }
   if (render_state.get() != render_state_.get()) {
     render_state_ = render_state;
     // Textures are bound again for the new state (its descriptor set layout may differ)
@@ -388,12 +452,18 @@ void RendererVk::ApplyViewportAndScissor(RenderStateVk& state) {
 }
 
 void RendererVk::BindIndexBuffer(std::shared_ptr<IndexBuffer> index_buffer) {
+  if (!frame_active_) {
+    return;
+  }
   IndexBufferVk& index_buffer_vk = *(static_cast<IndexBufferVk*>(index_buffer.get()));
   vkCmdBindIndexBuffer(render_command_buffer_, index_buffer_vk.GetIndexBuffer(),
                        0, VK_INDEX_TYPE_UINT16);
 }
 
 void RendererVk::BindVertexBuffer(std::shared_ptr<VertexBuffer> vertex_buffer) {
+  if (!frame_active_) {
+    return;
+  }
   VertexBufferVk& vertex_buffer_vk = *(static_cast<VertexBufferVk*>(vertex_buffer.get()));
   VkBuffer vertex_buffers[] = {vertex_buffer_vk.GetVertexBuffer()};
   VkDeviceSize vertex_offsets[] = {0};
@@ -401,6 +471,10 @@ void RendererVk::BindVertexBuffer(std::shared_ptr<VertexBuffer> vertex_buffer) {
 }
 
 void RendererVk::BindTexture(std::shared_ptr<Texture> texture) {
+  if (!frame_active_) {
+    // Skipped frame: no frame descriptor pool to allocate from
+    return;
+  }
   const TextureVk* texture_vk = static_cast<const TextureVk*>(texture.get());
   if (texture_vk == nullptr || texture_vk->GetImageView() == VK_NULL_HANDLE ||
       texture_vk->GetSampler() == VK_NULL_HANDLE) {

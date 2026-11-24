@@ -15,6 +15,7 @@
  */
 
 #include "renderer_interface.h"
+#include "renderer_debug.h"
 #include "renderer_gles.h"
 #include "renderer_vk.h"
 
@@ -26,6 +27,14 @@ base_game_framework::DisplayManager::SwapchainHandle Renderer::swapchain_handle_
 std::unique_ptr<Renderer> Renderer::instance_ = nullptr;
 
 void Renderer::SetRendererAPI(const RendererAPI api) {
+  if (Renderer::instance_ != nullptr && api != Renderer::renderer_api_) {
+    // The existing instance is for the other API (e.g. GetInstance was called before the API
+    // was set); using it with this API's resources would be a type confusion. Shut it down
+    // so GetInstance creates one for the new API.
+    RENDERER_ERROR("SetRendererAPI: replacing a renderer instance created for another API");
+    RENDERER_ASSERT(false);
+    ShutdownInstance();
+  }
   Renderer::renderer_api_ = api;
 }
 
@@ -46,8 +55,10 @@ Renderer &Renderer::GetInstance() {
 }
 
 void Renderer::ShutdownInstance() {
-  Renderer::instance_->PrepareShutdown();
-  Renderer::instance_.reset();
+  if (Renderer::instance_ != nullptr) {
+    Renderer::instance_->PrepareShutdown();
+    Renderer::instance_.reset();
+  }
 }
 
 Renderer::Renderer() {

@@ -515,6 +515,11 @@ void GraphicsAPIGLES::LostSurfaceGLES() {
 }
 
 void GraphicsAPIGLES::RestoreSurfaceGLES() {
+  // Nothing to restore without an initialized swapchain (no config or context yet), or if
+  // the surface wasn't lost
+  if (swapchain_frame_count_ == 0 || egl_surface_ != EGL_NO_SURFACE) {
+    return;
+  }
   // The context survives surface loss, so recreate the surface with the config the context
   // was created with rather than choosing a config again.
   egl_surface_ = CreateWindowSurface(egl_config_, swapchain_format_);
@@ -526,6 +531,9 @@ void GraphicsAPIGLES::RestoreSurfaceGLES() {
                         DebugManager::kLog_Level_Error,
                         BGM_CLASS_TAG,
                         "RestoreSurfaceGLES failed to set current with new EGLSurface");
+      // Don't keep a surface that can't be used (GetSwapchainValid would report it valid)
+      eglDestroySurface(egl_display_, egl_surface_);
+      egl_surface_ = EGL_NO_SURFACE;
     }
   } else {
     DebugManager::Log(DebugManager::kLog_Channel_Default,
@@ -577,6 +585,10 @@ DisplayManager::InitSwapchainResult GraphicsAPIGLES::InitSwapchain(
 }
 
 void GraphicsAPIGLES::ShutdownSwapchain() {
+  // Also called after the surface was lost, but not without an initialized swapchain
+  if (swapchain_frame_count_ == 0) {
+    return;
+  }
   PlatformUtilGLES::PlatformShutdownSwapchain();
   eglMakeCurrent(egl_display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
   if (egl_context_ != EGL_NO_CONTEXT) {

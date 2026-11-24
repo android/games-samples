@@ -187,6 +187,13 @@ class RendererVk : public Renderer {
 
   // Active frame resources
   VkCommandBuffer render_command_buffer_;
+  // A swapchain image was acquired and the render command buffer is recording. If BeginFrame
+  // couldn't acquire an image (e.g. the swapchain is out of date, or there is no window),
+  // nothing is recorded or submitted for the frame.
+  bool frame_active_;
+  // A swapchain image was acquired this frame, so EndFrame must submit (to signal the frame's
+  // semaphores and fence), even if recording couldn't start (frame_active_ false)
+  bool frame_acquired_;
   VkExtent2D active_extent_;
   VkDescriptorPool active_frame_pool_;
   // Pre-rotation of the swapchain this frame (see DisplayManager::GetSwapchainRotationMode)

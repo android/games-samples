@@ -32,24 +32,39 @@ namespace simple_renderer {
 
 static const char *kAstcExtensionString = "GL_OES_texture_compression_astc";
 
-RendererGLES::RendererGLES() {
-  GraphicsAPIResourcesGLES graphics_api_resources_gles;
-  SwapchainFrameResourcesGLES swapchain_frame_resources_gles;
-  DisplayManager& display_manager = DisplayManager::GetInstance();
-  display_manager.GetGraphicsAPIResourcesGLES(graphics_api_resources_gles);
-  const base_game_framework::DisplayManager::SwapchainFrameHandle frame_handle =
-      display_manager.GetCurrentSwapchainFrame(Renderer::GetSwapchainHandle());
-  display_manager.GetSwapchainFrameResourcesGLES(frame_handle, swapchain_frame_resources_gles);
-  egl_context_ = graphics_api_resources_gles.egl_context;
-  egl_display_ = swapchain_frame_resources_gles.egl_display;
-  egl_surface_ = swapchain_frame_resources_gles.egl_surface;
-
+RendererGLES::RendererGLES() :
+    swapchain_handle_(Renderer::GetSwapchainHandle()),
+    frame_active_(false),
+    egl_context_(EGL_NO_CONTEXT),
+    egl_display_(EGL_NO_DISPLAY),
+    egl_surface_(EGL_NO_SURFACE) {
   // Call BeginFrame to make sure the context is set in case the user starts creating resources
   // immediately after initialization
   BeginFrame(Renderer::GetSwapchainHandle());
 }
 
 RendererGLES::~RendererGLES() {
+}
+
+void RendererGLES::RefreshEGLResources() {
+  // The surface is destroyed and recreated when the window is lost and gained (and the
+  // context with the swapchain), so don't keep using handles from an earlier frame
+  DisplayManager& display_manager = DisplayManager::GetInstance();
+  GraphicsAPIResourcesGLES graphics_api_resources_gles;
+  egl_context_ = display_manager.GetGraphicsAPIResourcesGLES(graphics_api_resources_gles) ?
+      graphics_api_resources_gles.egl_context : EGL_NO_CONTEXT;
+  SwapchainFrameResourcesGLES swapchain_frame_resources_gles;
+  const base_game_framework::DisplayManager::SwapchainFrameHandle frame_handle =
+      display_manager.GetCurrentSwapchainFrame(swapchain_handle_);
+  if (display_manager.GetSwapchainFrameResourcesGLES(frame_handle,
+                                                     swapchain_frame_resources_gles)) {
+    egl_display_ = swapchain_frame_resources_gles.egl_display;
+    egl_surface_ = swapchain_frame_resources_gles.egl_surface;
+  } else {
+    // No valid swapchain (e.g. no window)
+    egl_display_ = EGL_NO_DISPLAY;
+    egl_surface_ = EGL_NO_SURFACE;
+  }
 }
 
 void RendererGLES::PrepareShutdown() {
@@ -82,29 +97,41 @@ bool RendererGLES::GetFeatureAvailable(const RendererFeature feature) {
 }
 
 void RendererGLES::BeginFrame(
-    const base_game_framework::DisplayManager::SwapchainHandle /*swapchain_handle*/) {
-  resources_.ProcessDeleteQueue();
-  EGLBoolean result = eglMakeCurrent(egl_display_, egl_surface_, egl_surface_, egl_context_);
-  if (result == EGL_FALSE) {
-    RENDERER_ERROR("eglMakeCurrent failed: %d", eglGetError());
+    const base_game_framework::DisplayManager::SwapchainHandle swapchain_handle) {
+  swapchain_handle_ = swapchain_handle;
+  RefreshEGLResources();
+  frame_active_ = false;
+  if (egl_surface_ != EGL_NO_SURFACE && egl_context_ != EGL_NO_CONTEXT) {
+    if (eglMakeCurrent(egl_display_, egl_surface_, egl_surface_, egl_context_) == EGL_TRUE) {
+      frame_active_ = true;
+    } else {
+      RENDERER_ERROR("eglMakeCurrent failed: %d", eglGetError());
+    }
   }
+  if (!frame_active_) {
+    // No surface (e.g. no window) or context: skip the frame. Queued deletions wait for a
+    // current context (GL deletes without one are ignored, leaking the objects).
+    return;
+  }
+  resources_.ProcessDeleteQueue();
 
-  // Make sure errors are cleared at top of frame
-  GLenum gl_error = glGetError();
-  while (gl_error != GL_NO_ERROR) {
-    gl_error = glGetError();
+  // Make sure errors are cleared at top of frame (bounded, in case of a lost context)
+  for (int i = 0; i < 32 && glGetError() != GL_NO_ERROR; ++i) {
   }
 }
 
 void RendererGLES::EndFrame() {
-  EndRenderPass();
+  if (frame_active_) {
+    EndRenderPass();
+  }
 
-  // Clear current render pass
+  // Clear current render pass and state
   render_pass_ = nullptr;
+  render_state_ = nullptr;
 }
 
 void RendererGLES::SwapchainRecreated() {
-
+  RefreshEGLResources();
 }
 
 void RendererGLES::EndRenderPass() {
@@ -123,6 +150,10 @@ void RendererGLES::EndRenderPass() {
 }
 
 void RendererGLES::Draw(const uint32_t vertex_count, const uint32_t first_vertex) {
+  if (!frame_active_) {
+    // Skipped frame (see BeginFrame)
+    return;
+  }
   // Update any uniform data that might have changed between draw calls
   RenderStateGLES& state = *(static_cast<RenderStateGLES*>(render_state_.get()));
   // Viewport or scissor changed while the state was bound
@@ -136,6 +167,10 @@ void RendererGLES::Draw(const uint32_t vertex_count, const uint32_t first_vertex
 }
 
 void RendererGLES::DrawIndexed(const uint32_t index_count, const uint32_t first_index) {
+  if (!frame_active_) {
+    // Skipped frame (see BeginFrame)
+    return;
+  }
   // Update any uniform data that might have changed between draw calls
   RenderStateGLES& state = *(static_cast<RenderStateGLES*>(render_state_.get()));
   // Viewport or scissor changed while the state was bound
@@ -152,6 +187,10 @@ void RendererGLES::DrawIndexed(const uint32_t index_count, const uint32_t first_
 }
 
 void RendererGLES::SetRenderPass(std::shared_ptr<RenderPass> render_pass) {
+  if (!frame_active_) {
+    // Skipped frame (see BeginFrame)
+    return;
+  }
   // End any currently active render pass
   EndRenderPass();
 
@@ -163,6 +202,10 @@ void RendererGLES::SetRenderPass(std::shared_ptr<RenderPass> render_pass) {
 }
 
 void RendererGLES::SetRenderState(std::shared_ptr<RenderState> render_state) {
+  if (!frame_active_) {
+    // Skipped frame (see BeginFrame)
+    return;
+  }
   // Exit early if we are setting a render state that is already the current one
   if (render_state_.get() == render_state.get()) {
     return;
@@ -184,6 +227,10 @@ void RendererGLES::SetRenderState(std::shared_ptr<RenderState> render_state) {
 }
 
 void RendererGLES::BindIndexBuffer(std::shared_ptr<IndexBuffer> index_buffer) {
+  if (!frame_active_) {
+    // Skipped frame (see BeginFrame)
+    return;
+  }
   if (index_buffer == nullptr) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     RENDERER_CHECK_GLES("glBindBuffer GL_ELEMENT_ARRAY_BUFFER reset");
@@ -195,6 +242,10 @@ void RendererGLES::BindIndexBuffer(std::shared_ptr<IndexBuffer> index_buffer) {
 }
 
 void RendererGLES::BindVertexBuffer(std::shared_ptr<VertexBuffer> vertex_buffer) {
+  if (!frame_active_) {
+    // Skipped frame (see BeginFrame)
+    return;
+  }
   if (vertex_buffer == nullptr) {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     RENDERER_CHECK_GLES("glBindBuffer GL_ARRAY_BUFFER reset");
@@ -206,6 +257,10 @@ void RendererGLES::BindVertexBuffer(std::shared_ptr<VertexBuffer> vertex_buffer)
 }
 
 void RendererGLES::BindTexture(std::shared_ptr<Texture> texture) {
+  if (!frame_active_) {
+    // Skipped frame (see BeginFrame)
+    return;
+  }
   if (texture == nullptr) {
     glBindTexture(GL_TEXTURE_2D, 0);
     RENDERER_CHECK_GLES("glBindTexture reset");

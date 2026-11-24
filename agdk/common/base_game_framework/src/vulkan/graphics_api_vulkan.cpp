@@ -18,12 +18,19 @@
 #include "debug_manager.h"
 #include "graphics_api_vulkan_utils.h"
 #include "platform_util_vulkan.h"
+#include <algorithm>
 #include <cstring>
 #include <vector>
 
 namespace base_game_framework {
 
 static constexpr DisplayManager::SwapchainFrameHandle kDefault_swapchain_handle = 1;
+
+// The number of in-flight frames for a display buffer mode (anything but triple buffering is
+// double buffering, as in RendererVk)
+static uint32_t GetInFlightFrameCount(const DisplayManager::DisplayBufferMode buffer_mode) {
+  return (buffer_mode == DisplayManager::kDisplay_Triple_Buffer) ? 3 : 2;
+}
 
 bool GraphicsAPIVulkan::enable_validation_layers_ = false;
 
@@ -65,8 +72,8 @@ GraphicsAPIVulkan::GraphicsAPIVulkan()
       swapchain_max_frames_(0),
       swapchain_present_modes_(0),
       swapchain_acquired_current_frame_image_(false),
+      swapchain_initialized_(false),
       in_flight_frame_fence_(),
-      frame_render_completion_semaphore_(),
       swapchain_image_semaphore_(),
       swapchain_info_(),
       debug_messenger_(VK_NULL_HANDLE),
@@ -142,7 +149,7 @@ void GraphicsAPIVulkan::QueryCapabilities() {
 
           QueueFamilyIndices queue_indices = VulkanAPIUtils::FindQueueFamilies(
               vk_physical_device_, vk_surface_);
-          if (CreateDevice(true, queue_indices)) {
+          if (queue_indices.isComplete() && CreateDevice(true, queue_indices)) {
             // Temp formats for temp swapchain, on Android we need a swapchain
             // to pull refresh rates from Swappy
             if (!display_formats_.empty() && !display_resolutions_.empty()) {
@@ -337,6 +344,7 @@ void GraphicsAPIVulkan::QuerySurfaceCapabilities() {
   swapchain_info_.swapchain_image_count_ = swapchain_min_frames_;
   pretransform_flags_ = surface_capabilities_.currentTransform;
 
+  swapchain_present_modes_ = 0;
   uint32_t present_mode_count = 0;
   vkGetPhysicalDeviceSurfacePresentModesKHR(vk_physical_device_, vk_surface_, &present_mode_count,
                                             nullptr);
@@ -463,7 +471,7 @@ bool GraphicsAPIVulkan::InitializeGraphicsAPI() {
         QueryDeviceCapabilities(vk_physical_device_);
         QueueFamilyIndices queue_indices = VulkanAPIUtils::FindQueueFamilies(
             vk_physical_device_, vk_surface_);
-        if (CreateDevice(false, queue_indices)) {
+        if (queue_indices.isComplete() && CreateDevice(false, queue_indices)) {
           volkLoadDevice(vk_device_);
 
           // Initialize Vulkan Memory Allocator library
@@ -479,6 +487,14 @@ bool GraphicsAPIVulkan::InitializeGraphicsAPI() {
 
           VkResult vma_result = vmaCreateAllocator(&allocator_info, &allocator_);
           if (vma_result == VK_SUCCESS) {
+            // The swapchain configurations come from this instance's surface: the one
+            // QueryCapabilities used was temporary, and the window may have changed since
+            // (e.g. rotated or resized)
+            QuerySurfaceCapabilities();
+            VulkanAPIUtils::GetDisplayFormats(vk_physical_device_, vk_surface_,
+                                              display_formats_);
+            PlatformUtilVulkan::GetScreenResolutions(surface_capabilities_,
+                                                     display_resolutions_);
             api_status_ = kGraphicsAPI_Active;
             return true;
           }
@@ -497,9 +513,8 @@ bool GraphicsAPIVulkan::InitializeGraphicsAPI() {
 }
 
 void GraphicsAPIVulkan::ShutdownGraphicsAPI() {
-  if (vk_swapchain_ != VK_NULL_HANDLE) {
-    DestroySwapchain();
-  }
+  swapchain_initialized_ = false;
+  TeardownSwapchain();
   if (allocator_ != VK_NULL_HANDLE) {
     vmaDestroyAllocator(allocator_);
     allocator_ = VK_NULL_HANDLE;
@@ -538,6 +553,15 @@ DisplayManager::InitSwapchainResult GraphicsAPIVulkan::InitSwapchain(
     const DisplayManager::DisplaySwapInterval display_swap_interval,
     const uint32_t swapchain_frame_count,
     const DisplayManager::SwapchainPresentMode present_mode) {
+
+  // One swapchain at a time: a second InitSwapchain would leak the first (shut it down first)
+  if (swapchain_initialized_) {
+    DebugManager::Log(DebugManager::kLog_Channel_Default,
+                      DebugManager::kLog_Level_Error,
+                      BGM_CLASS_TAG,
+                      "InitSwapchain called with a swapchain already initialized");
+    return DisplayManager::kInit_Swapchain_Failure;
+  }
 
   // Validate parameters
   bool found_format = false;
@@ -611,49 +635,29 @@ DisplayManager::InitSwapchainResult GraphicsAPIVulkan::InitSwapchain(
       VK_PRESENT_MODE_FIFO_RELAXED_KHR
   };
 
-  QueueFamilyIndices queue_indices = VulkanAPIUtils::FindQueueFamilies(
-      vk_physical_device_, vk_surface_);
   swapchain_format_ = display_format;
   swapchain_resolution_ = display_resolution;
   swapchain_interval_ = display_swap_interval;
   swapchain_info_.swapchain_present_mode_ = kPresentModes[present_mode];
-  swapchain_info_.swapchain_image_count_ = swapchain_frame_count;
+  swapchain_info_.swapchain_requested_image_count_ = swapchain_frame_count;
+  // Fixed for the swapchain's lifetime (also when it is recreated), sizing the per-frame
+  // synchronization objects
+  swapchain_info_.swapchain_frame_count_ =
+      GetInFlightFrameCount(DisplayManager::GetInstance().GetDisplayBufferMode());
 
-  if (DisplayManager::GetInstance().GetDisplayBufferMode() ==
-      DisplayManager::kDisplay_Triple_Buffer) {
-    swapchain_info_.swapchain_frame_count_ = 3;
-  } else {
-    swapchain_info_.swapchain_frame_count_ = 2;
-  }
-
-  if (!CreateSwapchain(queue_indices)) {
+  if (!BuildSwapchain()) {
     return DisplayManager::kInit_Swapchain_Failure;
   }
-
-  if (!CreateSwapchainImages()) {
-    DestroySwapchain();
-    return DisplayManager::kInit_Swapchain_Failure;
-  }
-
-  if (!PlatformUtilVulkan::ActivateSwapchain(vk_physical_device_,
-                                             vk_device_,
-                                             vk_swapchain_,
-                                             vk_present_queue_,
-                                             present_queue_index_,
-                                             swapchain_interval_)) {
-    // Don't leave a half initialized swapchain that GetSwapchainValid reports as valid
-    PlatformUtilVulkan::DeactivateSwapchain(vk_device_, vk_swapchain_);
-    DestroySwapchain();
-    return DisplayManager::kInit_Swapchain_Failure;
-  }
+  swapchain_initialized_ = true;
   return DisplayManager::kInit_Swapchain_Success;
 }
 
 void GraphicsAPIVulkan::ShutdownSwapchain() {
-  vkDeviceWaitIdle(vk_device_);
-  PlatformUtilVulkan::DeactivateSwapchain(vk_device_, vk_swapchain_);
+  // Also when the window is lost (and the swapchain with it), so it isn't recreated when a
+  // window is gained
+  swapchain_initialized_ = false;
+  TeardownSwapchain();
   swapchain_info_.swapchain_frame_count_ = 0;
-  DestroySwapchain();
 }
 
 bool GraphicsAPIVulkan::GetSwapchainValid() {
@@ -678,8 +682,9 @@ DisplayManager::SwapchainFrameHandle GraphicsAPIVulkan::GetCurrentSwapchainFrame
 
 DisplayManager::SwapchainFrameHandle GraphicsAPIVulkan::PresentCurrentSwapchainFrame() {
   if (swapchain_acquired_current_frame_image_) {
+    const uint32_t image_index = swapchain_info_.swapchain_current_image_index_;
     VkSemaphore wait_semaphores[] =
-        {frame_render_completion_semaphore_[swapchain_info_.swapchain_current_frame_index_]};
+        {swapchain_info_.swapchain_render_complete_semaphores_[image_index]};
 
     VkPresentInfoKHR present_info{};
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -690,19 +695,19 @@ DisplayManager::SwapchainFrameHandle GraphicsAPIVulkan::PresentCurrentSwapchainF
     VkSwapchainKHR swap_chains[] = {vk_swapchain_};
     present_info.swapchainCount = 1;
     present_info.pSwapchains = swap_chains;
-    present_info.pImageIndices = &swapchain_info_.swapchain_current_image_index_;
+    present_info.pImageIndices = &image_index;
     present_info.pResults = nullptr;
 
     VkResult result = PlatformUtilVulkan::PresentSwapchain(vk_present_queue_, &present_info);
+    // The image is handed to the presentation engine even if the swapchain is suboptimal or
+    // out of date
+    swapchain_acquired_current_frame_image_ = false;
     if (result == VK_SUBOPTIMAL_KHR) {
       DebugManager::Log(DebugManager::kLog_Channel_Default,
                         DebugManager::kLog_Level_Warning,
                         BGM_CLASS_TAG,
                         "vkQueuePresentKHR returned VK_SUBOPTIMAL_KHR");
-      // Update transform flags and recreate swapchain
-      vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk_physical_device_, vk_surface_,
-                                                &surface_capabilities_);
-      pretransform_flags_ = surface_capabilities_.currentTransform;
+      // e.g. the surface transform changed; recreate for the current surface properties
       RecreateSwapchain();
     } else if (result == VK_ERROR_OUT_OF_DATE_KHR) {
       DebugManager::Log(DebugManager::kLog_Channel_Default,
@@ -717,15 +722,18 @@ DisplayManager::SwapchainFrameHandle GraphicsAPIVulkan::PresentCurrentSwapchainF
                         "vkQueuePresentKHR failed: %d", result);
     }
 
-    swapchain_acquired_current_frame_image_ = false;
-    swapchain_info_.swapchain_current_frame_index_ =
-        (swapchain_info_.swapchain_current_frame_index_ + 1) %
-            swapchain_info_.swapchain_frame_count_;
+    // The swapchain may have been recreated or shut down by a callback above
+    if (swapchain_info_.swapchain_frame_count_ != 0) {
+      swapchain_info_.swapchain_current_frame_index_ =
+          (swapchain_info_.swapchain_current_frame_index_ + 1) %
+              swapchain_info_.swapchain_frame_count_;
+    }
   } else {
+    // e.g. the frame's image couldn't be acquired because the swapchain was out of date
     DebugManager::Log(DebugManager::kLog_Channel_Default,
-                      DebugManager::kLog_Level_Error,
+                      DebugManager::kLog_Level_Warning,
                       BGM_CLASS_TAG,
-                      "PresentCurrentSwapchainFrame called without valid frame image");
+                      "PresentCurrentSwapchainFrame: no frame image was acquired, not presenting");
   }
 
   return kDefault_swapchain_handle;
@@ -746,7 +754,8 @@ bool GraphicsAPIVulkan::GetSwapchainFrameResourcesVk(
     const DisplayManager::SwapchainFrameHandle frame_handle,
     SwapchainFrameResourcesVk &frame_resources, bool acquire_frame_image) {
   if (frame_handle != DisplayManager::kInvalid_swapchain_handle &&
-      vk_device_ != VK_NULL_HANDLE && vk_swapchain_ != VK_NULL_HANDLE) {
+      vk_device_ != VK_NULL_HANDLE && vk_swapchain_ != VK_NULL_HANDLE &&
+      swapchain_info_.swapchain_current_frame_index_ < in_flight_frame_fence_.size()) {
 
     // If we haven't acquired the image for this frame, do it now
     if (!swapchain_acquired_current_frame_image_ && acquire_frame_image) {
@@ -785,14 +794,19 @@ bool GraphicsAPIVulkan::GetSwapchainFrameResourcesVk(
         in_flight_frame_fence_[swapchain_info_.swapchain_current_frame_index_];
     frame_resources.image_available =
         swapchain_image_semaphore_[swapchain_info_.swapchain_current_frame_index_];
+    // Per swapchain image, not per frame (see swapchain_render_complete_semaphores_)
+    const uint32_t image_index = swapchain_info_.swapchain_current_image_index_;
+    const std::vector<VkSemaphore> &render_complete_semaphores =
+        swapchain_info_.swapchain_render_complete_semaphores_;
     frame_resources.render_complete =
-        frame_render_completion_semaphore_[swapchain_info_.swapchain_current_frame_index_];
+        (image_index < render_complete_semaphores.size()) ?
+        render_complete_semaphores[image_index] : VK_NULL_HANDLE;
     frame_resources.swapchain_color_image_view =
-        swapchain_info_.swapchain_image_views_[swapchain_info_.swapchain_current_image_index_];
+        (image_index < swapchain_info_.swapchain_image_views_.size()) ?
+        swapchain_info_.swapchain_image_views_[image_index] : VK_NULL_HANDLE;
     // Each swapchain image has its own depth/stencil image, so a depth/stencil image is never
     // shared by two frames in flight. None exist if the swapchain format has no depth or
     // stencil.
-    const uint32_t image_index = swapchain_info_.swapchain_current_image_index_;
     const std::vector<VkImageView> &depth_stencil_views =
         swapchain_info_.swapchain_depth_stencil_image_views_;
     frame_resources.swapchain_depth_stencil_image_view =
@@ -802,14 +816,7 @@ bool GraphicsAPIVulkan::GetSwapchainFrameResourcesVk(
     frame_resources.swapchain_color_format = swapchain_info_.swapchain_color_format_;
     frame_resources.swapchain_depth_stencil_format =
         swapchain_info_.swapchain_depth_stencil_format_;
-    if (pretransform_flags_ & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
-        pretransform_flags_ & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
-      frame_resources.swapchain_extent.width = swapchain_resolution_.display_height;
-      frame_resources.swapchain_extent.height = swapchain_resolution_.display_width;
-    } else {
-      frame_resources.swapchain_extent.width = swapchain_resolution_.display_width;
-      frame_resources.swapchain_extent.height = swapchain_resolution_.display_height;
-    }
+    frame_resources.swapchain_extent = swapchain_info_.swapchain_extent_;
     frame_resources.swapchain_frame_index = swapchain_info_.swapchain_current_frame_index_;
     frame_resources.swapchain_image_index = swapchain_info_.swapchain_current_image_index_;
     return true;
@@ -833,17 +840,68 @@ bool GraphicsAPIVulkan::SetSwapchainChangedCallback(
 }
 
 void GraphicsAPIVulkan::SwapchainChanged(const DisplayManager::SwapchainChangeMessage message) {
-  if (message == DisplayManager::kSwapchain_Lost_Window && vk_surface_ != VK_NULL_HANDLE) {
-    PlatformUtilVulkan::DestroySurface(vk_instance_, vk_surface_);
-    vk_surface_ = VK_NULL_HANDLE;
-  } else if (message == DisplayManager::kSwapchain_Gained_Window && vk_swapchain_ != VK_NULL_HANDLE) {
-    if (vk_surface_ == VK_NULL_HANDLE) {
+  if (message == DisplayManager::kSwapchain_Lost_Window) {
+    // The window's surface goes away, and a swapchain must be destroyed before its surface
+    // (VUID-vkDestroySurfaceKHR-surface-01266). It is recreated when a window is gained.
+    const bool had_swapchain = (vk_swapchain_ != VK_NULL_HANDLE);
+    TeardownSwapchain();
+    if (vk_surface_ != VK_NULL_HANDLE) {
+      PlatformUtilVulkan::DestroySurface(vk_instance_, vk_surface_);
+      vk_surface_ = VK_NULL_HANDLE;
+    }
+    if (had_swapchain) {
+      // Anything referring to the destroyed swapchain's images is invalid
+      NotifySwapchainChanged(DisplayManager::kSwapchain_Needs_Recreation);
+    }
+  } else if (message == DisplayManager::kSwapchain_Gained_Window) {
+    if (vk_surface_ == VK_NULL_HANDLE && vk_instance_ != VK_NULL_HANDLE) {
       vk_surface_ = PlatformUtilVulkan::CreateSurface(vk_instance_);
     }
-    RecreateSwapchain();
+    if (swapchain_initialized_ && vk_surface_ != VK_NULL_HANDLE) {
+      RecreateSwapchain();
+    }
   }
+  NotifySwapchainChanged(message);
+}
+
+void GraphicsAPIVulkan::NotifySwapchainChanged(
+    const DisplayManager::SwapchainChangeMessage message) {
   if (swapchain_changed_callback_ != nullptr) {
     swapchain_changed_callback_(message, swapchain_changed_user_data_);
+  }
+}
+
+void GraphicsAPIVulkan::HandleWindowResized() {
+  if (!swapchain_initialized_ || vk_surface_ == VK_NULL_HANDLE) {
+    return;
+  }
+  if (vk_swapchain_ == VK_NULL_HANDLE) {
+    // The swapchain couldn't be recreated before (e.g. the window had no size), try again
+    RecreateSwapchain();
+    return;
+  }
+  // The swapchain keeps its size when the window is resized (the image is scaled to the
+  // window), so compare it with the surface's current size and transform
+  VkSurfaceCapabilitiesKHR capabilities{};
+  if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk_physical_device_, vk_surface_,
+                                                &capabilities) != VK_SUCCESS) {
+    return;
+  }
+  const VkExtent2D &extent = capabilities.currentExtent;
+  bool size_changed = false;
+  if (extent.width == 0 || extent.height == 0) {
+    // No size: recreating tears the swapchain down until the window has a size again
+    size_changed = true;
+  } else if (extent.width != UINT32_MAX) {
+    // (0xFFFFFFFF: the swapchain decides the size, so there is nothing to follow)
+    std::vector<DisplayManager::DisplayResolution> resolutions;
+    PlatformUtilVulkan::GetScreenResolutions(capabilities, resolutions);
+    size_changed = !resolutions.empty() &&
+        (resolutions[0].display_width != swapchain_resolution_.display_width ||
+         resolutions[0].display_height != swapchain_resolution_.display_height);
+  }
+  if (size_changed || capabilities.currentTransform != pretransform_flags_) {
+    RecreateSwapchain();
   }
 }
 
@@ -946,8 +1004,6 @@ bool GraphicsAPIVulkan::CreateDevice(bool is_preflight_check,
   vkGetDeviceQueue(vk_device_, queue_indices.graphics_family.value(), 0, &vk_graphics_queue_);
   vkGetDeviceQueue(vk_device_, queue_indices.present_family.value(), 0, &vk_present_queue_);
 
-  CreateSynchronizationObjects();
-
   if (enable_validation) {
     VkDebugUtilsMessengerCreateInfoEXT messenger_create_info{};
     PlatformUtilVulkan::InitMessengerCreateInfo(messenger_create_info);
@@ -960,7 +1016,9 @@ bool GraphicsAPIVulkan::CreateDevice(bool is_preflight_check,
 
 void GraphicsAPIVulkan::DestroyDevice() {
   vkDeviceWaitIdle(vk_device_);
-  DestroySynchronizationObjects();
+  // Swappy's device state (finding #22: it was never released, for the preflight device
+  // created by QueryCapabilities or the real one)
+  PlatformUtilVulkan::DeactivateDevice(vk_device_);
   vkDestroyDevice(vk_device_, nullptr);
   vk_device_ = VK_NULL_HANDLE;
   vk_graphics_queue_ = VK_NULL_HANDLE;
@@ -1052,6 +1110,16 @@ bool GraphicsAPIVulkan::CreateSwapchain(const QueueFamilyIndices &queue_indices)
     swapchain_create_info.imageExtent.width = swapchain_resolution_.display_width;
     swapchain_create_info.imageExtent.height = swapchain_resolution_.display_height;
   }
+  // Within the surface's limits (VUID-VkSwapchainCreateInfoKHR-imageExtent-01274), when it
+  // reports them
+  const VkExtent2D &min_extent = surface_capabilities_.minImageExtent;
+  const VkExtent2D &max_extent = surface_capabilities_.maxImageExtent;
+  if (max_extent.width > 0 && max_extent.height > 0) {
+    VkExtent2D &extent = swapchain_create_info.imageExtent;
+    extent.width = std::min(std::max(extent.width, min_extent.width), max_extent.width);
+    extent.height = std::min(std::max(extent.height, min_extent.height), max_extent.height);
+  }
+  swapchain_info_.swapchain_extent_ = swapchain_create_info.imageExtent;
   swapchain_create_info.imageArrayLayers = 1;
   swapchain_create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
   swapchain_create_info.preTransform = pretransform_flags_;
@@ -1076,30 +1144,42 @@ bool GraphicsAPIVulkan::CreateSwapchain(const QueueFamilyIndices &queue_indices)
   return (vk_swapchain_ != VK_NULL_HANDLE);
 }
 
-void GraphicsAPIVulkan::RecreateSwapchain() {
-  vkDeviceWaitIdle(vk_device_);
-  SwapchainChanged(DisplayManager::kSwapchain_Needs_Recreation);
-  PlatformUtilVulkan::DeactivateSwapchain(vk_device_, vk_swapchain_);
-  DestroySwapchain();
-
-  QueueFamilyIndices queue_indices = VulkanAPIUtils::FindQueueFamilies(
-      vk_physical_device_, vk_surface_);
-
-  if (!CreateSwapchain(queue_indices)) {
+bool GraphicsAPIVulkan::BuildSwapchain() {
+  if (vk_device_ == VK_NULL_HANDLE || vk_surface_ == VK_NULL_HANDLE) {
+    return false;
+  }
+  // The device's queues must be able to present to this surface (a new surface, e.g. after
+  // the window was lost and gained, might not be supported)
+  VkBool32 present_supported = VK_FALSE;
+  vkGetPhysicalDeviceSurfaceSupportKHR(vk_physical_device_, present_queue_index_, vk_surface_,
+                                       &present_supported);
+  if (present_supported != VK_TRUE) {
     DebugManager::Log(DebugManager::kLog_Channel_Default,
                       DebugManager::kLog_Level_Error,
                       BGM_CLASS_TAG,
-                      "CreateSwapchain in RecreateSwapchain failed!");
-    return;
+                      "BuildSwapchain: the present queue can't present to the surface");
+    return false;
+  }
+  QueueFamilyIndices queue_indices;
+  queue_indices.graphics_family = graphics_queue_index_;
+  queue_indices.present_family = present_queue_index_;
+  // Request the image count InitSwapchain asked for, not the count the previous swapchain
+  // ended up with (which may be larger), within the surface's current limits
+  // (VUID-VkSwapchainCreateInfoKHR-minImageCount-01271/-01272; a max of 0 is no limit)
+  uint32_t image_count = std::max(swapchain_info_.swapchain_requested_image_count_,
+                                  swapchain_min_frames_);
+  if (swapchain_max_frames_ != 0) {
+    image_count = std::min(image_count, swapchain_max_frames_);
+  }
+  swapchain_info_.swapchain_image_count_ = image_count;
+
+  if (!CreateSwapchain(queue_indices)) {
+    return false;
   }
 
   if (!CreateSwapchainImages()) {
-    DebugManager::Log(DebugManager::kLog_Channel_Default,
-                      DebugManager::kLog_Level_Error,
-                      BGM_CLASS_TAG,
-                      "CreateSwapchainImages in RecreateSwapchain failed!");
     DestroySwapchain();
-    return;
+    return false;
   }
 
   if (!PlatformUtilVulkan::ActivateSwapchain(vk_physical_device_,
@@ -1108,10 +1188,87 @@ void GraphicsAPIVulkan::RecreateSwapchain() {
                                              vk_present_queue_,
                                              present_queue_index_,
                                              swapchain_interval_)) {
-    DebugManager::Log(DebugManager::kLog_Channel_Default,
-                      DebugManager::kLog_Level_Error,
-                      BGM_CLASS_TAG,
-                      "ActivateSwapchain in RecreateSwapchain failed!");
+    // Don't leave a half initialized swapchain that GetSwapchainValid reports as valid
+    PlatformUtilVulkan::DeactivateSwapchain(vk_device_, vk_swapchain_);
+    DestroySwapchain();
+    return false;
+  }
+  return true;
+}
+
+void GraphicsAPIVulkan::TeardownSwapchain() {
+  if (vk_swapchain_ == VK_NULL_HANDLE) {
+    return;
+  }
+  // Nothing may still use the swapchain images, or the semaphores destroyed with them
+  vkDeviceWaitIdle(vk_device_);
+  PlatformUtilVulkan::DeactivateSwapchain(vk_device_, vk_swapchain_);
+  DestroySwapchain();
+}
+
+bool GraphicsAPIVulkan::UpdateSurfaceProperties(bool *resolution_changed) {
+  *resolution_changed = false;
+  if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk_physical_device_, vk_surface_,
+                                                &surface_capabilities_) != VK_SUCCESS) {
+    return false;
+  }
+  pretransform_flags_ = surface_capabilities_.currentTransform;
+  swapchain_min_frames_ = surface_capabilities_.minImageCount;
+  swapchain_max_frames_ = surface_capabilities_.maxImageCount;
+  const VkExtent2D &extent = surface_capabilities_.currentExtent;
+  if (extent.width == 0 || extent.height == 0) {
+    // The window has no size (e.g. minimized): no swapchain can be created for it
+    return false;
+  }
+  if (extent.width == UINT32_MAX) {
+    // The swapchain decides the size: keep the current resolution
+    return true;
+  }
+  // The same resolution GetSwapchainConfigurations offers for the surface
+  PlatformUtilVulkan::GetScreenResolutions(surface_capabilities_, display_resolutions_);
+  if (!display_resolutions_.empty()) {
+    *resolution_changed = !(display_resolutions_[0] == swapchain_resolution_);
+    swapchain_resolution_ = display_resolutions_[0];
+  }
+  return true;
+}
+
+void GraphicsAPIVulkan::RecreateSwapchain() {
+  const bool had_swapchain = (vk_swapchain_ != VK_NULL_HANDLE);
+  TeardownSwapchain();
+
+  // Recreate for the surface's current size and transform (e.g. after a resize or rotation).
+  // Without a window, or one that can't have a swapchain right now, it is recreated when a
+  // window is gained or resized.
+  bool resolution_changed = false;
+  bool built = false;
+  if (vk_surface_ != VK_NULL_HANDLE) {
+    if (UpdateSurfaceProperties(&resolution_changed)) {
+      built = BuildSwapchain();
+      if (!built) {
+        DebugManager::Log(DebugManager::kLog_Channel_Default,
+                          DebugManager::kLog_Level_Error,
+                          BGM_CLASS_TAG,
+                          "RecreateSwapchain failed to create the swapchain!");
+      }
+    } else {
+      DebugManager::Log(DebugManager::kLog_Channel_Default,
+                        DebugManager::kLog_Level_Warning,
+                        BGM_CLASS_TAG,
+                        "RecreateSwapchain: the surface can't have a swapchain right now");
+    }
+  }
+
+  // Notify once the new swapchain exists: previously the swapchain changed callback ran
+  // before the old swapchain was even destroyed. Also if the old swapchain is gone and no new
+  // one could be created, as anything referring to its images is invalid.
+  if (resolution_changed && display_changed_callback_ != nullptr) {
+    DisplayManager::DisplayChangeInfo change_info(swapchain_resolution_,
+                                                  DisplayManager::kDisplay_Change_Window_Resized);
+    display_changed_callback_(change_info, display_changed_user_data_);
+  }
+  if (had_swapchain || built) {
+    NotifySwapchainChanged(DisplayManager::kSwapchain_Needs_Recreation);
   }
 }
 
@@ -1119,6 +1276,7 @@ void GraphicsAPIVulkan::DestroySwapchain() {
   DestroySwapchainImages();
   vkDestroySwapchainKHR(vk_device_, vk_swapchain_, nullptr);
   vk_swapchain_ = VK_NULL_HANDLE;
+  swapchain_acquired_current_frame_image_ = false;
 }
 
 bool GraphicsAPIVulkan::CreateSwapchainImages() {
@@ -1143,6 +1301,21 @@ bool GraphicsAPIVulkan::CreateSwapchainImages() {
     return false;
   }
   swapchain_info_.swapchain_image_count_ = image_count;
+
+  // Render complete semaphores, one per image. Ones that fail to create stay VK_NULL_HANDLE.
+  swapchain_info_.swapchain_render_complete_semaphores_.resize(image_count, VK_NULL_HANDLE);
+  VkSemaphoreCreateInfo semaphore_info{};
+  semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+  for (size_t i = 0; i < image_count; ++i) {
+    if (!VulkanAPIUtils::CheckVkResult(
+        vkCreateSemaphore(vk_device_, &semaphore_info, nullptr,
+                          &swapchain_info_.swapchain_render_complete_semaphores_[i]),
+        "vkCreateSemaphore")) {
+      swapchain_info_.swapchain_render_complete_semaphores_[i] = VK_NULL_HANDLE;
+      DestroySwapchainImages();
+      return false;
+    }
+  }
 
   // Views/images that fail to create stay VK_NULL_HANDLE, which DestroySwapchainImages skips
   swapchain_info_.swapchain_image_views_.resize(image_count, VK_NULL_HANDLE);
@@ -1184,15 +1357,9 @@ bool GraphicsAPIVulkan::CreateSwapchainImages() {
       VkImageCreateInfo ds_image_info{};
       ds_image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
       ds_image_info.imageType = VK_IMAGE_TYPE_2D;
-      if (pretransform_flags_ & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
-          pretransform_flags_ & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
-        // Use the identity resolution, so swap if we are rotated
-        ds_image_info.extent.width = swapchain_resolution_.display_height;
-        ds_image_info.extent.height = swapchain_resolution_.display_width;
-      } else {
-        ds_image_info.extent.width = swapchain_resolution_.display_width;
-        ds_image_info.extent.height = swapchain_resolution_.display_height;
-      }
+      // The same (pre-rotated) extent as the swapchain images
+      ds_image_info.extent.width = swapchain_info_.swapchain_extent_.width;
+      ds_image_info.extent.height = swapchain_info_.swapchain_extent_.height;
       ds_image_info.extent.depth = 1;
       ds_image_info.mipLevels = 1;
       ds_image_info.arrayLayers = 1;
@@ -1241,6 +1408,11 @@ bool GraphicsAPIVulkan::CreateSwapchainImages() {
       }
     }
   }
+
+  if (!CreateSynchronizationObjects()) {
+    DestroySwapchainImages();
+    return false;
+  }
   return true;
 }
 
@@ -1266,19 +1438,35 @@ void GraphicsAPIVulkan::DestroySwapchainImages() {
     }
   }
 
+  for (const VkSemaphore semaphore : swapchain_info_.swapchain_render_complete_semaphores_) {
+    if (semaphore != VK_NULL_HANDLE) {
+      vkDestroySemaphore(vk_device_, semaphore, nullptr);
+    }
+  }
+
   // The swapchain images themselves are owned by the swapchain
   swapchain_info_.swapchain_images_.clear();
   swapchain_info_.swapchain_image_views_.clear();
+  swapchain_info_.swapchain_render_complete_semaphores_.clear();
   swapchain_info_.swapchain_depth_stencil_images_.clear();
   swapchain_info_.swapchain_depth_stencil_image_views_.clear();
   swapchain_info_.swapchain_depth_stencil_allocs_.clear();
+
+  DestroySynchronizationObjects();
 }
 
-void GraphicsAPIVulkan::CreateSynchronizationObjects() {
-  const size_t in_flight_frame_count = DisplayManager::GetInstance().GetDisplayBufferMode();
-  in_flight_frame_fence_.resize(in_flight_frame_count);
-  frame_render_completion_semaphore_.resize(in_flight_frame_count);
-  swapchain_image_semaphore_.resize(in_flight_frame_count);
+bool GraphicsAPIVulkan::CreateSynchronizationObjects() {
+  // Per in-flight frame (the render complete semaphores are per swapchain image). Created
+  // with each swapchain, so a swapchain never inherits a fence left unsignaled or an image
+  // available semaphore left signaled by a frame that acquired an image but wasn't submitted.
+  swapchain_info_.swapchain_current_frame_index_ = 0;
+  const uint32_t in_flight_frame_count = swapchain_info_.swapchain_frame_count_;
+  if (in_flight_frame_count == 0) {
+    return false;
+  }
+  // Ones that fail to create stay VK_NULL_HANDLE, which DestroySynchronizationObjects skips
+  in_flight_frame_fence_.assign(in_flight_frame_count, VK_NULL_HANDLE);
+  swapchain_image_semaphore_.assign(in_flight_frame_count, VK_NULL_HANDLE);
 
   VkSemaphoreCreateInfo semaphore_info{};
   semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -1287,28 +1475,30 @@ void GraphicsAPIVulkan::CreateSynchronizationObjects() {
   fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
   fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-  for (size_t i = 0; i < in_flight_frame_count; ++i) {
-    VulkanAPIUtils::CheckVkResult(vkCreateSemaphore(vk_device_, &semaphore_info, nullptr,
-                                                    &frame_render_completion_semaphore_[i]),
-                                  "vkCreateSemaphore");
-
-    VulkanAPIUtils::CheckVkResult(vkCreateSemaphore(vk_device_, &semaphore_info, nullptr,
-                                                    &swapchain_image_semaphore_[i]),
-                                  "vkCreateSemaphore");
-
-    VulkanAPIUtils::CheckVkResult(vkCreateFence(vk_device_, &fence_info, nullptr,
-                                                &in_flight_frame_fence_[i]),
-                                  "vkCreateFence");
+  for (uint32_t i = 0; i < in_flight_frame_count; ++i) {
+    if (!VulkanAPIUtils::CheckVkResult(vkCreateSemaphore(vk_device_, &semaphore_info, nullptr,
+                                                         &swapchain_image_semaphore_[i]),
+                                       "vkCreateSemaphore") ||
+        !VulkanAPIUtils::CheckVkResult(vkCreateFence(vk_device_, &fence_info, nullptr,
+                                                     &in_flight_frame_fence_[i]),
+                                       "vkCreateFence")) {
+      return false;
+    }
   }
+  return true;
 }
 
 void GraphicsAPIVulkan::DestroySynchronizationObjects() {
-  for (size_t i = 0; i < in_flight_frame_fence_.size(); ++i) {
-    vkDestroySemaphore(vk_device_, frame_render_completion_semaphore_[i], nullptr);
-    vkDestroySemaphore(vk_device_, swapchain_image_semaphore_[i], nullptr);
-    vkDestroyFence(vk_device_, in_flight_frame_fence_[i], nullptr);
+  for (const VkSemaphore semaphore : swapchain_image_semaphore_) {
+    if (semaphore != VK_NULL_HANDLE) {
+      vkDestroySemaphore(vk_device_, semaphore, nullptr);
+    }
   }
-  frame_render_completion_semaphore_.clear();
+  for (const VkFence fence : in_flight_frame_fence_) {
+    if (fence != VK_NULL_HANDLE) {
+      vkDestroyFence(vk_device_, fence, nullptr);
+    }
+  }
   swapchain_image_semaphore_.clear();
   in_flight_frame_fence_.clear();
 }

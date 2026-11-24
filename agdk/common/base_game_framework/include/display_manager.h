@@ -256,11 +256,18 @@ class DisplayManager {
 
   /** @brief Enum of swapchain changed callback messages */
   enum SwapchainChangeMessage : int32_t {
-    /** @brief Swapchain lost its window */
+    /** @brief Swapchain lost its window. With Vulkan, the swapchain is destroyed until a
+     * window is gained (::GetSwapchainValid returns false meanwhile), sending
+     * kSwapchain_Needs_Recreation first. */
     kSwapchain_Lost_Window = 0,
-    /** @brief Swapchain gained a window */
+    /** @brief Swapchain gained a window. With Vulkan, the swapchain is recreated for it first
+     * (sending kSwapchain_Needs_Recreation); ::GetSwapchainValid tells if that succeeded. */
     kSwapchain_Gained_Window = 1,
-    /** @brief Swapchain was lost and needs to be recreated */
+    /** @brief The swapchain was recreated (e.g. it was out of date, or the window was resized
+     * or rotated): anything referring to the previous swapchain images must be recreated.
+     * Sent after the new swapchain is created, or after the old one was destroyed if no new
+     * one could be created (::GetSwapchainValid then returns false until the window is
+     * gained or resized again). */
     kSwapchain_Needs_Recreation = 2,
   };
 
@@ -500,18 +507,25 @@ class DisplayManager {
   void SetDisplayBufferMode(const DisplayBufferMode buffer_mode) { buffer_mode_ = buffer_mode; }
 
 /**
- * @brief Set a callback to be called when a configuration of the active display changes.
+ * @brief Set a callback to be called when a configuration of the active display changes,
+ * e.g. the swapchain was recreated with a new resolution after the window was resized.
+ * Can be called before a graphics API is initialized; the callback is kept until it is
+ * replaced or cleared.
  * @param callback A function object to use as the callback. Passing nullptr will clear
  * any currently registered callback.
  * @param user_data A pointer to user data to be passed to the callback
+ * @return true
  */
   bool SetDisplayChangedCallback(DisplayChangedCallback callback, void* user_data);
 
 /**
  * @brief Set a callback to be called when a change related to the active swapchain occurs.
+ * Can be called before a graphics API is initialized; the callback is kept until it is
+ * replaced or cleared.
  * @param callback A function object to use as the callback. Passing nullptr will clear
  * any currently registered callback.
  * @param user_data A pointer to user data to be passed to the callback
+ * @return true
  */
   bool SetSwapchainChangedCallback(SwapchainChangedCallback callback, void* user_data);
 
@@ -636,6 +650,12 @@ class DisplayManager {
 #endif
   DisplayBufferMode buffer_mode_;
   GraphicsAPIFeatures null_features_;
+  // Callbacks may be set before a graphics API is initialized; they are passed to the API
+  // when it is
+  DisplayChangedCallback display_changed_callback_;
+  void* display_changed_user_data_;
+  SwapchainChangedCallback swapchain_changed_callback_;
+  void* swapchain_changed_user_data_;
   static std::unique_ptr<DisplayManager> instance_;
   static constexpr const char* BGM_CLASS_TAG = "BGF::DisplayManager";
 };

@@ -52,6 +52,12 @@ void PlatformUtilVulkan::DeactivateSwapchain(VkDevice device, VkSwapchainKHR swa
   SwappyVk_destroySwapchain(device, swapchain);
 }
 
+void PlatformUtilVulkan::DeactivateDevice(VkDevice device) {
+  // Swappy keeps per-device state (and any swapchain instances still attached to the device)
+  // until told the device is going away
+  SwappyVk_destroyDevice(device);
+}
+
 VkResult PlatformUtilVulkan::PresentSwapchain(VkQueue queue, const VkPresentInfoKHR *present_info) {
   return SwappyVk_queuePresent(queue, present_info);
 }
@@ -121,6 +127,8 @@ void PlatformUtilVulkan::GetRefreshRates(VkPhysicalDevice physical_device,
                                                          swapchain,
                                                          &refresh_duration);
   if (!success) {
+    // Release anything Swappy set up for the swapchain before failing
+    SwappyVk_destroySwapchain(device, swapchain);
     return;
   }
   SwappyVk_setWindow(device, swapchain, PlatformUtilAndroid::GetNativeWindow());

@@ -62,10 +62,18 @@ class Renderer {
 
 /**
  * @brief Set the graphics API that the renderer should use. This should be called
- * prior to calling ::GetInstance for the first time.
+ * prior to calling ::GetInstance for the first time. If an instance already exists for
+ * another API, it is shut down (an error).
  * @param api `RendererAPI` enum value of the graphics API to use
  */
   static void SetRendererAPI(const RendererAPI api);
+
+/**
+ * @brief Determine if the renderer instance exists (::GetInstance was called, and
+ * ::ShutdownInstance wasn't since), without creating it.
+ * @return true if the renderer instance exists
+ */
+  static bool HasInstance() { return Renderer::instance_ != nullptr; }
 
 /**
  * @brief Retrieve the Display Manager swapchain in use by the renderer.

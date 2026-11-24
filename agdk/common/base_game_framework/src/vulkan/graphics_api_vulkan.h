@@ -57,12 +57,24 @@ class GraphicsAPIVulkan : public GraphicsAPIBase {
     uint32_t swapchain_frame_count_ = 0;
     // Number of swapchain images
     uint32_t swapchain_image_count_ = 0;
+    // Number of swapchain images requested by InitSwapchain (the minimum image count used
+    // when the swapchain is recreated, within the surface's limits; the swapchain may have
+    // more)
+    uint32_t swapchain_requested_image_count_ = 0;
+    // The extent the swapchain images were created with (pre-rotated for 90/270 degree
+    // transforms)
+    VkExtent2D swapchain_extent_ = {0, 0};
     VkPresentModeKHR swapchain_present_mode_ = VK_PRESENT_MODE_FIFO_KHR;
     std::vector<VkImage> swapchain_images_;
     std::vector<VkImageView> swapchain_image_views_;
     std::vector<VkImage> swapchain_depth_stencil_images_;
     std::vector<VmaAllocation> swapchain_depth_stencil_allocs_;
     std::vector<VkImageView> swapchain_depth_stencil_image_views_;
+    // One render complete semaphore per swapchain image, signaled by the frame's submit and
+    // waited on by its present. A semaphore can only be signaled again once the presentation
+    // engine is done with it, which is known once its image is acquired again, so these
+    // can't be per in-flight frame (VUID-vkQueueSubmit-pSignalSemaphores-00067).
+    std::vector<VkSemaphore> swapchain_render_complete_semaphores_;
   };
 
   GraphicsAPIVulkan();
@@ -104,6 +116,10 @@ class GraphicsAPIVulkan : public GraphicsAPIBase {
 
   DisplayManager::SwapchainRotationMode GetSwapchainRotationMode();
 
+  // The platform window was resized: recreate the swapchain if the surface size or
+  // transform no longer match it
+  void HandleWindowResized();
+
   bool GetGraphicsAPIResourcesVk(GraphicsAPIResourcesVk &api_resources_vk);
 
   bool GetSwapchainFrameResourcesVk(const DisplayManager::SwapchainFrameHandle frame_handle,
@@ -122,12 +138,28 @@ class GraphicsAPIVulkan : public GraphicsAPIBase {
   void DestroyInstance();
 
   bool CreateSwapchain(const QueueFamilyIndices &queue_indices);
+  // Creates and activates the swapchain and its images for the current surface, cleaning up
+  // after itself on failure
+  bool BuildSwapchain();
+  // Deactivates and destroys the swapchain (if any) once the device is idle
+  void TeardownSwapchain();
+  // Recreates the swapchain for the current surface size and transform, then notifies the
+  // display changed (if the resolution changed) and swapchain changed callbacks
   void RecreateSwapchain();
   void DestroySwapchain();
   bool CreateSwapchainImages();
   void DestroySwapchainImages();
+  // Re-queries the surface capabilities and updates the transform, image count limits, the
+  // display resolutions and the swapchain resolution. Returns false if the surface can't be
+  // used for a swapchain right now (e.g. a zero size window); resolution_changed is set if
+  // the swapchain resolution changed.
+  bool UpdateSurfaceProperties(bool *resolution_changed);
+  void NotifySwapchainChanged(const DisplayManager::SwapchainChangeMessage message);
 
-  void CreateSynchronizationObjects();
+  // Per in-flight frame fences and semaphores, created and destroyed with the swapchain
+  // images, so each swapchain starts with signaled fences and unsignaled semaphores even if
+  // a frame was interrupted between acquiring an image and submitting
+  bool CreateSynchronizationObjects();
   void DestroySynchronizationObjects();
 
   VkPhysicalDevice GetPhysicalDevice();
@@ -169,10 +201,12 @@ class GraphicsAPIVulkan : public GraphicsAPIBase {
   uint32_t swapchain_max_frames_;
   uint32_t swapchain_present_modes_;
   bool swapchain_acquired_current_frame_image_;
+  // InitSwapchain succeeded and ShutdownSwapchain wasn't called yet. The swapchain itself
+  // doesn't exist while the window is lost, and is recreated when a window is gained.
+  bool swapchain_initialized_;
 
-  // Synchronization objects
+  // Synchronization objects, per in-flight frame
   std::vector<VkFence> in_flight_frame_fence_;
-  std::vector<VkSemaphore> frame_render_completion_semaphore_;
   std::vector<VkSemaphore> swapchain_image_semaphore_;
 
   // Active swapchain variables

@@ -16,26 +16,38 @@
 
 #include "display_manager.h"
 #include "gles/graphics_api_gles.h"
+#if defined BGF_DISPLAY_MANAGER_VULKAN
+#include "vulkan/graphics_api_vulkan.h"
+#endif
 
 namespace base_game_framework {
 
 void DisplayManager::HandlePlatformDisplayChange(const DisplayChangeMessage& change_message) {
-  if (api_ != nullptr) {
+  // Only for an active graphics API
+  if (api_ != nullptr && active_api_ != kGraphicsAPI_None &&
+      api_->GetAPIStatus() == kGraphicsAPI_Active) {
     if (change_message == kDisplay_Change_Window_Terminate) {
       // We need to kill our surface and disassociate the native window
-      if (active_api_ == kGraphicsAPI_GLES && api_->GetAPIStatus() == kGraphicsAPI_Active) {
+      if (active_api_ == kGraphicsAPI_GLES) {
         api_gles_->LostSurfaceGLES();
       }
       api_->SwapchainChanged(kSwapchain_Lost_Window);
     } else if (change_message == kDisplay_Change_Window_Init) {
       // If we had previously initialized a swapchain, we need to update with the
       // new window and a new surface
-      if (active_api_ == kGraphicsAPI_GLES && api_->GetAPIStatus() == kGraphicsAPI_Active) {
+      if (active_api_ == kGraphicsAPI_GLES) {
         api_gles_->RestoreSurfaceGLES();
-        api_->SwapchainChanged(kSwapchain_Gained_Window);
-      } else if (active_api_ == kGraphicsAPI_Vulkan && api_->GetAPIStatus() == kGraphicsAPI_Active) {
-        api_->SwapchainChanged(kSwapchain_Gained_Window);
       }
+      api_->SwapchainChanged(kSwapchain_Gained_Window);
+    } else if (change_message == kDisplay_Change_Window_Resized) {
+#if defined BGF_DISPLAY_MANAGER_VULKAN
+      // A Vulkan swapchain keeps its size (the presentation engine scales it to the window),
+      // so recreate it at the new size. GLES surfaces follow the window, and resizes are
+      // detected when presenting.
+      if (active_api_ == kGraphicsAPI_Vulkan) {
+        api_vulkan_->HandleWindowResized();
+      }
+#endif
     }
   }
 }
