@@ -40,6 +40,10 @@ class PlatformUtilVulkan {
 
   static void DeactivateSwapchain(VkDevice device, VkSwapchainKHR swapchain);
 
+  // Releases any platform state (e.g. frame pacing) associated with a device, after its
+  // swapchains were deactivated. Call before vkDestroyDevice.
+  static void DeactivateDevice(VkDevice device);
+
   static void DestroySurface(VkInstance instance, VkSurfaceKHR surface);
 
   static void InitMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &create_info);

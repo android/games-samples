@@ -58,7 +58,11 @@ void DisplayManager::ShutdownInstance() {
 DisplayManager::DisplayManager()
     : active_api_(kGraphicsAPI_None)
     , api_(nullptr)
-    , buffer_mode_(kDisplay_Double_Buffer) {
+    , buffer_mode_(kDisplay_Double_Buffer)
+    , display_changed_callback_(nullptr)
+    , display_changed_user_data_(nullptr)
+    , swapchain_changed_callback_(nullptr)
+    , swapchain_changed_user_data_(nullptr) {
 #if defined BGF_DISPLAY_MANAGER_GLES
   api_gles_ = std::make_shared<GraphicsAPIGLES>();
 #endif
@@ -145,12 +149,19 @@ DisplayManager::InitGraphicsAPIResult DisplayManager::InitGraphicsAPI(const Grap
         if (api_->InitializeGraphicsAPI()) {
           result = kInit_GraphicsAPI_Success;
           active_api_ = api;
+          // Callbacks set before initialization
+          api_->SetDisplayChangedCallback(display_changed_callback_, display_changed_user_data_);
+          api_->SetSwapchainChangedCallback(swapchain_changed_callback_,
+                                            swapchain_changed_user_data_);
         } else {
           result = kInit_GraphicsAPI_Failure_Initialization;
-          api_ = nullptr;
         }
       }
     }
+  }
+  if (result != kInit_GraphicsAPI_Success) {
+    // No API is active (api_ is only used for the active API, e.g. for window events)
+    api_ = nullptr;
   }
   return result;
 }
@@ -158,6 +169,9 @@ DisplayManager::InitGraphicsAPIResult DisplayManager::InitGraphicsAPI(const Grap
 void DisplayManager::ShutdownGraphicsAPI() {
   if (active_api_ != kGraphicsAPI_None && api_->GetAPIStatus() == kGraphicsAPI_Active) {
     api_->ShutdownGraphicsAPI();
+    // The DisplayManager keeps the callbacks for the next initialization
+    api_->SetDisplayChangedCallback(nullptr, nullptr);
+    api_->SetSwapchainChangedCallback(nullptr, nullptr);
     active_api_ = kGraphicsAPI_None;
     api_ = nullptr;
   }
@@ -221,7 +235,10 @@ bool DisplayManager::GetSwapchainValid(const SwapchainHandle swapchain_handle) {
 }
 
 void DisplayManager::ShutdownSwapchain(const SwapchainHandle swapchain_handle) {
-  if (GetSwapchainValid(swapchain_handle)) {
+  // Not only a valid swapchain: one that lost its window (and, with Vulkan, isn't valid until
+  // a window is gained) is still shut down, releasing what it still holds
+  if (active_api_ != kGraphicsAPI_None && api_->GetAPIStatus() == kGraphicsAPI_Active &&
+      swapchain_handle == kDefault_swapchain_handle) {
     api_->ShutdownSwapchain();
   }
 }
@@ -305,18 +322,23 @@ DisplayManager::SwapchainRotationMode DisplayManager::GetSwapchainRotationMode(
 
 bool DisplayManager::SetDisplayChangedCallback(DisplayChangedCallback callback,
                                                void* user_data) {
+  // Kept (and passed to the API when it's initialized) even if no API is active yet
+  display_changed_callback_ = callback;
+  display_changed_user_data_ = user_data;
   if (active_api_ != kGraphicsAPI_None && api_->GetAPIStatus() == kGraphicsAPI_Active) {
-    return api_->SetDisplayChangedCallback(callback, user_data);
+    api_->SetDisplayChangedCallback(callback, user_data);
   }
-  return false;
+  return true;
 }
 
 bool DisplayManager::SetSwapchainChangedCallback(SwapchainChangedCallback callback,
                                                  void* user_data) {
+  swapchain_changed_callback_ = callback;
+  swapchain_changed_user_data_ = user_data;
   if (active_api_ != kGraphicsAPI_None && api_->GetAPIStatus() == kGraphicsAPI_Active) {
-    return api_->SetSwapchainChangedCallback(callback, user_data);
+    api_->SetSwapchainChangedCallback(callback, user_data);
   }
-  return false;
+  return true;
 }
 
 } // namespace base_game_framework

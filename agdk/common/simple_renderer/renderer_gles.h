@@ -87,11 +87,20 @@ class RendererGLES : public Renderer {
  private:
   void EndRenderPass();
 
+  // Get the current EGL context, display and surface from the DisplayManager
+  void RefreshEGLResources();
+
   RendererResources resources_;
 
   std::shared_ptr<RenderPass> render_pass_;
   std::shared_ptr<RenderState> render_state_;
 
+  // The swapchain of the current frame (BeginFrame)
+  base_game_framework::DisplayManager::SwapchainHandle swapchain_handle_;
+  // The context is current with a surface for this frame. Otherwise (e.g. no window) the
+  // frame is skipped: nothing is drawn or bound.
+  bool frame_active_;
+  // Refreshed each frame (the surface changes when the window is lost and gained)
   EGLContext egl_context_;
   EGLDisplay egl_display_;
   EGLSurface egl_surface_;

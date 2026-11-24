@@ -363,7 +363,11 @@ void NativeEngine::SwapchainChanged(const DisplayManager::SwapchainChangeMessage
     } else if (reason == DisplayManager::kSwapchain_Lost_Window) {
         mHasSwapchain = false;
     } else if (reason == DisplayManager::kSwapchain_Needs_Recreation) {
-        simple_renderer::Renderer::GetInstance().SwapchainRecreated();
+        // The swapchain can be recreated (e.g. on a window resize) before the renderer is
+        // created on the first frame; don't create it here (before its API is set)
+        if (simple_renderer::Renderer::HasInstance()) {
+            simple_renderer::Renderer::GetInstance().SwapchainRecreated();
+        }
     }
 }
 
