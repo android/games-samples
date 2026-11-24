@@ -277,18 +277,14 @@ void GfxManager::CreateUniformBuffers() {
 }
 
 void GfxManager::DestroyRenderResources() {
-  Renderer& renderer = Renderer::GetInstance();
+  // Releasing the resources destroys them (deferred by the renderer); this doesn't need (or
+  // create) the renderer instance
   for (int32_t i = kGfxType_BasicLines; i < kGfxType_Count; ++i) {
-    renderer.DestroyRenderState(mRenderStates[i]);
     mRenderStates[i] = nullptr;
-    renderer.DestroyUniformBuffer(mUniformBuffers[i]);
     mUniformBuffers[i] = nullptr;
   }
-  renderer.DestroyShaderProgram(mTrivialShaderProgram);
   mTrivialShaderProgram = nullptr;
-  renderer.DestroyShaderProgram(mOurShaderProgram);
   mOurShaderProgram = nullptr;
-  renderer.DestroyRenderPass(mMainRenderPass);
   mMainRenderPass = nullptr;
 }
 

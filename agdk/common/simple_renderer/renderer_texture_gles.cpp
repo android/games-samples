@@ -16,6 +16,7 @@
 
 #include "renderer_texture_gles.h"
 #include "renderer_debug.h"
+#include "renderer_gles.h"
 
 namespace simple_renderer {
 
@@ -85,7 +86,7 @@ static constexpr GLint kGLWrapT[Texture::kWrapT_Count] = {
 };
 
 TextureGLES::TextureGLES(const Texture::TextureCreationParams& params)
-                         : Texture(params) {
+                         : Texture(params), context_(GetCurrentGLESContext()) {
   texture_object_ = 0;
   // The base class validated the parameters; an invalid texture has no mip levels
   const bool valid_params = HasValidCreationParams();
@@ -179,7 +180,7 @@ TextureGLES::TextureGLES(const Texture::TextureCreationParams& params)
 TextureGLES::~TextureGLES() {
   // glDeleteTextures unbinds the texture wherever it is bound, so other bindings are
   // left alone
-  if (texture_object_ != 0) {
+  if (texture_object_ != 0 && IsGLESContextCurrent(context_)) {
     glDeleteTextures(1, &texture_object_);
     RENDERER_CHECK_GLES("glDeleteTextures");
     texture_object_ = 0;

@@ -16,156 +16,192 @@
 
 #include "renderer_resources.h"
 #include "renderer_debug.h"
+#include <map>
+#include <string>
+#include <type_traits>
 
 namespace simple_renderer {
 
-static constexpr long kExpectedUseCount = 1;
+static uint32_t AllFrameSlots(const uint32_t frame_slot_count) {
+  return (frame_slot_count >= 32) ? 0xFFFFFFFFu : ((1u << frame_slot_count) - 1u);
+}
 
-void RendererResources::ProcessDeleteQueue() {
-  while (!index_buffer_delete_queue_.empty()) {
-    RENDERER_ASSERT(index_buffer_delete_queue_.front().use_count() == kExpectedUseCount);
-    index_buffer_delete_queue_.pop();
-  }
+RendererResources::RendererResources(const uint32_t frame_slot_count)
+    : state_(std::make_shared<State>()) {
+  // Frame slots are tracked in a 32 bit mask
+  RENDERER_ASSERT(frame_slot_count <= 32);
+  state_->frame_slot_count = (frame_slot_count <= 32) ? frame_slot_count : 32;
+  state_->all_frame_slots = AllFrameSlots(state_->frame_slot_count);
+}
 
-  while (!render_state_delete_queue_.empty()) {
-    RENDERER_ASSERT(render_state_delete_queue_.front().use_count() == kExpectedUseCount);
-    render_state_delete_queue_.pop();
+RendererResources::~RendererResources() {
+  // Queued resources can't be deleted here (the renderer is being destroyed; its shutdown
+  // deletes them). Resources released from now on are leaked by their deleters (a deleter
+  // that already holds the state takes the mutex after this, and sees shut_down).
+  std::lock_guard<std::mutex> lock(state_->mutex);
+  state_->shut_down = true;
+  if (!state_->queue.empty()) {
+    RENDERER_ERROR("RendererResources: %zu resources queued for deletion were leaked",
+                   state_->queue.size());
   }
+}
 
-  while (!render_pass_delete_queue_.empty()) {
-    RENDERER_ASSERT(render_pass_delete_queue_.front().use_count() == kExpectedUseCount);
-    render_pass_delete_queue_.pop();
+template <typename T>
+std::shared_ptr<T> RendererResources::Add(T* resource, const char* type_name) {
+  if (resource == nullptr) {
+    return nullptr;
   }
-
-  while (!shader_program_delete_queue_.empty()) {
-    RENDERER_ASSERT(shader_program_delete_queue_.front().use_count() == kExpectedUseCount);
-    shader_program_delete_queue_.pop();
+  {
+    std::lock_guard<std::mutex> lock(state_->mutex);
+    state_->live.emplace(resource, type_name);
+    if constexpr (std::is_same_v<T, RenderPass>) {
+      state_->live_render_passes.insert(resource);
+    }
   }
-
-  while (!texture_delete_queue_.empty()) {
-    RENDERER_ASSERT(texture_delete_queue_.front().use_count() == kExpectedUseCount);
-    texture_delete_queue_.pop();
-  }
-
-  while (!uniform_buffer_delete_queue_.empty()) {
-    RENDERER_ASSERT(uniform_buffer_delete_queue_.front().use_count() == kExpectedUseCount);
-    uniform_buffer_delete_queue_.pop();
-  }
-
-  while (!vertex_buffer_delete_queue_.empty()) {
-    RENDERER_ASSERT(vertex_buffer_delete_queue_.front().use_count() == kExpectedUseCount);
-    vertex_buffer_delete_queue_.pop();
-  }
+  // The deleter only queues the resource; it holds the state weakly, as the pointer may
+  // outlive the renderer
+  std::weak_ptr<State> weak_state = state_;
+  return std::shared_ptr<T>(resource, [weak_state, type_name](T* released) {
+    std::shared_ptr<State> state = weak_state.lock();
+    bool leaked = (state == nullptr);
+    if (!leaked) {
+      std::lock_guard<std::mutex> lock(state->mutex);
+      state->live.erase(released);
+      if constexpr (std::is_same_v<T, RenderPass>) {
+        state->live_render_passes.erase(released);
+      }
+      if (state->shut_down) {
+        leaked = true;
+      } else {
+        state->queue.push_back({[released]() { delete released; }, 0});
+      }
+    }
+    if (leaked) {
+      // Its device or context is gone (or going): it can't be deleted
+      RENDERER_ERROR("%s %p was released after its renderer was shut down, leaking it",
+                     type_name, static_cast<const void*>(released));
+    }
+  });
 }
 
 std::shared_ptr<IndexBuffer> RendererResources::AddIndexBuffer(IndexBuffer* index_buffer) {
-  std::shared_ptr<IndexBuffer> share = std::shared_ptr<IndexBuffer>(index_buffer);
-  index_buffers_.insert({reinterpret_cast<RendererKey>(index_buffer), share});
-  return share;
-}
-
-void RendererResources::QueueDeleteIndexBuffer(const std::shared_ptr<IndexBuffer>& index_buffer) {
-  const RendererKey buffer_key = reinterpret_cast<RendererKey>(index_buffer.get());
-  auto iter = index_buffers_.find(buffer_key);
-  if (iter != index_buffers_.end()) {
-    index_buffer_delete_queue_.push(iter->second);
-    index_buffers_.erase(iter);
-  }
-
+  return Add(index_buffer, "IndexBuffer");
 }
 
 std::shared_ptr<RenderPass> RendererResources::AddRenderPass(RenderPass* render_pass) {
-  std::shared_ptr<RenderPass> share = std::shared_ptr<RenderPass>(render_pass);
-  render_passes_.insert({reinterpret_cast<RendererKey>(render_pass), share});
-  return share;
-
-}
-
-void RendererResources::QueueDeleteRenderPass(const std::shared_ptr<RenderPass>& render_pass) {
-  const RendererKey pass_key = reinterpret_cast<RendererKey>(render_pass.get());
-  auto iter = render_passes_.find(pass_key);
-  if (iter != render_passes_.end()) {
-    render_pass_delete_queue_.push(iter->second);
-    render_passes_.erase(iter);
-  }
+  return Add(render_pass, "RenderPass");
 }
 
 std::shared_ptr<RenderState> RendererResources::AddRenderState(RenderState* render_state) {
-  std::shared_ptr<RenderState> share = std::shared_ptr<RenderState>(render_state);
-  render_states_.insert({reinterpret_cast<RendererKey>(render_state),share});
-  return share;
-
+  return Add(render_state, "RenderState");
 }
 
-void RendererResources::QueueDeleteRenderState(const std::shared_ptr<RenderState>& render_state) {
-  const RendererKey state_key = reinterpret_cast<RendererKey>(render_state.get());
-  auto iter = render_states_.find(state_key);
-  if (iter != render_states_.end()) {
-    render_state_delete_queue_.push(iter->second);
-    render_states_.erase(iter);
-  }
-}
-
-std::shared_ptr<ShaderProgram> RendererResources::AddShaderProgram(ShaderProgram* shader_program) {
-  std::shared_ptr<ShaderProgram> share = std::shared_ptr<ShaderProgram>(shader_program);
-  shader_programs_.insert({reinterpret_cast<RendererKey>(shader_program),share});
-  return share;
-}
-
-void RendererResources::QueueDeleteShaderProgram(const std::shared_ptr<ShaderProgram>&
-    shader_program) {
-  const RendererKey shader_key = reinterpret_cast<RendererKey>(shader_program.get());
-  auto iter = shader_programs_.find(shader_key);
-  if (iter != shader_programs_.end()) {
-    shader_program_delete_queue_.push(iter->second);
-    shader_programs_.erase(iter);
-  }
+std::shared_ptr<ShaderProgram> RendererResources::AddShaderProgram(
+    ShaderProgram* shader_program) {
+  return Add(shader_program, "ShaderProgram");
 }
 
 std::shared_ptr<Texture> RendererResources::AddTexture(Texture* texture) {
-  std::shared_ptr<Texture> share = std::shared_ptr<Texture>(texture);
-  textures_.insert({reinterpret_cast<RendererKey>(texture), share});
-  return share;
+  return Add(texture, "Texture");
 }
 
-void RendererResources::QueueDeleteTexture(const std::shared_ptr<Texture>& texture) {
-  const RendererKey texture_key = reinterpret_cast<RendererKey>(texture.get());
-  auto iter = textures_.find(texture_key);
-  if (iter != textures_.end()) {
-    texture_delete_queue_.push(iter->second);
-    textures_.erase(iter);
-  }
-}
-
-std::shared_ptr<UniformBuffer> RendererResources::AddUniformBuffer(UniformBuffer* uniform_buffer) {
-  std::shared_ptr<UniformBuffer> share = std::shared_ptr<UniformBuffer>(uniform_buffer);
-  uniform_buffers_.insert({reinterpret_cast<RendererKey>(uniform_buffer), share});
-  return share;
-}
-
-void RendererResources::QueueDeleteUniformBuffer(const std::shared_ptr<UniformBuffer>&
-    uniform_buffer) {
-  const RendererKey uniform_key = reinterpret_cast<RendererKey>(uniform_buffer.get());
-  auto iter = uniform_buffers_.find(uniform_key);
-  if (iter != uniform_buffers_.end()) {
-    uniform_buffer_delete_queue_.push(iter->second);
-    uniform_buffers_.erase(iter);
-  }
+std::shared_ptr<UniformBuffer> RendererResources::AddUniformBuffer(
+    UniformBuffer* uniform_buffer) {
+  return Add(uniform_buffer, "UniformBuffer");
 }
 
 std::shared_ptr<VertexBuffer> RendererResources::AddVertexBuffer(VertexBuffer* vertex_buffer) {
-  std::shared_ptr<VertexBuffer> share = std::shared_ptr<VertexBuffer>(vertex_buffer);
-  vertex_buffers_.insert({reinterpret_cast<RendererKey>(vertex_buffer), share});
-  return share;
+  return Add(vertex_buffer, "VertexBuffer");
 }
 
-void RendererResources::QueueDeleteVertexBuffer(const std::shared_ptr<VertexBuffer>&
-    vertex_buffer) {
-  const RendererKey buffer_key = reinterpret_cast<RendererKey>(vertex_buffer.get());
-  auto iter = vertex_buffers_.find(buffer_key);
-  if (iter != vertex_buffers_.end()) {
-    vertex_buffer_delete_queue_.push(iter->second);
-    vertex_buffers_.erase(iter);
+void RendererResources::FrameSlotWaited(const uint32_t frame_slot,
+                                        const uint32_t frame_slot_count) {
+  RENDERER_ASSERT(frame_slot < frame_slot_count && frame_slot_count <= 32);
+  if (frame_slot >= frame_slot_count || frame_slot_count > 32) {
+    return;
+  }
+  std::lock_guard<std::mutex> lock(state_->mutex);
+  // The swapchain's frame count decides which slots a resource must wait for (e.g. a new
+  // swapchain with another buffer mode)
+  state_->frame_slot_count = frame_slot_count;
+  state_->all_frame_slots = AllFrameSlots(frame_slot_count);
+  for (QueuedDeletion& deletion : state_->queue) {
+    deletion.frame_slots_waited |= (1u << frame_slot);
+  }
+}
+
+void RendererResources::ProcessDeleteQueue() {
+  std::vector<std::function<void()>> ready;
+  {
+    std::lock_guard<std::mutex> lock(state_->mutex);
+    std::vector<QueuedDeletion> waiting;
+    for (QueuedDeletion& deletion : state_->queue) {
+      if ((deletion.frame_slots_waited & state_->all_frame_slots) == state_->all_frame_slots) {
+        ready.push_back(std::move(deletion.destroy));
+      } else {
+        waiting.push_back(std::move(deletion));
+      }
+    }
+    state_->queue.swap(waiting);
+  }
+  // Without the lock: deleting a resource can release others (e.g. a render state's shader
+  // program), which queues them (for a later frame)
+  for (std::function<void()>& destroy : ready) {
+    destroy();
+  }
+}
+
+void RendererResources::DeleteAllQueued() {
+  while (true) {
+    std::vector<QueuedDeletion> queue;
+    {
+      std::lock_guard<std::mutex> lock(state_->mutex);
+      queue.swap(state_->queue);
+    }
+    if (queue.empty()) {
+      break;
+    }
+    for (QueuedDeletion& deletion : queue) {
+      deletion.destroy();
+    }
+  }
+}
+
+void RendererResources::Shutdown(const char* reason) {
+  std::map<std::string, size_t> counts;
+  while (true) {
+    std::vector<QueuedDeletion> queue;
+    {
+      std::lock_guard<std::mutex> lock(state_->mutex);
+      if (state_->queue.empty()) {
+        // Nothing is left to delete: from now on (with no gap) a released resource is leaked
+        state_->shut_down = true;
+        for (const auto& live : state_->live) {
+          ++counts[live.second];
+        }
+        break;
+      }
+      queue.swap(state_->queue);
+    }
+    // Without the lock (deleting can release, and so queue, other resources)
+    for (QueuedDeletion& deletion : queue) {
+      deletion.destroy();
+    }
+  }
+  for (const auto& count : counts) {
+    RENDERER_ERROR("%s: %zu %s still referenced", reason, count.second, count.first.c_str());
+  }
+}
+
+void RendererResources::ForEachLiveRenderPass(
+    const std::function<void(RenderPass*)>& function) {
+  std::vector<RenderPass*> render_passes;
+  {
+    std::lock_guard<std::mutex> lock(state_->mutex);
+    render_passes.assign(state_->live_render_passes.begin(), state_->live_render_passes.end());
+  }
+  for (RenderPass* render_pass : render_passes) {
+    function(render_pass);
   }
 }
 

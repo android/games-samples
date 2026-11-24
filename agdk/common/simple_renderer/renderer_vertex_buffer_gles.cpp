@@ -16,11 +16,12 @@
 
 #include "renderer_vertex_buffer_gles.h"
 #include "renderer_debug.h"
+#include "renderer_gles.h"
 
 namespace simple_renderer {
 
 VertexBufferGLES::VertexBufferGLES(const VertexBuffer::VertexBufferCreationParams& params)
-                                   : VertexBuffer(params) {
+                                   : VertexBuffer(params), context_(GetCurrentGLESContext()) {
   vertex_buffer_object_ = 0;
   glGenBuffers(1, &vertex_buffer_object_);
   RENDERER_CHECK_GLES("glGenBuffers");
@@ -34,6 +35,9 @@ VertexBufferGLES::VertexBufferGLES(const VertexBuffer::VertexBufferCreationParam
 }
 
 VertexBufferGLES::~VertexBufferGLES() {
+  if (!IsGLESContextCurrent(context_)) {
+    return;
+  }
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   RENDERER_CHECK_GLES("glBindBuffer GL_ARRAY_BUFFER reset");
   glDeleteBuffers(1, &vertex_buffer_object_);

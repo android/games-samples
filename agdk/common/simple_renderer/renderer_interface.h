@@ -99,7 +99,9 @@ class Renderer {
  */
   static Renderer& GetInstance();
 /**
- * @brief Shuts down the renderer and frees all graphical resources in the pending deletion queue.
+ * @brief Shuts down the renderer and destroys the resources pending deletion. Release all
+ * shared pointers to its resources first: a resource released after shutdown can't be
+ * destroyed (its graphics device or context is gone) and is leaked, with an error.
  */
   static void ShutdownInstance();
 /**
@@ -176,114 +178,107 @@ class Renderer {
 /**
  * @brief Create a renderer `IndexBuffer`.
  * @param params A reference to a `IndexBufferCreationParams` struct with creation parameters.
- * @return A shared pointer to a renderer `IndexBuffer`.
+ * @return A shared pointer to a renderer `IndexBuffer`. The `IndexBuffer` is destroyed when the last
+ * shared pointer to it is released (deferred until the GPU no longer uses it).
  */
   virtual std::shared_ptr<IndexBuffer> CreateIndexBuffer(
       const IndexBuffer::IndexBufferCreationParams& params) = 0;
 /**
- * @brief Destroy a renderer `IndexBuffer`.
- * @param index_buffer A shared pointer to a renderer `IndexBuffer`. Do not retain any other
- * instances of the shared pointer after calling the destroy function. The resources
- * is not immediately deleted, but put in a delete queue. Deletion will happen at the
- * next ::BeginFrame or ::ShutdownInstance.
+ * @brief Optional, does nothing: a `IndexBuffer` is destroyed when the last shared pointer to it is
+ * released (see ::CreateIndexBuffer). Kept for compatibility.
+ * @param index_buffer A shared pointer to a renderer `IndexBuffer`.
  */
-  virtual void DestroyIndexBuffer(std::shared_ptr<IndexBuffer> index_buffer) = 0;
+  virtual void DestroyIndexBuffer(std::shared_ptr<IndexBuffer> /*index_buffer*/) {}
 
 /**
  * @brief Create a renderer `RenderPass`.
  * @param params A reference to a `RenderPassCreationParams` struct with creation parameters.
- * @return A shared pointer to a renderer `RenderPass`.
+ * @return A shared pointer to a renderer `RenderPass`. The `RenderPass` is destroyed when the last
+ * shared pointer to it is released (deferred until the GPU no longer uses it).
  */
   virtual std::shared_ptr<RenderPass> CreateRenderPass(
       const RenderPass::RenderPassCreationParams& params) = 0;
 /**
- * @brief Destroy a renderer `RenderPass`.
- * @param render_pass A shared pointer to a renderer `RenderPass`. Do not retain any other
- * instances of the shared pointer after calling the destroy function. The resources
- * is not immediately deleted, but put in a delete queue. Deletion will happen at the
- * next ::BeginFrame or ::ShutdownInstance.
+ * @brief Optional, does nothing: a `RenderPass` is destroyed when the last shared pointer to it is
+ * released (see ::CreateRenderPass). Kept for compatibility.
+ * @param render_pass A shared pointer to a renderer `RenderPass`.
  */
-  virtual void DestroyRenderPass(std::shared_ptr<RenderPass> render_pass) = 0;
+  virtual void DestroyRenderPass(std::shared_ptr<RenderPass> /*render_pass*/) {}
 
 /**
  * @brief Create a renderer `RenderState`.
  * @param params A reference to a `RenderStateCreationParams` struct with creation parameters.
- * @return A shared pointer to a renderer `RenderState`.
+ * @return A shared pointer to a renderer `RenderState`. The `RenderState` is destroyed when the last
+ * shared pointer to it is released (deferred until the GPU no longer uses it).
  */
   virtual std::shared_ptr<RenderState> CreateRenderState(
       const RenderState::RenderStateCreationParams& params) = 0;
 /**
- * @brief Destroy a renderer `RenderState`.
- * @param render_state A shared pointer to a renderer `RenderState`. Do not retain any other
- * instances of the shared pointer after calling the destroy function. The resources
- * is not immediately deleted, but put in a delete queue. Deletion will happen at the
- * next ::BeginFrame or ::ShutdownInstance.
+ * @brief Optional, does nothing: a `RenderState` is destroyed when the last shared pointer to it is
+ * released (see ::CreateRenderState). Kept for compatibility.
+ * @param render_state A shared pointer to a renderer `RenderState`.
  */
-  virtual void DestroyRenderState(std::shared_ptr<RenderState> render_state) = 0;
+  virtual void DestroyRenderState(std::shared_ptr<RenderState> /*render_state*/) {}
 
 /**
  * @brief Create a renderer `ShaderProgram`.
  * @param params A reference to a `ShaderProgramCreationParams` struct with creation parameters.
- * @return A shared pointer to a renderer `ShaderProgram`.
+ * @return A shared pointer to a renderer `ShaderProgram`. The `ShaderProgram` is destroyed when the last
+ * shared pointer to it is released (deferred until the GPU no longer uses it).
  */
   virtual std::shared_ptr<ShaderProgram> CreateShaderProgram(
       const ShaderProgram::ShaderProgramCreationParams& params) = 0;
 /**
- * @brief Destroy a renderer `ShaderProgram`.
- * @param shader_program A shared pointer to a renderer `ShaderProgram`. Do not retain any other
- * instances of the shared pointer after calling the destroy function. The resources
- * is not immediately deleted, but put in a delete queue. Deletion will happen at the
- * next ::BeginFrame or ::ShutdownInstance.
+ * @brief Optional, does nothing: a `ShaderProgram` is destroyed when the last shared pointer to it is
+ * released (see ::CreateShaderProgram). Kept for compatibility.
+ * @param shader_program A shared pointer to a renderer `ShaderProgram`.
  */
-  virtual void DestroyShaderProgram(std::shared_ptr<ShaderProgram> shader_program) = 0;
+  virtual void DestroyShaderProgram(std::shared_ptr<ShaderProgram> /*shader_program*/) {}
 
 /**
  * @brief Create a renderer `Texture`.
  * @param params A reference to a `TextureCreationParams` struct with creation parameters.
- * @return A shared pointer to a renderer `Texture`.
+ * @return A shared pointer to a renderer `Texture`. The `Texture` is destroyed when the last
+ * shared pointer to it is released (deferred until the GPU no longer uses it).
  */
   virtual std::shared_ptr<Texture> CreateTexture(
       const Texture::TextureCreationParams& params) = 0;
 /**
- * @brief Destroy a renderer `Texture`.
- * @param texture A shared pointer to a renderer `Texture`. Do not retain any other
- * instances of the shared pointer after calling the destroy function. The resources
- * is not immediately deleted, but put in a delete queue. Deletion will happen at the
- * next ::BeginFrame or ::ShutdownInstance.
+ * @brief Optional, does nothing: a `Texture` is destroyed when the last shared pointer to it is
+ * released (see ::CreateTexture). Kept for compatibility.
+ * @param texture A shared pointer to a renderer `Texture`.
  */
-  virtual void DestroyTexture(std::shared_ptr<Texture> texture) = 0;
+  virtual void DestroyTexture(std::shared_ptr<Texture> /*texture*/) {}
 
 /**
  * @brief Create a renderer `UniformBuffer`.
  * @param params A reference to a `UniformBufferCreationParams` struct with creation parameters.
- * @return A shared pointer to a renderer `UniformBuffer`.
+ * @return A shared pointer to a renderer `UniformBuffer`. The `UniformBuffer` is destroyed when the last
+ * shared pointer to it is released (deferred until the GPU no longer uses it).
  */
   virtual std::shared_ptr<UniformBuffer> CreateUniformBuffer(
       const UniformBuffer::UniformBufferCreationParams& params) = 0;
 /**
- * @brief Destroy a renderer `UniformBuffer`.
- * @param uniform_buffer A shared pointer to a renderer `UniformBuffer`. Do not retain any other
- * instances of the shared pointer after calling the destroy function. The resources
- * is not immediately deleted, but put in a delete queue. Deletion will happen at the
- * next ::BeginFrame or ::ShutdownInstance.
+ * @brief Optional, does nothing: a `UniformBuffer` is destroyed when the last shared pointer to it is
+ * released (see ::CreateUniformBuffer). Kept for compatibility.
+ * @param uniform_buffer A shared pointer to a renderer `UniformBuffer`.
  */
-  virtual void DestroyUniformBuffer(std::shared_ptr<UniformBuffer> uniform_buffer) = 0;
+  virtual void DestroyUniformBuffer(std::shared_ptr<UniformBuffer> /*uniform_buffer*/) {}
 
 /**
  * @brief Create a renderer `VertexBuffer`.
  * @param params A reference to a `VertexBufferCreationParams` struct with creation parameters.
- * @return A shared pointer to a renderer `VertexBuffer`.
+ * @return A shared pointer to a renderer `VertexBuffer`. The `VertexBuffer` is destroyed when the last
+ * shared pointer to it is released (deferred until the GPU no longer uses it).
  */
   virtual std::shared_ptr<VertexBuffer> CreateVertexBuffer(
       const VertexBuffer::VertexBufferCreationParams& params) = 0;
 /**
- * @brief Destroy a renderer `VertexBuffer`.
- * @param vertex_buffer A shared pointer to a renderer `VertexBuffer`. Do not retain any other
- * instances of the shared pointer after calling the destroy function. The resources
- * is not immediately deleted, but put in a delete queue. Deletion will happen at the
- * next ::BeginFrame or ::ShutdownInstance.
+ * @brief Optional, does nothing: a `VertexBuffer` is destroyed when the last shared pointer to it is
+ * released (see ::CreateVertexBuffer). Kept for compatibility.
+ * @param vertex_buffer A shared pointer to a renderer `VertexBuffer`.
  */
-  virtual void DestroyVertexBuffer(std::shared_ptr<VertexBuffer> vertex_buffer) = 0;
+  virtual void DestroyVertexBuffer(std::shared_ptr<VertexBuffer> /*vertex_buffer*/) {}
 
  protected:
   Renderer();

@@ -16,6 +16,7 @@
 
 #include "renderer_shader_program_gles.h"
 #include "renderer_debug.h"
+#include "renderer_gles.h"
 
 namespace simple_renderer {
 
@@ -49,7 +50,8 @@ static bool CheckShaderStatus(GLuint shader_handle) {
   return valid;
 }
 
-ShaderProgramGLES::ShaderProgramGLES(const ShaderProgram::ShaderProgramCreationParams& params) {
+ShaderProgramGLES::ShaderProgramGLES(const ShaderProgram::ShaderProgramCreationParams& params)
+    : context_(GetCurrentGLESContext()) {
   valid_program_ = false;
   fragment_handle_ = glCreateShader(GL_FRAGMENT_SHADER);
   vertex_handle_ = glCreateShader(GL_VERTEX_SHADER);
@@ -84,7 +86,7 @@ ShaderProgramGLES::ShaderProgramGLES(const ShaderProgram::ShaderProgramCreationP
 }
 
 ShaderProgramGLES::~ShaderProgramGLES() {
-  if (valid_program_) {
+  if (valid_program_ && IsGLESContextCurrent(context_)) {
     valid_program_ = false;
     glDetachShader(program_handle_, fragment_handle_);
     glDetachShader(program_handle_, vertex_handle_);

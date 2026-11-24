@@ -24,6 +24,17 @@
 
 namespace simple_renderer {
 
+/*
+ * The GL objects of a resource belong to the context that was current when it was created,
+ * and can only be deleted with that context current: without a current context the deletes
+ * fail, and with another one they would delete that context's objects of the same names.
+ * Once the context is destroyed (with its swapchain), its objects are gone with it.
+ */
+inline EGLContext GetCurrentGLESContext() { return eglGetCurrentContext(); }
+inline bool IsGLESContextCurrent(const EGLContext context) {
+  return context != EGL_NO_CONTEXT && eglGetCurrentContext() == context;
+}
+
 /**
  * @brief A subclass implementation of the base Renderer class for the
  * OpenGL ES API. This class should not be used directly.
@@ -52,34 +63,27 @@ class RendererGLES : public Renderer {
   virtual void BindVertexBuffer(std::shared_ptr<VertexBuffer> vertex_buffer);
   virtual void BindTexture(std::shared_ptr<Texture> texture);
 
-  // Resource creation and destruction
+  // Resource creation (resources are destroyed when released, see RendererResources)
   virtual std::shared_ptr<IndexBuffer> CreateIndexBuffer(
       const IndexBuffer::IndexBufferCreationParams& params);
-  virtual void DestroyIndexBuffer(std::shared_ptr<IndexBuffer> index_buffer);
 
   virtual std::shared_ptr<RenderPass> CreateRenderPass(
       const RenderPass::RenderPassCreationParams& params);
-  virtual void DestroyRenderPass(std::shared_ptr<RenderPass> render_pass);
 
   virtual std::shared_ptr<RenderState> CreateRenderState(
       const RenderState::RenderStateCreationParams& params);
-  virtual void DestroyRenderState(std::shared_ptr<RenderState> render_state);
 
   virtual std::shared_ptr<ShaderProgram> CreateShaderProgram(
       const ShaderProgram::ShaderProgramCreationParams& params);
-  virtual void DestroyShaderProgram(std::shared_ptr<ShaderProgram> shader_program);
 
   virtual std::shared_ptr<Texture> CreateTexture(
       const Texture::TextureCreationParams& params);
-  virtual void DestroyTexture(std::shared_ptr<Texture> texture);
 
   virtual std::shared_ptr<UniformBuffer> CreateUniformBuffer(
       const UniformBuffer::UniformBufferCreationParams& params);
-  virtual void DestroyUniformBuffer(std::shared_ptr<UniformBuffer> uniform_buffer);
 
   virtual std::shared_ptr<VertexBuffer> CreateVertexBuffer(
       const VertexBuffer::VertexBufferCreationParams& params);
-  virtual void DestroyVertexBuffer(std::shared_ptr<VertexBuffer> vertex_buffer);
 
  protected:
   virtual void PrepareShutdown();

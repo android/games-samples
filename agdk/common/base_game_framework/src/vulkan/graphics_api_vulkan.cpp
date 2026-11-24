@@ -757,8 +757,20 @@ bool GraphicsAPIVulkan::GetSwapchainFrameResourcesVk(
       vk_device_ != VK_NULL_HANDLE && vk_swapchain_ != VK_NULL_HANDLE &&
       swapchain_info_.swapchain_current_frame_index_ < in_flight_frame_fence_.size()) {
 
+    if (acquire_frame_image && swapchain_acquired_current_frame_image_) {
+      // This frame's image was already acquired (and maybe submitted) without being presented:
+      // acquiring again would skip the wait for the frame fence, so the caller could reuse the
+      // frame's resources while the GPU still uses them
+      DebugManager::Log(DebugManager::kLog_Channel_Default,
+                        DebugManager::kLog_Level_Error,
+                        BGM_CLASS_TAG,
+                        "GetSwapchainFrameResourcesVk: the current frame's image was already "
+                        "acquired, present it first");
+      return false;
+    }
+
     // If we haven't acquired the image for this frame, do it now
-    if (!swapchain_acquired_current_frame_image_ && acquire_frame_image) {
+    if (acquire_frame_image) {
       vkWaitForFences(vk_device_, 1,
                       &in_flight_frame_fence_[swapchain_info_.swapchain_current_frame_index_],
                       VK_TRUE, UINT64_MAX);
@@ -819,6 +831,7 @@ bool GraphicsAPIVulkan::GetSwapchainFrameResourcesVk(
     frame_resources.swapchain_extent = swapchain_info_.swapchain_extent_;
     frame_resources.swapchain_frame_index = swapchain_info_.swapchain_current_frame_index_;
     frame_resources.swapchain_image_index = swapchain_info_.swapchain_current_image_index_;
+    frame_resources.swapchain_frame_count = swapchain_info_.swapchain_frame_count_;
     return true;
   }
 

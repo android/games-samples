@@ -34,7 +34,25 @@ RendererVk& RendererVk::GetInstanceVk() {
   return *(static_cast<RendererVk*>(Renderer::GetInstancePtr()));
 }
 
+// Frames in flight: the swapchain's, or if there is no swapchain yet, from the display buffer
+// mode (as GraphicsAPIVulkan sizes its frame fences)
+static uint32_t GetInFlightFrameCount() {
+  DisplayManager& display_manager = DisplayManager::GetInstance();
+  const DisplayManager::SwapchainFrameHandle frame_handle =
+      display_manager.GetCurrentSwapchainFrame(Renderer::GetSwapchainHandle());
+  SwapchainFrameResourcesVk frame_resources;
+  if (frame_handle != DisplayManager::kInvalid_swapchain_handle &&
+      display_manager.GetSwapchainFrameResourcesVk(frame_handle, frame_resources, false) &&
+      frame_resources.swapchain_frame_count != 0) {
+    return frame_resources.swapchain_frame_count;
+  }
+  return (display_manager.GetDisplayBufferMode() ==
+          DisplayManager::kDisplay_Triple_Buffer) ? 3 : 2;
+}
+
 RendererVk::RendererVk() :
+    // A released resource is deleted once every frame in flight was waited after its release
+    resources_(GetInFlightFrameCount()),
     staging_command_buffer_(VK_NULL_HANDLE),
     render_command_buffer_(VK_NULL_HANDLE),
     frame_active_(false),
@@ -68,15 +86,7 @@ RendererVk::RendererVk() :
 
   // Creating a pool per frame, currently our renderer only uses
   // a single sampler descriptor for draws that use a texture
-  in_flight_frame_count_ = 2;
-  switch (DisplayManager::GetInstance().GetDisplayBufferMode()) {
-    case DisplayManager::kDisplay_Double_Buffer:
-      in_flight_frame_count_ = 2;
-      break;
-    case DisplayManager::kDisplay_Triple_Buffer:
-      in_flight_frame_count_ = 3;
-      break;
-  }
+  in_flight_frame_count_ = GetInFlightFrameCount();
 
   CreateDescriptorPools();
   CreateCommandBuffers();
@@ -99,7 +109,7 @@ void RendererVk::PrepareShutdown() {
   render_state_ = nullptr;
   frame_active_ = false;
   frame_acquired_ = false;
-  resources_.ProcessDeleteQueue();
+  resources_.Shutdown("Renderer shutdown");
 
   DestroyCommandBuffers();
 
@@ -133,7 +143,6 @@ bool RendererVk::GetFeatureAvailable(const RendererFeature feature) {
 
 void RendererVk::BeginFrame(
     const base_game_framework::DisplayManager::SwapchainHandle swapchain_handle) {
-  resources_.ProcessDeleteQueue();
   frame_active_ = false;
   frame_acquired_ = false;
   // At the moment, we don't support render targets, so grab a swapchain image
@@ -162,12 +171,21 @@ void RendererVk::BeginFrame(
   active_extent_ = swap_.swapchain_extent;
   active_rotation_ = display_manager.GetSwapchainRotationMode(swapchain_handle);
 
-  // Per in-flight frame resources (sized from the same display buffer mode as the swapchain)
+  // Per in-flight frame resources (sized from the swapchain's frame count)
   const uint32_t frame_index = swap_.swapchain_frame_index;
+  // Acquiring the image waited for this frame slot's previous frame to finish: delete the
+  // released resources that no frame in flight can still use. A resource waits for every
+  // frame slot of the swapchain.
+  const uint32_t frame_count = (swap_.swapchain_frame_count != 0) ?
+      swap_.swapchain_frame_count : in_flight_frame_count_;
+  resources_.FrameSlotWaited(frame_index, frame_count);
+  resources_.ProcessDeleteQueue();
+
   RENDERER_ASSERT(frame_index < descriptor_pools_.size() && frame_index < command_buffers_.size());
   if (frame_index >= descriptor_pools_.size() || frame_index >= command_buffers_.size()) {
     return;
   }
+
   active_frame_pool_ = descriptor_pools_[frame_index];
   VkResult reset_result = vkResetDescriptorPool(vk_.device, active_frame_pool_, 0);
   RENDERER_CHECK_VK(reset_result, "vkResetDescriptorPool");
@@ -258,12 +276,13 @@ void RendererVk::SwapchainRecreated() {
   // reset by the next BeginFrame), and don't submit or record anything else in it
   frame_active_ = false;
   frame_acquired_ = false;
+  // The GPU is idle, so released resources can all be deleted now
+  resources_.DeleteAllQueued();
   // Our cached framebuffers were associated with image view from the old
   // swapchain, purge the cache to rebuild them using the new swapchain
-  for (auto &render_pass : resources_.GetRenderPasses()) {
-    RenderPassVk *render_pass_vk = reinterpret_cast<RenderPassVk*>(render_pass.second.get());
-    render_pass_vk->PurgeFramebufferCache();
-  }
+  resources_.ForEachLiveRenderPass([](RenderPass* render_pass) {
+    static_cast<RenderPassVk*>(render_pass)->PurgeFramebufferCache();
+  });
 }
 
 void RendererVk::ResetBoundDescriptorSet() {
@@ -555,17 +574,9 @@ std::shared_ptr<IndexBuffer> RendererVk::CreateIndexBuffer(
   return resources_.AddIndexBuffer(new IndexBufferVk(params));
 }
 
-void RendererVk::DestroyIndexBuffer(std::shared_ptr<IndexBuffer> index_buffer) {
-  resources_.QueueDeleteIndexBuffer(index_buffer);
-}
-
 std::shared_ptr<RenderPass> RendererVk::CreateRenderPass(
     const RenderPass::RenderPassCreationParams& params) {
   return resources_.AddRenderPass(new RenderPassVk(params));
-}
-
-void RendererVk::DestroyRenderPass(std::shared_ptr<RenderPass> render_pass) {
-  resources_.QueueDeleteRenderPass(render_pass);
 }
 
 std::shared_ptr<RenderState> RendererVk::CreateRenderState(
@@ -573,25 +584,13 @@ std::shared_ptr<RenderState> RendererVk::CreateRenderState(
   return resources_.AddRenderState(new RenderStateVk(params));
 }
 
-void RendererVk::DestroyRenderState(std::shared_ptr<RenderState> render_state) {
-  resources_.QueueDeleteRenderState(render_state);
-}
-
 std::shared_ptr<ShaderProgram> RendererVk::CreateShaderProgram(
     const ShaderProgram::ShaderProgramCreationParams& params) {
   return resources_.AddShaderProgram(new ShaderProgramVk(params));
 }
 
-void RendererVk::DestroyShaderProgram(std::shared_ptr<ShaderProgram> shader_program) {
-  resources_.QueueDeleteShaderProgram(shader_program);
-}
-
 std::shared_ptr<Texture> RendererVk::CreateTexture(const Texture::TextureCreationParams& params) {
   return resources_.AddTexture(new TextureVk(params));
-}
-
-void RendererVk::DestroyTexture(std::shared_ptr<Texture> texture) {
-  resources_.QueueDeleteTexture(texture);
 }
 
 std::shared_ptr<UniformBuffer> RendererVk::CreateUniformBuffer(
@@ -599,17 +598,9 @@ std::shared_ptr<UniformBuffer> RendererVk::CreateUniformBuffer(
   return resources_.AddUniformBuffer(new UniformBufferVk(params));
 }
 
-void RendererVk::DestroyUniformBuffer(std::shared_ptr<UniformBuffer> uniform_buffer) {
-  resources_.QueueDeleteUniformBuffer(uniform_buffer);
-}
-
 std::shared_ptr<VertexBuffer> RendererVk::CreateVertexBuffer(
     const VertexBuffer::VertexBufferCreationParams& params) {
   return resources_.AddVertexBuffer(new VertexBufferVk(params));
-}
-
-void RendererVk::DestroyVertexBuffer(std::shared_ptr<VertexBuffer> vertex_buffer) {
-  resources_.QueueDeleteVertexBuffer(vertex_buffer);
 }
 
 VkDescriptorSetLayout RendererVk::GetDescriptorSetLayout(

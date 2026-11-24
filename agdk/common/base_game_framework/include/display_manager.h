@@ -624,6 +624,9 @@ class DisplayManager {
  * @param frame_handle Handle to the specified swapchain
  * @param frame_resources A reference to a `SwapchainFrameResourcesVk` structure to populate
  * with swapchain frame resources related to rendering using Vulkan
+ * @param acquire_frame_image If true, wait for the frame's previous use to finish (its frame
+ * fence) and acquire its swapchain image. Fails if the image was already acquired and the frame
+ * not presented since (::PresentCurrentSwapchainFrame).
  * @return True if resource information was successfully retrieved.
  */
   bool GetSwapchainFrameResourcesVk(const SwapchainFrameHandle frame_handle,

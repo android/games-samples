@@ -33,6 +33,9 @@ namespace simple_renderer {
 static const char *kAstcExtensionString = "GL_OES_texture_compression_astc";
 
 RendererGLES::RendererGLES() :
+    // GL keeps objects used by queued commands alive until they are done, so released
+    // resources are deleted at the next frame (with the context current) without frame tracking
+    resources_(0),
     swapchain_handle_(Renderer::GetSwapchainHandle()),
     frame_active_(false),
     egl_context_(EGL_NO_CONTEXT),
@@ -51,18 +54,21 @@ void RendererGLES::RefreshEGLResources() {
   // context with the swapchain), so don't keep using handles from an earlier frame
   DisplayManager& display_manager = DisplayManager::GetInstance();
   GraphicsAPIResourcesGLES graphics_api_resources_gles;
-  egl_context_ = display_manager.GetGraphicsAPIResourcesGLES(graphics_api_resources_gles) ?
-      graphics_api_resources_gles.egl_context : EGL_NO_CONTEXT;
+  if (display_manager.GetGraphicsAPIResourcesGLES(graphics_api_resources_gles)) {
+    egl_context_ = graphics_api_resources_gles.egl_context;
+    egl_display_ = graphics_api_resources_gles.egl_display;
+  } else {
+    egl_context_ = EGL_NO_CONTEXT;
+    egl_display_ = EGL_NO_DISPLAY;
+  }
   SwapchainFrameResourcesGLES swapchain_frame_resources_gles;
   const base_game_framework::DisplayManager::SwapchainFrameHandle frame_handle =
       display_manager.GetCurrentSwapchainFrame(swapchain_handle_);
   if (display_manager.GetSwapchainFrameResourcesGLES(frame_handle,
                                                      swapchain_frame_resources_gles)) {
-    egl_display_ = swapchain_frame_resources_gles.egl_display;
     egl_surface_ = swapchain_frame_resources_gles.egl_surface;
   } else {
     // No valid swapchain (e.g. no window)
-    egl_display_ = EGL_NO_DISPLAY;
     egl_surface_ = EGL_NO_SURFACE;
   }
 }
@@ -70,7 +76,35 @@ void RendererGLES::RefreshEGLResources() {
 void RendererGLES::PrepareShutdown() {
   render_pass_ = nullptr;
   render_state_ = nullptr;
-  resources_.ProcessDeleteQueue();
+  // GL objects can only be deleted with their context current, and the window (with the
+  // surface) may already be gone, e.g. when the Activity finishes (APP_CMD_TERM_WINDOW comes
+  // before APP_CMD_DESTROY). Make the context current, without a surface then
+  // (EGL_KHR_surfaceless_context). Resources whose context isn't current skip their GL
+  // deletes (see IsGLESContextCurrent): they are deleted with their context.
+  const EGLDisplay previous_display = eglGetCurrentDisplay();
+  const EGLSurface previous_draw = eglGetCurrentSurface(EGL_DRAW);
+  const EGLSurface previous_read = eglGetCurrentSurface(EGL_READ);
+  const EGLContext previous_context = eglGetCurrentContext();
+  RefreshEGLResources();
+  bool made_current = false;
+  if (egl_context_ != EGL_NO_CONTEXT && egl_display_ != EGL_NO_DISPLAY) {
+    made_current = (eglMakeCurrent(egl_display_, egl_surface_, egl_surface_, egl_context_) ==
+                    EGL_TRUE);
+    if (!made_current) {
+      RENDERER_ERROR("PrepareShutdown: eglMakeCurrent failed: 0x%x, GL objects are left to "
+                     "the context", eglGetError());
+    }
+  }
+  resources_.Shutdown("Renderer shutdown");
+  // Leave the previously current context (or none) current
+  if (made_current && (previous_context != egl_context_ || previous_draw != egl_surface_ ||
+                       previous_read != egl_surface_)) {
+    if (previous_context == EGL_NO_CONTEXT) {
+      eglMakeCurrent(egl_display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    } else {
+      eglMakeCurrent(previous_display, previous_draw, previous_read, previous_context);
+    }
+  }
 }
 
 bool RendererGLES::GetFeatureAvailable(const RendererFeature feature) {
@@ -276,17 +310,9 @@ std::shared_ptr<IndexBuffer> RendererGLES::CreateIndexBuffer(
   return resources_.AddIndexBuffer(new IndexBufferGLES(params));
 }
 
-void RendererGLES::DestroyIndexBuffer(std::shared_ptr<IndexBuffer> index_buffer) {
-  resources_.QueueDeleteIndexBuffer(index_buffer);
-}
-
 std::shared_ptr<RenderPass> RendererGLES::CreateRenderPass(
     const RenderPass::RenderPassCreationParams& params) {
   return resources_.AddRenderPass(new RenderPassGLES(params));
-}
-
-void RendererGLES::DestroyRenderPass(std::shared_ptr<RenderPass> render_pass) {
-  resources_.QueueDeleteRenderPass(render_pass);
 }
 
 std::shared_ptr<RenderState> RendererGLES::CreateRenderState(
@@ -294,25 +320,13 @@ std::shared_ptr<RenderState> RendererGLES::CreateRenderState(
   return resources_.AddRenderState(new RenderStateGLES(params));
 }
 
-void RendererGLES::DestroyRenderState(std::shared_ptr<RenderState> render_state) {
-  resources_.QueueDeleteRenderState(render_state);
-}
-
 std::shared_ptr<ShaderProgram> RendererGLES::CreateShaderProgram(
     const ShaderProgram::ShaderProgramCreationParams& params) {
   return resources_.AddShaderProgram(new ShaderProgramGLES(params));
 }
 
-void RendererGLES::DestroyShaderProgram(std::shared_ptr<ShaderProgram> shader_program) {
-  resources_.QueueDeleteShaderProgram(shader_program);
-}
-
 std::shared_ptr<Texture> RendererGLES::CreateTexture(const Texture::TextureCreationParams& params) {
   return resources_.AddTexture(new TextureGLES(params));
-}
-
-void RendererGLES::DestroyTexture(std::shared_ptr<Texture> texture) {
-  resources_.QueueDeleteTexture(texture);
 }
 
 std::shared_ptr<UniformBuffer> RendererGLES::CreateUniformBuffer(
@@ -320,17 +334,9 @@ std::shared_ptr<UniformBuffer> RendererGLES::CreateUniformBuffer(
   return resources_.AddUniformBuffer(new UniformBufferGLES(params));
 }
 
-void RendererGLES::DestroyUniformBuffer(std::shared_ptr<UniformBuffer> uniform_buffer) {
-  resources_.QueueDeleteUniformBuffer(uniform_buffer);
-}
-
 std::shared_ptr<VertexBuffer> RendererGLES::CreateVertexBuffer(
     const VertexBuffer::VertexBufferCreationParams& params) {
   return resources_.AddVertexBuffer(new VertexBufferGLES(params));
-}
-
-void RendererGLES::DestroyVertexBuffer(std::shared_ptr<VertexBuffer> vertex_buffer) {
-  resources_.QueueDeleteVertexBuffer(vertex_buffer);
 }
 
 }

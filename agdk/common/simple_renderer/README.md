@@ -60,9 +60,9 @@ required by the Android Baseline Profile for Vulkan.
 
 ### Resources
 
-Each render resource in SimpleRenderer has an associated class. Creation and destruction of resource
-objects is done through the Renderer interface instead of calling resource constructors or
-destructors directly. The resource classes are:
+Each render resource in SimpleRenderer has an associated class. Resource objects are created
+through the Renderer interface instead of calling resource constructors directly, and destroyed
+when the last shared pointer to them is released. The resource classes are:
 
 * IndexBuffer
 * UniformBuffer
@@ -100,25 +100,28 @@ parameter to a creation parameters structure specific to each resource type:
       const VertexBuffer::VertexBufferCreationParams& params) = 0;
 ```
 
-With one exception, data pointers in a `...CreationParams` struct are not referenced post-creation
-and are not required to persist after return from the `Create...` call.
-
-The exception is the pointer specified by the `element_array` field in the
-`UniformBufferCreationParams` structure. The data associated with that pointer will be referenced
-and must persist until after destruction of the `UniformBuffer` object.
+Data pointers in a `...CreationParams` struct are not referenced post-creation and are not
+required to persist after return from the `Create...` call (a `UniformBuffer` copies its
+`element_array`).
 
 #### Resource destruction
 
-The renderer has `Destroy...` calls for each resource type. The destroy calls take the shared
-pointer to the resource object as a parameter. The caller should not retain any additional
-references to the shared pointer after calling the destroy function.
+A resource is destroyed when the last shared pointer to it is released (the `Create...` calls
+return a shared pointer with a custom deleter). Destruction is deferred until it is safe:
 
-Resources are not immediately deleted, but placed in a pending deletion queue. The queue is emptied
-at the beginning of each render frame (during the call to Renderer::BeginFrame) or when the
-renderer instance is shutdown.
+* Vulkan: until every frame that was in flight when the resource was released has finished
+  executing on the GPU, so a resource can be released right after its last draw call.
+* OpenGL ES: until the next render frame (Renderer::BeginFrame), when the context is current.
 
-In debug mode, the renderer will assert if there are additional references being held to the
-shared pointer when destructing the resources.
+Remaining deferred destructions happen when the swapchain is recreated (Vulkan) and when the
+renderer instance is shut down. Release all pointers to a renderer's resources before shutting it
+down: a resource released after shutdown can't be destroyed (its device or context is gone), and is
+leaked with an error. Resources still referenced at shutdown are logged.
+
+The `Destroy...` calls are optional and do nothing; they are kept for compatibility.
+
+Resources hold references to the resources they use (e.g. a `RenderState` to its
+`ShaderProgram` and `UniformBuffer`), so those live at least as long.
 
 #### Resource dependencies
 

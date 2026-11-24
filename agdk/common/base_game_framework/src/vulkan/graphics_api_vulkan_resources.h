@@ -46,6 +46,8 @@ struct SwapchainFrameResourcesVk {
   VkFormat swapchain_depth_stencil_format = VK_FORMAT_UNDEFINED;
   uint32_t swapchain_frame_index = 0;
   uint32_t swapchain_image_index = 0;
+  // Frames in flight (frame indices are below it), fixed for the swapchain's lifetime
+  uint32_t swapchain_frame_count = 0;
 };
 
 } // namespace base_game_framework
