@@ -257,10 +257,7 @@ TextureManager::TextureManager() {
 }
 
 TextureManager::~TextureManager() {
-    for (std::vector<TextureReference>::iterator iter = mTextures.begin(); iter != mTextures.end();
-         ++iter) {
-        simple_renderer::Renderer::GetInstance().DestroyTexture(iter->mTextureReference);
-    }
+    // Releasing the textures destroys them (deferred by the renderer)
     mTextures.clear();
 }
 
@@ -295,6 +292,17 @@ bool TextureManager::LoadTexture(const char *textureName) {
 
 bool TextureManager::CreateTexture(const char *textureName, const size_t textureSize,
                                    const uint8_t *textureData) {
+    if (textureName == nullptr || textureData == nullptr) {
+        ALOGE("TextureManager: CreateTexture without a name or data");
+        free((void *) textureData);
+        return false;
+    }
+    if (IsTextureLoaded(textureName)) {
+        // Already loaded (e.g. the loader scene runs again when returning to the main menu):
+        // keep the existing texture instead of creating another copy
+        free((void *) textureData);
+        return true;
+    }
     std::shared_ptr<simple_renderer::Texture> newTexture = nullptr;
     const TextureFileFormat fileFormat = GetFileFormat(textureData, textureSize);
 
@@ -327,10 +335,12 @@ std::shared_ptr<simple_renderer::Texture> TextureManager::GetTexture(const char 
 }
 
 TextureManager::TextureReference TextureManager::FindReferenceForName(const char *textureName) {
-    for (std::vector<TextureReference>::iterator iter = mTextures.begin();
-         iter != mTextures.end(); ++iter) {
-        if (strcmp(textureName, iter->mTextureName) == 0) {
-            return *iter;
+    if (textureName != nullptr) {
+        for (std::vector<TextureReference>::iterator iter = mTextures.begin();
+             iter != mTextures.end(); ++iter) {
+            if (iter->mTextureName == textureName) {
+                return *iter;
+            }
         }
     }
     TextureManager::TextureReference emptyReference(0, NULL, nullptr);

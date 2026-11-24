@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <vector>
 #include "simple_renderer/renderer_texture.h"
 #include "util.hpp"
@@ -65,10 +66,12 @@ private:
                          const char *textureName,
                          std::shared_ptr<simple_renderer::Texture> textureReference) :
                 mTextureMipCount(textureMipCount),
-                mTextureName(textureName), mTextureReference(textureReference) {}
+                mTextureName(textureName != nullptr ? textureName : ""),
+                mTextureReference(textureReference) {}
 
         uint32_t mTextureMipCount;
-        const char *mTextureName;
+        // A copy (the caller's name, e.g. an asset list entry, may not outlive the texture)
+        std::string mTextureName;
         std::shared_ptr<simple_renderer::Texture> mTextureReference;
     };
 

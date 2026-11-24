@@ -18,58 +18,90 @@
 #define SIMPLERENDERER_RESOURCES_H_
 
 #include "renderer_interface.h"
-#include <queue>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <mutex>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 namespace simple_renderer {
 
-typedef uint64_t RendererKey;
-
+/*
+ * Owns the lifetime of a renderer's resources.
+ *
+ * Resources are handed out as shared pointers whose deleter doesn't delete the resource but
+ * queues it for deletion: the GPU may still be using it (Vulkan frames in flight), and GLES
+ * objects must be deleted with the context current. Queued resources are deleted by
+ * ProcessDeleteQueue once that is safe:
+ * - With frame slots (Vulkan): once every frame slot was waited (FrameSlotWaited) after the
+ *   resource was queued, so no submitted frame that could use it is still executing.
+ * - Without (GLES): at the next ProcessDeleteQueue.
+ * DeleteAllQueued deletes everything queued (when the GPU is idle).
+ *
+ * A resource released after the renderer is shut down (Shutdown) or gone can't be deleted
+ * (its device or context is gone too): it is leaked, with an error.
+ */
 class RendererResources {
  public:
-  void ProcessDeleteQueue();
+  // frame_slot_count: frames that can be in flight, updated by FrameSlotWaited (0: no
+  // tracking, see above)
+  explicit RendererResources(uint32_t frame_slot_count);
+  ~RendererResources();
+
+  RendererResources(const RendererResources&) = delete;
+  RendererResources& operator=(const RendererResources&) = delete;
 
   std::shared_ptr<IndexBuffer> AddIndexBuffer(IndexBuffer* index_buffer);
-  void QueueDeleteIndexBuffer(const std::shared_ptr<IndexBuffer>& index_buffer);
-
   std::shared_ptr<RenderPass> AddRenderPass(RenderPass* render_pass);
-  void QueueDeleteRenderPass(const std::shared_ptr<RenderPass>& render_pass);
-
   std::shared_ptr<RenderState> AddRenderState(RenderState* render_state);
-  void QueueDeleteRenderState(const std::shared_ptr<RenderState>& render_state);
-
   std::shared_ptr<ShaderProgram> AddShaderProgram(ShaderProgram* shader_program);
-  void QueueDeleteShaderProgram(const std::shared_ptr<ShaderProgram>& shader_program);
-
   std::shared_ptr<Texture> AddTexture(Texture* texture);
-  void QueueDeleteTexture(const std::shared_ptr<Texture>& texture);
-
   std::shared_ptr<UniformBuffer> AddUniformBuffer(UniformBuffer* uniform_buffer);
-  void QueueDeleteUniformBuffer(const std::shared_ptr<UniformBuffer>& uniform_buffer);
-
   std::shared_ptr<VertexBuffer> AddVertexBuffer(VertexBuffer* vertex_buffer);
-  void QueueDeleteVertexBuffer(const std::shared_ptr<VertexBuffer>& vertex_buffer);
 
-  auto &GetRenderPasses() {
-    return render_passes_;
-  }
+  // The fence of a frame slot was waited (its last submitted frame finished). frame_slot_count
+  // is the number of frame slots in use (the swapchain's frames in flight), which a queued
+  // resource must all have waited before it is deleted.
+  void FrameSlotWaited(uint32_t frame_slot, uint32_t frame_slot_count);
+
+  // Delete the queued resources that are safe to delete
+  void ProcessDeleteQueue();
+
+  // Delete all queued resources (including ones queued while deleting). The GPU must be idle.
+  void DeleteAllQueued();
+
+  // At renderer shutdown (the GPU must be idle): delete all queued resources, then log the
+  // ones still referenced. A resource released from then on is leaked, with an error.
+  void Shutdown(const char* reason);
+
+  // Calls function for each render pass that is still referenced (not queued for deletion)
+  void ForEachLiveRenderPass(const std::function<void(RenderPass*)>& function);
 
  private:
-  std::unordered_map<RendererKey, std::shared_ptr<IndexBuffer> > index_buffers_;
-  std::unordered_map<RendererKey, std::shared_ptr<RenderPass> > render_passes_;
-  std::unordered_map<RendererKey, std::shared_ptr<RenderState> > render_states_;
-  std::unordered_map<RendererKey, std::shared_ptr<ShaderProgram> > shader_programs_;
-  std::unordered_map<RendererKey, std::shared_ptr<Texture> > textures_;
-  std::unordered_map<RendererKey, std::shared_ptr<UniformBuffer> > uniform_buffers_;
-  std::unordered_map<RendererKey, std::shared_ptr<VertexBuffer> > vertex_buffers_;
+  struct QueuedDeletion {
+    std::function<void()> destroy;
+    uint32_t frame_slots_waited;  // bit mask
+  };
 
-  std::queue< std::shared_ptr<IndexBuffer> > index_buffer_delete_queue_;
-  std::queue< std::shared_ptr<RenderPass> > render_pass_delete_queue_;
-  std::queue< std::shared_ptr<RenderState> > render_state_delete_queue_;
-  std::queue< std::shared_ptr<ShaderProgram> > shader_program_delete_queue_;
-  std::queue< std::shared_ptr<Texture> > texture_delete_queue_;
-  std::queue< std::shared_ptr<UniformBuffer> > uniform_buffer_delete_queue_;
-  std::queue< std::shared_ptr<VertexBuffer> > vertex_buffer_delete_queue_;
+  // Shared with the deleters of the handed out pointers, which may outlive this object
+  struct State {
+    std::mutex mutex;
+    // Set (with the mutex held) once the renderer is shut down: released resources are leaked
+    bool shut_down = false;
+    uint32_t frame_slot_count = 0;
+    uint32_t all_frame_slots = 0;  // bit mask
+    std::vector<QueuedDeletion> queue;
+    // Referenced resources, with their type name
+    std::unordered_map<const void*, const char*> live;
+    std::unordered_set<RenderPass*> live_render_passes;
+  };
+
+  template <typename T>
+  std::shared_ptr<T> Add(T* resource, const char* type_name);
+
+  std::shared_ptr<State> state_;
 };
 
 }

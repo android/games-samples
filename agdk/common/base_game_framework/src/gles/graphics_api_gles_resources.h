@@ -24,6 +24,8 @@ namespace base_game_framework {
 
 struct GraphicsAPIResourcesGLES {
   EGLContext egl_context = EGL_NO_CONTEXT;
+  // The context's display (also valid while there is no surface, e.g. no window)
+  EGLDisplay egl_display = EGL_NO_DISPLAY;
 };
 
 struct SwapchainFrameResourcesGLES {

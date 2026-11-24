@@ -18,6 +18,7 @@
 #define SIMPLERENDERER_TEXTURE_GLES_H_
 
 #include <cstdint>
+#include <EGL/egl.h>
 #include <GLES3/gl3.h>
 #include "renderer_texture.h"
 
@@ -32,6 +33,8 @@ class TextureGLES : public Texture {
 
  private:
   GLuint texture_object_;
+  // The context the GL objects belong to (see IsGLESContextCurrent)
+  EGLContext context_;
 };
 } // namespace simple_renderer
 

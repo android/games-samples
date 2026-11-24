@@ -16,11 +16,12 @@
 
 #include "renderer_index_buffer_gles.h"
 #include "renderer_debug.h"
+#include "renderer_gles.h"
 
 namespace simple_renderer {
 
 IndexBufferGLES::IndexBufferGLES(const IndexBuffer::IndexBufferCreationParams& params)
-    : IndexBuffer(params) {
+    : IndexBuffer(params), context_(GetCurrentGLESContext()) {
   index_buffer_object_ = 0;
   glGenBuffers(1, &index_buffer_object_);
   RENDERER_CHECK_GLES("glGenBuffers");
@@ -34,6 +35,9 @@ IndexBufferGLES::IndexBufferGLES(const IndexBuffer::IndexBufferCreationParams& p
 }
 
 IndexBufferGLES::~IndexBufferGLES() {
+  if (!IsGLESContextCurrent(context_)) {
+    return;
+  }
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   RENDERER_CHECK_GLES("glBindBuffer GL_ELEMENT_ARRAY_BUFFER");
   glDeleteBuffers(1, &index_buffer_object_);

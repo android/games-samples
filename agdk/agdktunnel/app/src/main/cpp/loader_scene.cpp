@@ -49,6 +49,13 @@ class LoaderScene::TextureLoader {
 
     LoadedTextureData _loadedTextures[MAX_ASSET_TEXTURES];
 
+    // The loader scene runs again on every return to the main menu: textures that are
+    // already loaded aren't read again
+    static bool IsTextureLoaded(const char *textureName) {
+        TextureManager *textureManager = TunnelEngine::GetInstance()->GetTextureManager();
+        return textureManager != NULL && textureManager->IsTextureLoaded(textureName);
+    }
+
  public:
     ~TextureLoader() {
         // Wait for any textures to finish loading so we don't accidentally call
@@ -114,9 +121,16 @@ class LoaderScene::TextureLoader {
         const char **assetPackFiles = gameAssetManager->GetGameAssetPackFileList(assetPackName,
                 &assetPackFileCount);
         if (assetPackFiles != NULL) {
-            _totalLoadCount += assetPackFileCount;
-            _remainingLoadCount += assetPackFileCount;
-            ALOGI("TextureLoader: found %d assets from pack %s", assetPackFileCount, assetPackName);
+            int toLoadCount = 0;
+            for (int i = 0; i < assetPackFileCount; ++i) {
+                if (!IsTextureLoaded(assetPackFiles[i])) {
+                    ++toLoadCount;
+                }
+            }
+            _totalLoadCount += toLoadCount;
+            _remainingLoadCount += toLoadCount;
+            ALOGI("TextureLoader: found %d assets from pack %s, %d to load", assetPackFileCount,
+                  assetPackName, toLoadCount);
         } else {
             ALOGI("TextureLoader: could not retrieve the list from pack %s", assetPackName);
         }
@@ -130,6 +144,10 @@ class LoaderScene::TextureLoader {
         ALOGI("TextureLoader: loading textures from asset pack %s", assetPackName);
         if (assetPackFiles != NULL) {
             for (int i = 0; i < assetPackFileCount; ++i) {
+                if (IsTextureLoaded(assetPackFiles[i])) {
+                    // Not counted by FindTexturesFromAssetPack
+                    continue;
+                }
                 uint64_t fileSize = gameAssetManager->GetGameAssetSize(assetPackFiles[i]);
                 ALOGI("TextureLoader: the size of asset %s is %d",
                       assetPackFiles[i], (int)fileSize);

@@ -628,6 +628,7 @@ DisplayManager::SwapchainFrameHandle GraphicsAPIGLES::PresentCurrentSwapchainFra
 
 bool GraphicsAPIGLES::GetGraphicsAPIResourcesGLES(GraphicsAPIResourcesGLES& api_resources_gles) {
   api_resources_gles.egl_context = egl_context_;
+  api_resources_gles.egl_display = egl_display_;
   return (egl_context_ != EGL_NO_CONTEXT);
 }
 

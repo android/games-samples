@@ -18,6 +18,7 @@
 #define SIMPLERENDERER_SHADER_PROGRAM_GLES_H_
 
 #include <cstdint>
+#include <EGL/egl.h>
 #include <GLES3/gl3.h>
 #include "renderer_shader_program.h"
 
@@ -35,6 +36,8 @@ class ShaderProgramGLES : public ShaderProgram {
   GLuint program_handle_;
   GLuint vertex_handle_;
   bool valid_program_;
+  // The context the GL objects belong to (see IsGLESContextCurrent)
+  EGLContext context_;
 };
 } // namespace simple_renderer
 

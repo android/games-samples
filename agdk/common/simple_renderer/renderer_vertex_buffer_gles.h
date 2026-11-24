@@ -18,6 +18,7 @@
 #define SIMPLERENDERER_VERTEX_BUFFER_GLES_H_
 
 #include <cstdint>
+#include <EGL/egl.h>
 #include <GLES3/gl3.h>
 #include "renderer_vertex_buffer.h"
 
@@ -31,6 +32,8 @@ class VertexBufferGLES : public VertexBuffer {
   GLuint GetVertexBufferObject() const { return vertex_buffer_object_; }
  private:
   GLuint vertex_buffer_object_;
+  // The context the GL objects belong to (see IsGLESContextCurrent)
+  EGLContext context_;
 };
 } // namespace simple_renderer
 
