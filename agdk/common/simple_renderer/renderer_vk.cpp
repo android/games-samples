@@ -52,7 +52,6 @@ RendererVk::RendererVk() :
   // Reserve space up front; the cache starts empty each frame
   texture_descriptor_frame_cache_.reserve(kMaxSamplerDescriptors);
   DisplayManager& display_manager = DisplayManager::GetInstance();
-  const GraphicsAPIFeatures& api_features = display_manager.GetGraphicsAPIFeatures();
   display_manager.GetGraphicsAPIResourcesVk(vk_);
   // Viewport limits, for clamping render state viewports
   VkPhysicalDeviceProperties device_properties{};
