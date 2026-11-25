@@ -35,7 +35,9 @@ UserInputManager::UserInputManager()
     : key_event_callback_(nullptr),
       key_event_user_data_(nullptr),
       touch_event_callback_(nullptr),
-      touch_event_user_data_(nullptr) {
+      touch_event_user_data_(nullptr),
+      mouse_event_callback_(nullptr),
+      mouse_event_user_data_(nullptr) {
   game_controller_manager_ = std::unique_ptr<GameControllerManager>(new GameControllerManager());
 }
 
@@ -53,6 +55,13 @@ bool UserInputManager::OnTouchEvent(const TouchEvent &touch_event) {
   return false;
 }
 
+bool UserInputManager::OnMouseEvent(const MouseEvent &mouse_event) {
+  if (mouse_event_callback_) {
+    return mouse_event_callback_(mouse_event, mouse_event_user_data_);
+  }
+  return false;
+}
+
 void UserInputManager::SetKeyEventCallback(KeyEventCallback callback, void *user_data) {
   key_event_callback_ = callback;
   key_event_user_data_ = user_data;
@@ -61,6 +70,11 @@ void UserInputManager::SetKeyEventCallback(KeyEventCallback callback, void *user
 void UserInputManager::SetTouchEventCallback(TouchEventCallback callback, void *user_data) {
   touch_event_callback_ = callback;
   touch_event_user_data_ = user_data;
+}
+
+void UserInputManager::SetMouseEventCallback(MouseEventCallback callback, void *user_data) {
+  mouse_event_callback_ = callback;
+  mouse_event_user_data_ = user_data;
 }
 
 }

@@ -25,6 +25,7 @@ class PlatformUserInputDispatch {
  public:
   static bool DispatchKeyEvent(const KeyEvent &key_event);
   static bool DispatchTouchEvent(const TouchEvent &touch_event);
+  static bool DispatchMouseEvent(const MouseEvent &mouse_event);
 };
 
 } // namespace base_game_framework

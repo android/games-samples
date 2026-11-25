@@ -84,21 +84,34 @@ struct TouchEvent {
 
 /** @brief Enum of possible mouse event actions */
 enum MouseEventAction : int32_t {
-  kMouse_Button_Down = 0, ///< Mouse button down
-  kMouse_Button_Up, ///< Mouse button up
+  kMouse_Button_Down = 0, ///< Mouse button(s) pressed: mouse_buttons has the buttons now down
+  kMouse_Button_Up, ///< Mouse button(s) released: mouse_buttons has the buttons still down
   kMouse_Moved, ///< Mouse moved: delta_x/delta_y have changes
   kMouse_Scroll_Wheel ///< Scroll wheel moved: delta_x/delta_y have changes
+};
+
+/** @brief Bitmask values of the buttons in `MouseEvent::mouse_buttons` */
+enum MouseButton : uint32_t {
+  kMouse_Button_Left = (1U << 0), ///< Left (primary) mouse button
+  kMouse_Button_Right = (1U << 1), ///< Right (secondary) mouse button
+  kMouse_Button_Middle = (1U << 2), ///< Middle (tertiary) mouse button
+  kMouse_Button_Back = (1U << 3), ///< Back mouse button
+  kMouse_Button_Forward = (1U << 4) ///< Forward mouse button
 };
 
 /** @brief Structure defining the data associated with a mouse event */
 struct MouseEvent {
   MouseEventAction mouse_action; ///< The type of mouse event that occurred
   uint32_t mouse_index; ///< The index of the mouse associated with the event
-  uint32_t mouse_buttons; ///< Bitmask of currently down mouse buttons
+  uint32_t mouse_buttons; ///< Bitmask of currently down mouse buttons (`MouseButton` values)
   int32_t mouse_x; ///< The X position of the mouse, in screen pixel coordinates
   int32_t mouse_y; ///< The Y position of the mouse, in screen pixel coordinates
-  int32_t delta_x; ///< The delta X change of the mouse, or scroll wheel
-  int32_t delta_y; ///< The delta X change of the mouse, or scroll wheel
+  /** The change of the mouse position (kMouse_Moved) in screen pixel coordinates, or of the
+   * scroll wheel (kMouse_Scroll_Wheel) in whole notches (positive: right and up). Smooth
+   * scrolling (e.g. a touchpad) reports fractions of a notch, which add up until a notch is
+   * reported. */
+  int32_t delta_x;
+  int32_t delta_y; ///< See delta_x
 };
 
 } // namespace base_game_framework

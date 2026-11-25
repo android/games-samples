@@ -33,14 +33,28 @@ class PlatformUtilAndroid {
     kAndroidFeatureAndroidExtensionPack = 1
   };
 
+  // These make JNI calls with the calling thread's JNIEnv (GetCurrentThreadJNIEnv), so they
+  // can be called from any thread attached to the VM, e.g. a Paddleboat motion data callback
+  // on the Java UI thread. They return their default if the thread isn't attached.
   static bool GetAndroidFeatureSupported(const AndroidFeature android_feature);
   static int GetDisplayDPI();
+  // The default display's rotation (Display.getRotation(): Surface.ROTATION_0..270 as 0..3),
+  // 0 if it can't be retrieved.
+  static int GetDisplayRotation();
 
   static android_app* GetAndroidApp() { return android_app_;}
   static void SetAndroidApp(android_app* app) { android_app_ = app; }
 
+  // The JNIEnv of the thread running the application's main loop (the thread that called
+  // BaseGameFramework_Init); only valid on that thread.
   static JNIEnv* GetMainThreadJNIEnv() { return jni_env_; }
   static void SetMainThreadJniEnv(JNIEnv* jni_env) { jni_env_ = jni_env; }
+
+  static void SetJavaVM(JavaVM* java_vm) { java_vm_ = java_vm; }
+  // The JNIEnv of the calling thread: the main thread JNIEnv on the main loop thread, else
+  // the thread's own if it is attached to the VM, else nullptr (a JNIEnv can't be used on
+  // another thread).
+  static JNIEnv* GetCurrentThreadJNIEnv();
 
   static jobject GetActivityClassObject() { return activity_class_object_; }
   static void SetActivityClassObject(jobject activity_class_object) {
@@ -81,6 +95,7 @@ class PlatformUtilAndroid {
  private:
   static android_app* android_app_;
   static JNIEnv* jni_env_;
+  static JavaVM* java_vm_;
   static jclass activity_class_;
   static jobject activity_class_object_;
   static ANativeWindow *native_window_;

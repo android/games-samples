@@ -15,6 +15,7 @@
  */
 
 #include "platform_events_android.h"
+#include <cmath>
 #include "platform_defines.h"
 #include "platform_system_event_dispatch.h"
 #include "platform_user_input_dispatch.h"
@@ -82,6 +83,9 @@ void PlatformEventAndroid::ProcessApplicationEvent(struct android_app *app, int3
     }
       break;
     case APP_CMD_TERM_WINDOW: {
+      // No more input events come for the window, e.g. the release of a mouse button held
+      // (losing focus doesn't need this: the window still gets the gesture's events)
+      ReleaseMouse();
       DisplayManager::GetInstance().HandlePlatformDisplayChange(
           DisplayManager::kDisplay_Change_Window_Terminate);
       PlatformUtilAndroid::SetNativeWindow(nullptr);
@@ -150,58 +154,274 @@ void PlatformEventAndroid::ProcessKeyEvent(struct android_app *app,
   PlatformUserInputDispatch::DispatchKeyEvent(key_event);
 }
 
-void PlatformEventAndroid::ProcessMotionEvent(struct android_app *app,
-                                              const GameActivityMotionEvent &event) {
+namespace {
+// True if source includes all the bits of source type (a source type includes its class bits,
+// e.g. a stylus on a touchscreen reports AINPUT_SOURCE_TOUCHSCREEN | AINPUT_SOURCE_STYLUS)
+bool IsSourceType(const int32_t source, const int32_t source_type) {
+  return (source & source_type) == source_type;
+}
 
-  // Screen for touch events, Paddleboat will handle mouse events.
-  if (event.source == AINPUT_SOURCE_TOUCHSCREEN && event.pointerCount > 0) {
-    const int action = event.action;
-    const int action_masked = action & AMOTION_EVENT_ACTION_MASK;
-    // Initialize pointer_index to the max size, we only dispatch an
-    // event at the end of the function if pointer_index is set to a valid index range
-    uint32_t pointer_index = GAMEACTIVITY_MAX_NUM_POINTERS_IN_MOTION_EVENT;
+// AMOTION_EVENT_BUTTON_PRIMARY .. AMOTION_EVENT_BUTTON_FORWARD are the MouseButton bits
+constexpr uint32_t kMouseButtonMask = kMouse_Button_Left | kMouse_Button_Right |
+                                      kMouse_Button_Middle | kMouse_Button_Back |
+                                      kMouse_Button_Forward;
+
+// State of the mouse, and of the touch emulated with its left button
+struct MouseState {
+  uint32_t buttons = 0;
+  int32_t x = 0;
+  int32_t y = 0;
+  // False until the first event, and after the pointer left the window: no move is reported
+  // from the previous position
+  bool has_position = false;
+  // A press without a button state (e.g. a touchpad tap, or injected events) is the left
+  // button, held until the gesture ends
+  bool buttonless_press = false;
+  bool emulating_touch = false;
+  int32_t touch_id = 0;
+  // Scroll amounts not yet reported, less than a notch
+  float scroll_x = 0.0f;
+  float scroll_y = 0.0f;
+};
+MouseState mouse_state;
+
+void DispatchMouseTouch(const TouchEventAction action, const int32_t touch_id, const int32_t x,
+                        const int32_t y) {
+  TouchEvent touch_event;
+  touch_event.touch_action = action;
+  touch_event.touch_id = touch_id;
+  touch_event.touch_x = x;
+  touch_event.touch_y = y;
+  PlatformUserInputDispatch::DispatchTouchEvent(touch_event);
+}
+
+bool DispatchMouse(const MouseEventAction action, const uint32_t buttons, const int32_t x,
+                   const int32_t y, const int32_t delta_x, const int32_t delta_y) {
+  MouseEvent mouse_event;
+  mouse_event.mouse_action = action;
+  mouse_event.mouse_index = 0;
+  mouse_event.mouse_buttons = buttons;
+  mouse_event.mouse_x = x;
+  mouse_event.mouse_y = y;
+  mouse_event.delta_x = delta_x;
+  mouse_event.delta_y = delta_y;
+  return PlatformUserInputDispatch::DispatchMouseEvent(mouse_event);
+}
+
+// Releases the buttons in `released` (reporting the buttons still down), ending the emulated
+// touch if the left button is released
+void ReleaseMouseButtons(MouseState &state, const uint32_t released) {
+  if (released == 0) {
+    return;
+  }
+  state.buttons &= ~released;
+  DispatchMouse(kMouse_Button_Up, state.buttons, state.x, state.y, 0, 0);
+  if ((released & kMouse_Button_Left) != 0 && state.emulating_touch) {
+    state.emulating_touch = false;
+    DispatchMouseTouch(kTouch_Up, state.touch_id, state.x, state.y);
+  }
+}
+
+// Adds a scroll axis value to the amount not yet reported, returning the whole notches to
+// report: smooth scrolling (touchpads, high resolution wheels) reports fractions of a notch
+int32_t AccumulateScroll(float &accumulated, const float value) {
+  if (std::isnan(value)) {
+    return 0;
+  }
+  if ((value > 0.0f && accumulated < 0.0f) || (value < 0.0f && accumulated > 0.0f)) {
+    accumulated = 0.0f;  // Direction reversed: drop the remainder of the other direction
+  }
+  // (Clamped so the notches convert to int)
+  accumulated = std::fmax(-1.0e6f, std::fmin(accumulated + value, 1.0e6f));
+  // (With a little tolerance, so fractions adding up to a notch report it despite rounding)
+  const float notches = std::trunc(accumulated + std::copysign(1.0e-3f, accumulated));
+  accumulated -= notches;
+  return static_cast<int32_t>(notches);
+}
+
+// Float screen coordinate to int (NaN as 0, out of range values clamped)
+int32_t ToCoordinate(const float value) {
+  if (std::isnan(value)) {
+    return 0;
+  }
+  return static_cast<int32_t>(std::fmax(-1.0e9f, std::fmin(value, 1.0e9f)));
+}
+
+// Touchscreen or stylus: one touch per pointer
+void ProcessTouchscreenEvent(const GameActivityMotionEvent &event) {
+  const int action = event.action;
+  const int action_masked = action & AMOTION_EVENT_ACTION_MASK;
+  const uint32_t action_index = static_cast<uint32_t>(
+      (action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >>
+      AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
+  // The pointers to report, and as what
+  uint32_t first = 0;
+  uint32_t count = 0;
+  TouchEventAction touch_action = kTouch_Moved;
+  switch (action_masked) {
+    case AMOTION_EVENT_ACTION_DOWN:
+      count = 1;
+      touch_action = kTouch_Down;
+      break;
+    case AMOTION_EVENT_ACTION_POINTER_DOWN:
+      first = action_index;
+      count = 1;
+      touch_action = kTouch_Down;
+      break;
+    case AMOTION_EVENT_ACTION_UP:
+      count = 1;
+      touch_action = kTouch_Up;
+      break;
+    case AMOTION_EVENT_ACTION_POINTER_UP:
+      first = action_index;
+      count = 1;
+      touch_action = kTouch_Up;
+      break;
+    case AMOTION_EVENT_ACTION_MOVE:
+      // Includes all active pointers
+      count = event.pointerCount;
+      touch_action = kTouch_Moved;
+      break;
+    case AMOTION_EVENT_ACTION_CANCEL:
+      // The gesture was aborted (e.g. taken over by a system gesture): end all its touches
+      // rather than leaving them down
+      count = event.pointerCount;
+      touch_action = kTouch_Up;
+      break;
+    default:
+      break;
+  }
+  for (uint32_t i = first; i < event.pointerCount && i - first < count; ++i) {
     TouchEvent touch_event;
+    touch_event.touch_action = touch_action;
+    touch_event.touch_id = event.pointers[i].id;
+    touch_event.touch_x = ToCoordinate(GameActivityPointerAxes_getX(&event.pointers[i]));
+    touch_event.touch_y = ToCoordinate(GameActivityPointerAxes_getY(&event.pointers[i]));
+    PlatformUserInputDispatch::DispatchTouchEvent(touch_event);
+  }
+}
 
-    switch (action_masked) {
-      case AMOTION_EVENT_ACTION_DOWN:
-        pointer_index = 0;
-        touch_event.touch_action = kTouch_Down;
-        break;
-      case AMOTION_EVENT_ACTION_POINTER_DOWN:
-        pointer_index = ((action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK)
-            >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
-        touch_event.touch_action = kTouch_Down;
-        break;
-      case AMOTION_EVENT_ACTION_UP:pointer_index = 0;
-        touch_event.touch_action = kTouch_Up;
-        break;
-      case AMOTION_EVENT_ACTION_POINTER_UP:
-        pointer_index = ((action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK)
-            >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
-        touch_event.touch_action = kTouch_Up;
-        break;
-      case AMOTION_EVENT_ACTION_MOVE: {
-        // Move includes all active pointers, so loop and process them here,
-        // we do not set pointer_index since we are dispatching the events in
-        // this loop rather than at the bottom of the function
-        touch_event.touch_action = kTouch_Moved;
-        for (uint32_t i = 0; i < event.pointerCount; ++i) {
-          touch_event.touch_id = event.pointers[i].id;
-          touch_event.touch_x = GameActivityPointerAxes_getX(&event.pointers[i]);
-          touch_event.touch_y = GameActivityPointerAxes_getY(&event.pointers[i]);
-          PlatformUserInputDispatch::DispatchTouchEvent(touch_event);
-        }
-        break;
+// Mouse (also a touchpad moving the mouse pointer): mouse events, and a touch while the left
+// button is down
+void ProcessMouseEvent(const GameActivityMotionEvent &event) {
+  const GameActivityPointerAxes &pointer = event.pointers[0];
+  const int32_t x = ToCoordinate(GameActivityPointerAxes_getX(&pointer));
+  const int32_t y = ToCoordinate(GameActivityPointerAxes_getY(&pointer));
+  const int action_masked = event.action & AMOTION_EVENT_ACTION_MASK;
+  MouseState &state = mouse_state;
+
+  switch (action_masked) {
+    case AMOTION_EVENT_ACTION_SCROLL: {
+      // (The scroll axes are enabled by PlatformEventLoop)
+      const int32_t delta_x = AccumulateScroll(state.scroll_x,
+          GameActivityPointerAxes_getAxisValue(&pointer, AMOTION_EVENT_AXIS_HSCROLL));
+      const int32_t delta_y = AccumulateScroll(state.scroll_y,
+          GameActivityPointerAxes_getAxisValue(&pointer, AMOTION_EVENT_AXIS_VSCROLL));
+      if (delta_x != 0 || delta_y != 0) {
+        DispatchMouse(kMouse_Scroll_Wheel, state.buttons, x, y, delta_x, delta_y);
       }
-      default:break;
+      return;
     }
-    if (pointer_index != GAMEACTIVITY_MAX_NUM_POINTERS_IN_MOTION_EVENT) {
-      touch_event.touch_id = event.pointers[pointer_index].id;
-      touch_event.touch_x = GameActivityPointerAxes_getX(&event.pointers[pointer_index]);
-      touch_event.touch_y = GameActivityPointerAxes_getY(&event.pointers[pointer_index]);
-      PlatformUserInputDispatch::DispatchTouchEvent(touch_event);
+    case AMOTION_EVENT_ACTION_OUTSIDE:
+      // Only the position of a press outside the window, which isn't followed by its release
+      return;
+    default:
+      break;
+  }
+
+  // The buttons down after this event. The button state has all the buttons (a right or
+  // middle press is also a down/up gesture), and back/forward can be held while hovering.
+  uint32_t buttons = static_cast<uint32_t>(event.buttonState) & kMouseButtonMask;
+  bool position_valid = true;
+  switch (action_masked) {
+    case AMOTION_EVENT_ACTION_DOWN:
+      state.buttonless_press = (event.buttonState == 0);
+      break;
+    case AMOTION_EVENT_ACTION_UP:
+      state.buttonless_press = false;
+      break;
+    case AMOTION_EVENT_ACTION_CANCEL:
+      // The gesture was aborted: no release follows, even if a button is still held
+      state.buttonless_press = false;
+      buttons = 0;
+      break;
+    case AMOTION_EVENT_ACTION_HOVER_ENTER:
+    case AMOTION_EVENT_ACTION_HOVER_MOVE:
+      // Not pressed
+      state.buttonless_press = false;
+      buttons &= ~(kMouse_Button_Left | kMouse_Button_Right | kMouse_Button_Middle);
+      break;
+    case AMOTION_EVENT_ACTION_HOVER_EXIT:
+      // The pointer left the window (or is about to be pressed): moves are reported again
+      // from where it next appears
+      position_valid = false;
+      buttons = state.buttons;
+      break;
+    default:
+      // MOVE, and BUTTON_PRESS/BUTTON_RELEASE (sent with DOWN/MOVE/UP, same button state)
+      break;
+  }
+  if (state.buttonless_press) {
+    buttons |= kMouse_Button_Left;
+  }
+
+  if (state.has_position && (x != state.x || y != state.y)) {
+    DispatchMouse(kMouse_Moved, state.buttons, x, y, x - state.x, y - state.y);
+    if (state.emulating_touch) {
+      DispatchMouseTouch(kTouch_Moved, state.touch_id, x, y);
     }
   }
+  state.x = x;
+  state.y = y;
+  state.has_position = position_valid;
+
+  ReleaseMouseButtons(state, state.buttons & ~buttons);
+  const uint32_t pressed = buttons & ~state.buttons;
+  if (pressed != 0) {
+    state.buttons = buttons;
+    const bool consumed = DispatchMouse(kMouse_Button_Down, buttons, x, y, 0, 0);
+    if ((pressed & kMouse_Button_Left) != 0 && !consumed) {
+      state.emulating_touch = true;
+      state.touch_id = pointer.id;
+      DispatchMouseTouch(kTouch_Down, state.touch_id, x, y);
+    }
+  }
+}
+} // anonymous namespace
+
+void PlatformEventAndroid::ProcessMotionEvent(struct android_app * /*app*/,
+                                              const GameActivityMotionEvent &event) {
+  if (event.pointerCount == 0) {
+    return;
+  }
+  // Screen coordinates: touchscreen and stylus (on the touchscreen, or a drawing tablet mapped
+  // to the display), and mouse pointer. A touchpad in its own right (AINPUT_SOURCE_TOUCHPAD,
+  // e.g. with pointer capture) reports positions on the pad, not the screen, and isn't
+  // reported; as a mouse pointer it reports AINPUT_SOURCE_MOUSE.
+  if (IsSourceType(event.source, AINPUT_SOURCE_TOUCHSCREEN) ||
+      IsSourceType(event.source, AINPUT_SOURCE_STYLUS)) {
+    ProcessTouchscreenEvent(event);
+  } else if (IsSourceType(event.source, AINPUT_SOURCE_MOUSE)) {
+    ProcessMouseEvent(event);
+  }
+}
+
+void PlatformEventAndroid::ReleaseMouse() {
+  ReleaseMouseButtons(mouse_state, mouse_state.buttons);
+  mouse_state.buttonless_press = false;
+  mouse_state.has_position = false;
+  mouse_state.scroll_x = 0.0f;
+  mouse_state.scroll_y = 0.0f;
+}
+
+void PlatformEventAndroid::ResetMouseState() {
+  mouse_state = MouseState();
+}
+
+bool PlatformEventAndroid::IsMouseEvent(const GameActivityMotionEvent &event) {
+  return !IsSourceType(event.source, AINPUT_SOURCE_TOUCHSCREEN) &&
+         !IsSourceType(event.source, AINPUT_SOURCE_STYLUS) &&
+         IsSourceType(event.source, AINPUT_SOURCE_MOUSE);
 }
 
 bool PlatformUserInputDispatch::DispatchKeyEvent(const KeyEvent &key_event) {
@@ -210,6 +430,10 @@ bool PlatformUserInputDispatch::DispatchKeyEvent(const KeyEvent &key_event) {
 
 bool PlatformUserInputDispatch::DispatchTouchEvent(const TouchEvent &touch_event) {
   return UserInputManager::GetInstance().OnTouchEvent(touch_event);
+}
+
+bool PlatformUserInputDispatch::DispatchMouseEvent(const MouseEvent &mouse_event) {
+  return UserInputManager::GetInstance().OnMouseEvent(mouse_event);
 }
 
 void PlatformSystemEventDispatch::DispatchFocusEvent(

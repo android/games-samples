@@ -71,6 +71,9 @@ PlatformEventLoop::PlatformEventLoop() {
   platform_data_->android_app_ = PlatformUtilAndroid::GetAndroidApp();
   platform_data_->android_app_->onAppCmd = _handle_cmd_proxy;
   platform_data_->android_app_->motionEventFilter = _all_motion_filter;
+  // For mouse scroll wheel events (only the X and Y axes are enabled by default)
+  GameActivityPointerAxes_enableAxis(AMOTION_EVENT_AXIS_VSCROLL);
+  GameActivityPointerAxes_enableAxis(AMOTION_EVENT_AXIS_HSCROLL);
 }
 
 PlatformEventLoop::~PlatformEventLoop() {
@@ -118,10 +121,14 @@ void PlatformEventLoop::PollEvents() {
         GameActivityMotionEvent *motionEvent = &input_buffer->motionEvents[i];
         bool controller_ate_motion = false;
         if (do_controller) {
+          // Paddleboat also needs mouse events: a controller's touchpad acting as a mouse
+          // updates the controller's virtual pointer and touchpad button
           controller_ate_motion = Paddleboat_processGameActivityMotionInputEvent(motionEvent,
                                                                                  sizeof(GameActivityMotionEvent));
         }
-        if (!controller_ate_motion) {
+        // Paddleboat consumes the events of a mouse it manages, but BGF doesn't use its mouse
+        // data, so mouse events always go to BGF too (mouse and emulated touch events)
+        if (!controller_ate_motion || PlatformEventAndroid::IsMouseEvent(*motionEvent)) {
           PlatformEventAndroid::ProcessMotionEvent(platform_data_->android_app_, *motionEvent);
         }
       }
