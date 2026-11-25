@@ -104,6 +104,11 @@ Data pointers in a `...CreationParams` struct are not referenced post-creation a
 required to persist after return from the `Create...` call (a `UniformBuffer` copies its
 `element_array`).
 
+With Vulkan, buffer and texture data is uploaded through staging buffers. The uploads are batched:
+their copies are recorded into one command buffer, which is submitted ahead of the next frame's
+commands, so creating many resources (e.g. a scene's geometry) doesn't stall on each upload. A
+large batch is submitted early, and waited for.
+
 #### Resource destruction
 
 A resource is destroyed when the last shared pointer to it is released (the `Create...` calls
