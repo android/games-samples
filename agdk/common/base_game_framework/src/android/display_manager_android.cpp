@@ -16,11 +16,25 @@
 
 #include "display_manager.h"
 #include "gles/graphics_api_gles.h"
+#include "platform_util_android.h"
 #if defined BGF_DISPLAY_MANAGER_VULKAN
 #include "vulkan/graphics_api_vulkan.h"
 #endif
 
 namespace base_game_framework {
+
+DisplayManager::DisplayRotation DisplayManager::GetDisplayRotation() {
+  switch (PlatformUtilAndroid::GetDisplayRotation()) {
+    case 1:
+      return kDisplay_Rotation_90;
+    case 2:
+      return kDisplay_Rotation_180;
+    case 3:
+      return kDisplay_Rotation_270;
+    default:
+      return kDisplay_Rotation_0;
+  }
+}
 
 void DisplayManager::HandlePlatformDisplayChange(const DisplayChangeMessage& change_message) {
   // Only for an active graphics API

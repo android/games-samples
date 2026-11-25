@@ -204,6 +204,22 @@ class DisplayManager {
     kDisplay_Orientation_Portrait = (1 << 1)
   };
 
+  /**
+   * @brief Enum of display rotations: the rotation of the displayed image from the display's
+   * natural orientation, which is the opposite of the device's physical rotation (Android's
+   * `Display.getRotation()`, `Surface.ROTATION_*`)
+   */
+  enum DisplayRotation : int32_t {
+    /** @brief The display is in its natural orientation */
+    kDisplay_Rotation_0 = 0,
+    /** @brief The image is rotated 90 degrees (counterclockwise) */
+    kDisplay_Rotation_90 = 1,
+    /** @brief The image is rotated 180 degrees */
+    kDisplay_Rotation_180 = 2,
+    /** @brief The image is rotated 270 degrees (counterclockwise) */
+    kDisplay_Rotation_270 = 3
+  };
+
   /** @brief Enum of possible display frame swap intervals */
   enum DisplaySwapInterval : uint64_t {
     /** 165 frames per second swap interval */
@@ -491,6 +507,19 @@ class DisplayManager {
  * @return A `DisplayId` id value for the specified display index
  */
   DisplayId GetDisplayId(const uint32_t display_index);
+
+/**
+ * @brief Retrieves the current rotation of the default display, e.g. to map motion sensor data
+ * (reported in the device's natural orientation) to the screen. It can change at any time
+ * (e.g. between the two landscape orientations, which changes neither the window size nor the
+ * configuration), so query it when it is needed. Independent of the graphics API: a GLES
+ * surface is rotated by the system, see ::GetSwapchainRotationMode for Vulkan pre-rotation.
+ * On Android, this makes a JNI call: it can be called on the thread running the application's
+ * main loop, or on a thread attached to the Java VM (e.g. in an integrated motion data
+ * callback, which runs on the Java UI thread). On other threads it can't be retrieved.
+ * @return A `DisplayRotation` enum, `kDisplay_Rotation_0` if the rotation can't be retrieved
+ */
+  DisplayRotation GetDisplayRotation();
 
 /**
  * @brief Retrieves the current frame buffer mode.

@@ -29,6 +29,13 @@ class PlatformEventAndroid {
   static void ProcessApplicationEvent(struct android_app *app, int32_t cmd);
   static void ProcessKeyEvent(struct android_app *app, const GameActivityKeyEvent &event);
   static void ProcessMotionEvent(struct android_app *app, const GameActivityMotionEvent &event);
+  // Reports the release of any mouse buttons down (and the end of the emulated touch), e.g.
+  // when the window is terminated, and forgets the mouse position and scroll remainders
+  static void ReleaseMouse();
+  // Resets the mouse state without reporting anything (BaseGameFramework_Init)
+  static void ResetMouseState();
+  // A mouse event, which BGF handles itself (see PlatformEventLoop::PollEvents)
+  static bool IsMouseEvent(const GameActivityMotionEvent &event);
   static constexpr const char *BGM_CLASS_TAG = "BGF::PlatformEventAndroid";
 };
 

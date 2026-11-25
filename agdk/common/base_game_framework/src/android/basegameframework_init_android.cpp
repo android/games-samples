@@ -19,6 +19,7 @@
 #include "display_manager.h"
 #include "filesystem_manager.h"
 #include "platform_event_loop.h"
+#include "platform_events_android.h"
 #include "platform_util_android.h"
 #include "system_event_manager.h"
 #include "user_input_manager.h"
@@ -42,8 +43,11 @@ void BaseGameFramework_Init(const PlatformInitParameters &init_params) {
   PlatformUtilAndroid::SetMainThreadID(std::this_thread::get_id());
   PlatformUtilAndroid::SetAndroidApp(init_params.app);
   PlatformUtilAndroid::SetMainThreadJniEnv(env);
+  PlatformUtilAndroid::SetJavaVM(init_params.app->activity->vm);
   PlatformUtilAndroid::SetActivityClassObject(init_params.app->activity->javaGameActivity);
 
+  // (The mouse state is process wide: don't carry it over from a previous Activity)
+  PlatformEventAndroid::ResetMouseState();
   DebugManager::GetInstance();
   FilesystemManager::GetInstance();
   PlatformEventLoop::GetInstance();

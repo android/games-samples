@@ -44,6 +44,10 @@ namespace base_game_framework {
   typedef std::function<bool(const TouchEvent &touch_event, void *user_data)>
       TouchEventCallback;
 
+  /** @brief Definition of the MouseEventCallback to be used with ::SetMouseEventCallback */
+  typedef std::function<bool(const MouseEvent &mouse_event, void *user_data)>
+      MouseEventCallback;
+
 /**
  * @brief Retrieve an instance of the `UserInputManager`. The first time this is called
  * it will construct and initialize the manager.
@@ -73,6 +77,17 @@ namespace base_game_framework {
   void SetTouchEventCallback(TouchEventCallback callback, void *user_data);
 
 /**
+ * @brief Set a callback to be called when a mouse event occurs (a mouse, or a touchpad moving
+ * the mouse pointer). Pressing, dragging and releasing the left mouse button is also reported
+ * as a touch (see ::SetTouchEventCallback), so touch interfaces work with a mouse, unless the
+ * mouse callback consumes the press.
+ * @param callback A function object to use as the callback, returning true if it consumed the
+ * event. Passing nullptr will clear any currently registered callback.
+ * @param user_data A pointer to user data to be passed to the callback
+ */
+  void SetMouseEventCallback(MouseEventCallback callback, void *user_data);
+
+/**
  * @brief Retrieves a reference to the GameControllerManager object
  * @return A `GameControllerManager` reference
  */
@@ -91,12 +106,16 @@ namespace base_game_framework {
 
   bool OnKeyEvent(const KeyEvent &focus_event);
   bool OnTouchEvent(const TouchEvent &lifecycle_event);
+  bool OnMouseEvent(const MouseEvent &mouse_event);
 
   KeyEventCallback key_event_callback_;
   void *key_event_user_data_;
 
   TouchEventCallback touch_event_callback_;
   void *touch_event_user_data_;
+
+  MouseEventCallback mouse_event_callback_;
+  void *mouse_event_user_data_;
 
   std::unique_ptr<GameControllerManager> game_controller_manager_;
   static std::unique_ptr<UserInputManager> instance_;

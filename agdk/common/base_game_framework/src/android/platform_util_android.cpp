@@ -24,6 +24,8 @@ static constexpr const char* kGetAndroidFeatureSupportedName = "GetAndroidFeatur
 static constexpr const char* kGetAndroidFeatureSupportedSignature = "(I)Z";
 static constexpr const char* kGetDisplayDPIName = "GetDisplayDPI";
 static constexpr const char* kGetDisplayDPISignature = "()I";
+static constexpr const char* kGetDeviceRotationName = "getDeviceRotation";
+static constexpr const char* kGetDeviceRotationSignature = "()I";
 
 namespace {
 // The registered Java BaseGameFrameworkUtils object (global ref) and the Activity that
@@ -47,6 +49,7 @@ void DeleteUtilObjectRefsLocked(JNIEnv *env) {
 
 android_app* PlatformUtilAndroid::android_app_ = nullptr;
 JNIEnv* PlatformUtilAndroid::jni_env_ = nullptr;
+JavaVM* PlatformUtilAndroid::java_vm_ = nullptr;
 jclass PlatformUtilAndroid::activity_class_ = nullptr;
 jobject PlatformUtilAndroid::activity_class_object_ = nullptr;
 ANativeWindow *PlatformUtilAndroid::native_window_ = nullptr;
@@ -55,7 +58,7 @@ std::thread::id PlatformUtilAndroid::main_thread_id_;
 
 bool PlatformUtilAndroid::GetAndroidFeatureSupported(const AndroidFeature android_feature) {
   bool supported = false;
-  JNIEnv *env = jni_env_;
+  JNIEnv *env = GetCurrentThreadJNIEnv();
   jobject util = NewUtilObjectLocalRef(env);
   if (util != nullptr) {
     jclass util_class = env->GetObjectClass(util);
@@ -76,7 +79,7 @@ bool PlatformUtilAndroid::GetAndroidFeatureSupported(const AndroidFeature androi
 
 int PlatformUtilAndroid::GetDisplayDPI() {
   int dpi = 0;
-  JNIEnv *env = jni_env_;
+  JNIEnv *env = GetCurrentThreadJNIEnv();
   jobject util = NewUtilObjectLocalRef(env);
   if (util != nullptr) {
     jclass util_class = env->GetObjectClass(util);
@@ -91,6 +94,40 @@ int PlatformUtilAndroid::GetDisplayDPI() {
     env->DeleteLocalRef(util);
   }
   return dpi;
+}
+
+int PlatformUtilAndroid::GetDisplayRotation() {
+  int rotation = 0;
+  JNIEnv *env = GetCurrentThreadJNIEnv();
+  jobject util = NewUtilObjectLocalRef(env);
+  if (util != nullptr) {
+    jclass util_class = env->GetObjectClass(util);
+    jmethodID method = env->GetMethodID(util_class, kGetDeviceRotationName,
+                                        kGetDeviceRotationSignature);
+    if (method != nullptr) {
+      const jint result = env->CallIntMethod(util, method);
+      if (!ClearPendingException(env) && result >= 0 && result <= 3) {
+        rotation = result;
+      }
+    } else {
+      ClearPendingException(env);
+    }
+    env->DeleteLocalRef(util_class);
+    env->DeleteLocalRef(util);
+  }
+  return rotation;
+}
+
+JNIEnv *PlatformUtilAndroid::GetCurrentThreadJNIEnv() {
+  if (RunningOnMainThread()) {
+    return jni_env_;
+  }
+  JNIEnv *env = nullptr;
+  if (java_vm_ == nullptr ||
+      java_vm_->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) != JNI_OK) {
+    return nullptr;
+  }
+  return env;
 }
 
 jobject PlatformUtilAndroid::NewUtilObjectLocalRef(JNIEnv *env) {

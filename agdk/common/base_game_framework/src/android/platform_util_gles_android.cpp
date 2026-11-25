@@ -27,7 +27,8 @@ namespace base_game_framework {
 // orientation follows directly from the aspect ratio. Compare without dividing to avoid
 // integer truncation and division by zero.
 // Note this is the *window* aspect: a side-by-side split-screen pane on a landscape phone
-// reports portrait. Device rotation (BaseGameFrameworkUtils.getDeviceRotation) is not used.
+// reports portrait, which is what matters for laying out the window's content. The display's
+// rotation is available separately (DisplayManager::GetDisplayRotation).
 static DisplayManager::DisplayOrientation GetSurfaceOrientation(const EGLint width,
                                                                 const EGLint height) {
   return (width >= height) ? DisplayManager::kDisplay_Orientation_Landscape
