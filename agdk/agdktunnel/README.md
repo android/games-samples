@@ -107,6 +107,11 @@ For more information see the codelab: [Using Play Asset Delivery in native games
 
 ## Version history
 
+1.2.7 - base_game_framework/simple_renderer fixes and cleanup (lifecycle, swapchain,
+        resource lifetime, batched Vulkan uploads), mouse and stylus input,
+        display rotation query, standalone CMake library targets, updated
+        AGDK versions
+1.2.6 - Updated to current AGDK/NDK/AGP versions
 1.2.5 - Updated to current AGDK/NDK/AGP versions, 16KB page compatible fix
 1.2.1 - Updated to current AGDK/NDK/AGP versions, deprecated Android Performance Tuner integration
 1.2.0 - Major refactor to add basegameframework support, Vulkan/GLES simplerenderer, updating AGDK versions
