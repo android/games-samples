@@ -22,6 +22,8 @@
 #include "renderer_resources.h"
 #include "vulkan/graphics_api_vulkan_resources.h"
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace simple_renderer {
 
@@ -114,10 +116,17 @@ class RendererVk : public Renderer {
 
   VkDescriptorSetLayout GetDescriptorSetLayout(const VertexBuffer::VertexFormat vertex_format);
 
-  // Used for buffer/image copy staging operations, creates and submits a
-  // temporary command buffer.
+  // Uploads through staging buffers. Copies from all the uploads are recorded in one staging
+  // command buffer, which is submitted ahead of the next frame's commands (in the same queue
+  // submission), so creating many resources doesn't stall on each upload; a large batch is
+  // submitted (and waited for) early. BeginStagingCommandBuffer returns the command buffer
+  // to record an upload's copies (and barriers) into, or VK_NULL_HANDLE if it can't record.
+  // EndStagingCommandBuffer takes ownership of the upload's staging buffer, destroyed once
+  // the copies have executed. The resource being created is kept alive until then (see
+  // KeepAliveForUpload).
   VkCommandBuffer BeginStagingCommandBuffer();
-  void EndStagingCommandBuffer();
+  void EndStagingCommandBuffer(VkBuffer staging_buffer, VmaAllocation staging_alloc,
+                               VkDeviceSize staging_size);
 
   VkCommandBuffer GetRenderCommandBuffer() const { return render_command_buffer_; };
   VkExtent2D GetActiveExtent() const { return active_extent_; }
@@ -141,6 +150,42 @@ class RendererVk : public Renderer {
   };
 
   static constexpr uint32_t kMaxSamplerDescriptors = 128;
+  // Staging data recorded in one batch before it is submitted and waited for right away
+  // (bounds the staging memory held, e.g. while loading many textures in one frame)
+  static constexpr VkDeviceSize kMaxStagingBatchSize = 32 * 1024 * 1024;
+
+  // Staging uploads recorded into one command buffer, see BeginStagingCommandBuffer
+  struct StagingBatch {
+    VkCommandBuffer command_buffer = VK_NULL_HANDLE;
+    // Staging buffers to destroy once the batch has executed
+    std::vector<std::pair<VkBuffer, VmaAllocation>> buffers;
+    // The resources the batch copies to, kept alive (not queued for deletion) until it has
+    // executed or is discarded
+    std::vector<std::shared_ptr<void>> destinations;
+    VkDeviceSize size = 0;
+    // Submitted with this frame slot's frame (done when its fence is next waited)
+    uint32_t frame_slot = 0;
+  };
+
+  // A created resource whose upload was recorded in the open batch is kept alive by it, so
+  // it can't be deleted (when released) before the copy executes. uploads_before: the upload
+  // serial before the resource was constructed.
+  template <typename T>
+  std::shared_ptr<T> KeepAliveForUpload(std::shared_ptr<T> resource, uint64_t uploads_before);
+
+  // End the recording batch's command buffer (with a barrier making its copies visible to
+  // the vertex input and shaders of later commands). False if there is no batch or it failed.
+  bool EndStagingBatch();
+  // Submit the recording batch (if any) on its own and wait for it
+  void FlushStagingBatchAndWait();
+  // Drop the recording batch (if any) without executing it (at shutdown)
+  void DiscardStagingBatch();
+  // Destroy the staging buffers of a batch that has executed (or will never execute), release
+  // its destinations, and keep it for reuse
+  void RecycleStagingBatch(StagingBatch&& batch);
+  // Recycle the submitted batches of a frame slot whose fence was just waited (and ones of
+  // slots that no longer exist, frame_slot >= frame_count), or all of them (the GPU is idle)
+  void RecycleSubmittedStagingBatches(uint32_t frame_slot, uint32_t frame_count, bool all);
 
   void CreateCommandBuffers();
 
@@ -174,7 +219,16 @@ class RendererVk : public Renderer {
   std::shared_ptr<RenderPass> render_pass_;
   std::shared_ptr<RenderState> render_state_;
 
-  VkCommandBuffer staging_command_buffer_;
+  // The batch recording uploads (if staging_recording_), the batches submitted with frames
+  // and not known to be done, and recycled batches (with their command buffers)
+  StagingBatch staging_batch_;
+  bool staging_recording_;
+  // Counts the uploads recorded (see KeepAliveForUpload)
+  uint64_t staging_upload_serial_;
+  std::vector<StagingBatch> staging_submitted_;
+  std::vector<StagingBatch> staging_free_;
+  // For batches submitted on their own (FlushStagingBatchAndWait)
+  VkFence staging_fence_;
 
   uint32_t in_flight_frame_count_;
 

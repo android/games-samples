@@ -53,7 +53,9 @@ static uint32_t GetInFlightFrameCount() {
 RendererVk::RendererVk() :
     // A released resource is deleted once every frame in flight was waited after its release
     resources_(GetInFlightFrameCount()),
-    staging_command_buffer_(VK_NULL_HANDLE),
+    staging_recording_(false),
+    staging_upload_serial_(0),
+    staging_fence_(VK_NULL_HANDLE),
     render_command_buffer_(VK_NULL_HANDLE),
     frame_active_(false),
     frame_acquired_(false),
@@ -109,6 +111,11 @@ void RendererVk::PrepareShutdown() {
   render_state_ = nullptr;
   frame_active_ = false;
   frame_acquired_ = false;
+  // The submitted staging batches have executed (the device is idle). Uploads not submitted
+  // yet are dropped (their resources are about to be destroyed), releasing the resources they
+  // kept alive, so those are deleted below.
+  RecycleSubmittedStagingBatches(0, 0, true);
+  DiscardStagingBatch();
   resources_.Shutdown("Renderer shutdown");
 
   DestroyCommandBuffers();
@@ -178,6 +185,10 @@ void RendererVk::BeginFrame(
   // frame slot of the swapchain.
   const uint32_t frame_count = (swap_.swapchain_frame_count != 0) ?
       swap_.swapchain_frame_count : in_flight_frame_count_;
+  // The staging batches submitted with this slot's previous frame have executed, releasing
+  // the resources they copied to (a resource with a pending upload is kept alive by its
+  // batch, so it isn't queued for deletion before the copy executes)
+  RecycleSubmittedStagingBatches(frame_index, frame_count, false);
   resources_.FrameSlotWaited(frame_index, frame_count);
   resources_.ProcessDeleteQueue();
 
@@ -248,8 +259,19 @@ void RendererVk::EndFrame() {
 
   // Submit the frame; without a recorded command buffer (recording couldn't start), still
   // wait on the image available semaphore and signal the render complete semaphore and frame
-  // fence, which the present and the next use of this frame's resources wait on
-  VkSubmitInfo submit_info{};
+  // fence, which the present and the next use of this frame's resources wait on. Uploads
+  // recorded since the last frame are submitted ahead of it (their copies are before the
+  // frame's commands in submission order), and done when the frame fence is.
+  VkSubmitInfo submit_infos[2] = {};
+  uint32_t submit_count = 0;
+  const bool submit_staging = EndStagingBatch();
+  if (submit_staging) {
+    VkSubmitInfo& staging_submit_info = submit_infos[submit_count++];
+    staging_submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    staging_submit_info.commandBufferCount = 1;
+    staging_submit_info.pCommandBuffers = &staging_batch_.command_buffer;
+  }
+  VkSubmitInfo& submit_info = submit_infos[submit_count++];
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
   VkSemaphore signal_semaphores[] = {swap_.render_complete};
@@ -264,8 +286,20 @@ void RendererVk::EndFrame() {
   submit_info.signalSemaphoreCount = 1;
   submit_info.pSignalSemaphores = signal_semaphores;
 
-  const VkResult queue_result = vkQueueSubmit(vk_.render_queue, 1, &submit_info, swap_.frame_fence);
-  RENDERER_CHECK_VK(queue_result, "vkQueueSubmit");
+  const VkResult queue_result = vkQueueSubmit(vk_.render_queue, submit_count, submit_infos,
+                                              swap_.frame_fence);
+  const bool submitted = RENDERER_CHECK_VK(queue_result, "vkQueueSubmit");
+  if (submit_staging) {
+    if (submitted) {
+      // Done when this frame slot's fence is next waited (BeginFrame)
+      staging_batch_.frame_slot = swap_.swapchain_frame_index;
+      staging_submitted_.push_back(std::move(staging_batch_));
+    } else {
+      // Not submitted: it won't execute (its resources keep undefined contents)
+      RecycleStagingBatch(std::move(staging_batch_));
+    }
+    staging_batch_ = StagingBatch();
+  }
 }
 
 void RendererVk::SwapchainRecreated() {
@@ -276,6 +310,10 @@ void RendererVk::SwapchainRecreated() {
   // reset by the next BeginFrame), and don't submit or record anything else in it
   frame_active_ = false;
   frame_acquired_ = false;
+  // The submitted staging batches have executed (and the frame fences they were submitted
+  // with are recreated with the swapchain). Uploads not submitted yet don't depend on the
+  // swapchain: they stay recorded, and keep the resources they copy to alive.
+  RecycleSubmittedStagingBatches(0, 0, true);
   // The GPU is idle, so released resources can all be deleted now
   resources_.DeleteAllQueued();
   // Our cached framebuffers were associated with image view from the old
@@ -473,8 +511,12 @@ void RendererVk::BindIndexBuffer(std::shared_ptr<IndexBuffer> index_buffer) {
   if (!frame_active_) {
     return;
   }
-  IndexBufferVk& index_buffer_vk = *(static_cast<IndexBufferVk*>(index_buffer.get()));
-  vkCmdBindIndexBuffer(render_command_buffer_, index_buffer_vk.GetIndexBuffer(),
+  const IndexBufferVk* index_buffer_vk = static_cast<const IndexBufferVk*>(index_buffer.get());
+  if (index_buffer_vk == nullptr || index_buffer_vk->GetIndexBuffer() == VK_NULL_HANDLE) {
+    // Nothing to bind (no buffer, or one that failed to create)
+    return;
+  }
+  vkCmdBindIndexBuffer(render_command_buffer_, index_buffer_vk->GetIndexBuffer(),
                        0, VK_INDEX_TYPE_UINT16);
 }
 
@@ -482,8 +524,13 @@ void RendererVk::BindVertexBuffer(std::shared_ptr<VertexBuffer> vertex_buffer) {
   if (!frame_active_) {
     return;
   }
-  VertexBufferVk& vertex_buffer_vk = *(static_cast<VertexBufferVk*>(vertex_buffer.get()));
-  VkBuffer vertex_buffers[] = {vertex_buffer_vk.GetVertexBuffer()};
+  const VertexBufferVk* vertex_buffer_vk =
+      static_cast<const VertexBufferVk*>(vertex_buffer.get());
+  if (vertex_buffer_vk == nullptr || vertex_buffer_vk->GetVertexBuffer() == VK_NULL_HANDLE) {
+    // Nothing to bind (no buffer, or one that failed to create)
+    return;
+  }
+  VkBuffer vertex_buffers[] = {vertex_buffer_vk->GetVertexBuffer()};
   VkDeviceSize vertex_offsets[] = {0};
   vkCmdBindVertexBuffers(render_command_buffer_, 0, 1, vertex_buffers, vertex_offsets);
 }
@@ -571,7 +618,9 @@ void RendererVk::BindTexture(std::shared_ptr<Texture> texture) {
 
 std::shared_ptr<IndexBuffer> RendererVk::CreateIndexBuffer(
     const IndexBuffer::IndexBufferCreationParams& params) {
-  return resources_.AddIndexBuffer(new IndexBufferVk(params));
+  const uint64_t uploads_before = staging_upload_serial_;
+  return KeepAliveForUpload(resources_.AddIndexBuffer(new IndexBufferVk(params)),
+                            uploads_before);
 }
 
 std::shared_ptr<RenderPass> RendererVk::CreateRenderPass(
@@ -590,7 +639,8 @@ std::shared_ptr<ShaderProgram> RendererVk::CreateShaderProgram(
 }
 
 std::shared_ptr<Texture> RendererVk::CreateTexture(const Texture::TextureCreationParams& params) {
-  return resources_.AddTexture(new TextureVk(params));
+  const uint64_t uploads_before = staging_upload_serial_;
+  return KeepAliveForUpload(resources_.AddTexture(new TextureVk(params)), uploads_before);
 }
 
 std::shared_ptr<UniformBuffer> RendererVk::CreateUniformBuffer(
@@ -600,7 +650,19 @@ std::shared_ptr<UniformBuffer> RendererVk::CreateUniformBuffer(
 
 std::shared_ptr<VertexBuffer> RendererVk::CreateVertexBuffer(
     const VertexBuffer::VertexBufferCreationParams& params) {
-  return resources_.AddVertexBuffer(new VertexBufferVk(params));
+  const uint64_t uploads_before = staging_upload_serial_;
+  return KeepAliveForUpload(resources_.AddVertexBuffer(new VertexBufferVk(params)),
+                            uploads_before);
+}
+
+template <typename T>
+std::shared_ptr<T> RendererVk::KeepAliveForUpload(std::shared_ptr<T> resource,
+                                                  const uint64_t uploads_before) {
+  // Its upload is in the open batch (not if it was already flushed and waited for)
+  if (resource != nullptr && staging_recording_ && staging_upload_serial_ != uploads_before) {
+    staging_batch_.destinations.push_back(resource);
+  }
+  return resource;
 }
 
 VkDescriptorSetLayout RendererVk::GetDescriptorSetLayout(
@@ -657,32 +719,155 @@ VkDescriptorSetLayout RendererVk::GetDescriptorSetLayout(
 }
 
 VkCommandBuffer RendererVk::BeginStagingCommandBuffer() {
-  RENDERER_ASSERT(staging_command_buffer_ != nullptr);
+  if (staging_recording_) {
+    return staging_batch_.command_buffer;
+  }
+  // Reuse a batch that has executed, or allocate a command buffer for a new one
+  if (!staging_free_.empty()) {
+    staging_batch_ = std::move(staging_free_.back());
+    staging_free_.pop_back();
+  } else {
+    staging_batch_ = StagingBatch();
+    VkCommandBufferAllocateInfo allocate_info = {};
+    allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocate_info.commandPool = command_pool_;
+    allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocate_info.commandBufferCount = 1;
+    const VkResult allocate_result = vkAllocateCommandBuffers(vk_.device, &allocate_info,
+                                                              &staging_batch_.command_buffer);
+    if (!RENDERER_CHECK_VK(allocate_result, "vkAllocateCommandBuffers (staging)")) {
+      staging_batch_.command_buffer = VK_NULL_HANDLE;
+      return VK_NULL_HANDLE;
+    }
+  }
 
-  VkCommandBufferBeginInfo begin_info = {
-      VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-      nullptr,
-      VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-      nullptr};
-  vkResetCommandBuffer(staging_command_buffer_, 0);
-  const VkResult begin_result = vkBeginCommandBuffer(staging_command_buffer_, &begin_info);
-  RENDERER_CHECK_VK(begin_result, "vkBeginCommandBuffer (BeginStagingCommandBuffer)");
-  return staging_command_buffer_;
+  VkCommandBufferBeginInfo begin_info = {};
+  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  // (Implicitly resets the command buffer, which executed if it was used before)
+  const VkResult begin_result = vkBeginCommandBuffer(staging_batch_.command_buffer, &begin_info);
+  if (!RENDERER_CHECK_VK(begin_result, "vkBeginCommandBuffer (staging)")) {
+    staging_free_.push_back(std::move(staging_batch_));
+    staging_batch_ = StagingBatch();
+    return VK_NULL_HANDLE;
+  }
+  staging_recording_ = true;
+  return staging_batch_.command_buffer;
 }
 
-void RendererVk::EndStagingCommandBuffer() {
-  RENDERER_ASSERT(staging_command_buffer_ != nullptr);
-  const VkResult end_result = vkEndCommandBuffer(staging_command_buffer_);
-  RENDERER_CHECK_VK(end_result, "vkEndCommandBuffer (EndStagingCommandBuffer");
+void RendererVk::EndStagingCommandBuffer(const VkBuffer staging_buffer,
+                                         const VmaAllocation staging_alloc,
+                                         const VkDeviceSize staging_size) {
+  RENDERER_ASSERT(staging_recording_);
+  if (!staging_recording_) {
+    // Nothing was recorded with it (BeginStagingCommandBuffer failed)
+    vmaDestroyBuffer(vk_.allocator, staging_buffer, staging_alloc);
+    return;
+  }
+  // The staging memory may not be host coherent: make the host writes available to the
+  // device (before the batch is submitted)
+  const VkResult flush_result = vmaFlushAllocation(vk_.allocator, staging_alloc, 0,
+                                                   VK_WHOLE_SIZE);
+  RENDERER_CHECK_VK(flush_result, "vmaFlushAllocation (staging)");
+  staging_batch_.buffers.emplace_back(staging_buffer, staging_alloc);
+  staging_batch_.size += staging_size;
+  ++staging_upload_serial_;
+  if (staging_batch_.size >= kMaxStagingBatchSize) {
+    FlushStagingBatchAndWait();
+  }
+}
 
-  VkSubmitInfo submit_info = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+bool RendererVk::EndStagingBatch() {
+  if (!staging_recording_) {
+    return false;
+  }
+  staging_recording_ = false;
+  // The copies (transfer writes) are made visible to the vertex input (vertex and index
+  // buffers) and shaders of the commands after them in submission order. Texture uploads
+  // also transition their images with their own barriers.
+  VkMemoryBarrier memory_barrier = {};
+  memory_barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+  memory_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  memory_barrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_INDEX_READ_BIT |
+                                 VK_ACCESS_SHADER_READ_BIT;
+  vkCmdPipelineBarrier(staging_batch_.command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                       VK_PIPELINE_STAGE_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                           VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                       0, 1, &memory_barrier, 0, nullptr, 0, nullptr);
+  const VkResult end_result = vkEndCommandBuffer(staging_batch_.command_buffer);
+  if (!RENDERER_CHECK_VK(end_result, "vkEndCommandBuffer (staging)")) {
+    // The uploads won't execute (their resources keep undefined contents)
+    RecycleStagingBatch(std::move(staging_batch_));
+    staging_batch_ = StagingBatch();
+    return false;
+  }
+  return true;
+}
+
+void RendererVk::FlushStagingBatchAndWait() {
+  if (!EndStagingBatch()) {
+    return;
+  }
+  VkSubmitInfo submit_info = {};
+  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers = &staging_command_buffer_;
-  const VkResult submit_result = vkQueueSubmit(vk_.render_queue, 1, &submit_info, VK_NULL_HANDLE);
-  RENDERER_CHECK_VK(submit_result, "vkQueueSubmit (EndStagingCommandBuffer)");
+  submit_info.pCommandBuffers = &staging_batch_.command_buffer;
+  const VkResult submit_result = vkQueueSubmit(vk_.render_queue, 1, &submit_info,
+                                               staging_fence_);
+  if (RENDERER_CHECK_VK(submit_result, "vkQueueSubmit (staging)")) {
+    if (staging_fence_ != VK_NULL_HANDLE) {
+      const VkResult wait_result = vkWaitForFences(vk_.device, 1, &staging_fence_, VK_TRUE,
+                                                   UINT64_MAX);
+      if (!RENDERER_CHECK_VK(wait_result, "vkWaitForFences (staging)")) {
+        // e.g. the device was lost: make sure nothing is pending before reusing the fence
+        // and destroying the staging buffers
+        vkDeviceWaitIdle(vk_.device);
+      }
+      vkResetFences(vk_.device, 1, &staging_fence_);
+    } else {
+      // (The fence couldn't be created)
+      const VkResult wait_result = vkQueueWaitIdle(vk_.render_queue);
+      RENDERER_CHECK_VK(wait_result, "vkQueueWaitIdle (staging)");
+    }
+  }
+  RecycleStagingBatch(std::move(staging_batch_));
+  staging_batch_ = StagingBatch();
+}
 
-  const VkResult wait_result = vkQueueWaitIdle(vk_.render_queue);
-  RENDERER_CHECK_VK(wait_result, "vkQueueWaitIdle (EndStagingCommandBuffer)");
+void RendererVk::DiscardStagingBatch() {
+  if (!staging_recording_) {
+    return;
+  }
+  staging_recording_ = false;
+  vkResetCommandBuffer(staging_batch_.command_buffer, 0);
+  RecycleStagingBatch(std::move(staging_batch_));
+  staging_batch_ = StagingBatch();
+}
+
+void RendererVk::RecycleStagingBatch(StagingBatch&& batch) {
+  for (const auto& buffer : batch.buffers) {
+    vmaDestroyBuffer(vk_.allocator, buffer.first, buffer.second);
+  }
+  batch.buffers.clear();
+  batch.size = 0;
+  // Released resources are queued for deletion (and wait for the frames in flight)
+  batch.destinations.clear();
+  staging_free_.push_back(std::move(batch));
+}
+
+void RendererVk::RecycleSubmittedStagingBatches(const uint32_t frame_slot,
+                                                const uint32_t frame_count, const bool all) {
+  auto iter = staging_submitted_.begin();
+  while (iter != staging_submitted_.end()) {
+    // A slot beyond the frame count belonged to an earlier swapchain, which was destroyed
+    // after the device was idle
+    if (all || iter->frame_slot == frame_slot || iter->frame_slot >= frame_count) {
+      RecycleStagingBatch(std::move(*iter));
+      iter = staging_submitted_.erase(iter);
+    } else {
+      ++iter;
+    }
+  }
 }
 
 void RendererVk::CreateCommandBuffers() {
@@ -703,16 +888,28 @@ void RendererVk::CreateCommandBuffers() {
   result = vkAllocateCommandBuffers(vk_.device, &command_buffer_info, command_buffers_.data());
   RENDERER_CHECK_VK(result, "vkAllocateCommandBuffers");
 
-  command_buffer_info.commandBufferCount = 1;
-  result = vkAllocateCommandBuffers(vk_.device, &command_buffer_info, &staging_command_buffer_);
-  RENDERER_CHECK_VK(result, "vkAllocateCommandBuffers");
+  // Staging batch command buffers are allocated on demand (BeginStagingCommandBuffer)
+  VkFenceCreateInfo fence_info = {};
+  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  result = vkCreateFence(vk_.device, &fence_info, nullptr, &staging_fence_);
+  if (!RENDERER_CHECK_VK(result, "vkCreateFence (staging)")) {
+    staging_fence_ = VK_NULL_HANDLE;
+  }
 }
 
 void RendererVk::DestroyCommandBuffers() {
+  // The staging batches have executed (PrepareShutdown)
+  RENDERER_ASSERT(!staging_recording_ && staging_submitted_.empty());
+  for (StagingBatch& batch : staging_free_) {
+    vkFreeCommandBuffers(vk_.device, command_pool_, 1, &batch.command_buffer);
+  }
+  staging_free_.clear();
+  if (staging_fence_ != VK_NULL_HANDLE) {
+    vkDestroyFence(vk_.device, staging_fence_, nullptr);
+    staging_fence_ = VK_NULL_HANDLE;
+  }
   vkFreeCommandBuffers(vk_.device, command_pool_, command_buffers_.size(), command_buffers_.data());
   command_buffers_.clear();
-  vkFreeCommandBuffers(vk_.device, command_pool_, 1, &staging_command_buffer_);
-  staging_command_buffer_ = VK_NULL_HANDLE;
   vkDestroyCommandPool(vk_.device, command_pool_, nullptr);
   command_pool_ = VK_NULL_HANDLE;
 }

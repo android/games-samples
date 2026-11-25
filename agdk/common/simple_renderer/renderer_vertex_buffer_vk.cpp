@@ -64,14 +64,23 @@ VertexBufferVk::VertexBufferVk(const VertexBuffer::VertexBufferCreationParams& p
     return;
   }
 
+  // Recorded with other uploads, executed before the next frame's commands (see
+  // RendererVk::BeginStagingCommandBuffer)
   VkCommandBuffer command_buffer = renderer.BeginStagingCommandBuffer();
+  if (command_buffer == VK_NULL_HANDLE) {
+    vmaDestroyBuffer(allocator, vertex_buffer_, vertex_buffer_alloc_);
+    vertex_buffer_ = VK_NULL_HANDLE;
+    vertex_buffer_alloc_ = VK_NULL_HANDLE;
+    vmaDestroyBuffer(allocator, staging_buffer, staging_alloc);
+    return;
+  }
   VkBufferCopy copy_region = {};
   copy_region.srcOffset = 0;
   copy_region.dstOffset = 0;
   copy_region.size = params.data_byte_size;
   vkCmdCopyBuffer(command_buffer, staging_buffer, vertex_buffer_, 1, &copy_region);
-  renderer.EndStagingCommandBuffer();
-  vmaDestroyBuffer(allocator, staging_buffer, staging_alloc);
+  // The renderer destroys the staging buffer once the copy has executed
+  renderer.EndStagingCommandBuffer(staging_buffer, staging_alloc, params.data_byte_size);
 }
 
 VertexBufferVk::~VertexBufferVk() {

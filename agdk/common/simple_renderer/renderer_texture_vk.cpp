@@ -271,43 +271,6 @@ TextureVk::TextureVk(const Texture::TextureCreationParams& params)
     return;
   }
 
-  VkCommandBuffer command_buffer = renderer.BeginStagingCommandBuffer();
-
-  // Copy and translate the image data from the staging buffer to the final GPU memory and
-  // format, for all mip levels
-  VkImageMemoryBarrier image_memory_barrier{};
-  image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-  image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  image_memory_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  image_memory_barrier.subresourceRange.baseMipLevel = 0;
-  image_memory_barrier.subresourceRange.levelCount = mip_count;
-  image_memory_barrier.subresourceRange.baseArrayLayer = 0;
-  image_memory_barrier.subresourceRange.layerCount = 1;
-  image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-  image_memory_barrier.image = image_;
-  image_memory_barrier.srcAccessMask = 0;
-  image_memory_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-  vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr,
-                       1, &image_memory_barrier);
-
-  vkCmdCopyBufferToImage(command_buffer, staging_buffer, image_,
-                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mip_count, copy_regions);
-
-  image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-  image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  image_memory_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-  image_memory_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-  vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr,
-                       1, &image_memory_barrier);
-  renderer.EndStagingCommandBuffer();
-  vmaDestroyBuffer(allocator, staging_buffer, staging_alloc);
-
   // Create the ImageView for the new Image, covering all mip levels
   VkImageViewCreateInfo view_create_info{};
   view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -327,6 +290,7 @@ TextureVk::TextureVk(const Texture::TextureCreationParams& params)
     vmaDestroyImage(allocator, image_, image_alloc_);
     image_ = VK_NULL_HANDLE;
     image_alloc_ = VK_NULL_HANDLE;
+    vmaDestroyBuffer(allocator, staging_buffer, staging_alloc);
     return;
   }
 
@@ -361,7 +325,60 @@ TextureVk::TextureVk(const Texture::TextureCreationParams& params)
     vmaDestroyImage(allocator, image_, image_alloc_);
     image_ = VK_NULL_HANDLE;
     image_alloc_ = VK_NULL_HANDLE;
+    vmaDestroyBuffer(allocator, staging_buffer, staging_alloc);
+    return;
   }
+
+  // Upload last: once recorded, the image must stay alive until the copy executes, so no
+  // failure path may destroy it. Recorded with other uploads, executed before the next
+  // frame's commands (see RendererVk::BeginStagingCommandBuffer).
+  VkCommandBuffer command_buffer = renderer.BeginStagingCommandBuffer();
+  if (command_buffer == VK_NULL_HANDLE) {
+    vkDestroySampler(renderer.GetDevice(), sampler_, nullptr);
+    sampler_ = VK_NULL_HANDLE;
+    vkDestroyImageView(renderer.GetDevice(), image_view_, nullptr);
+    image_view_ = VK_NULL_HANDLE;
+    vmaDestroyImage(allocator, image_, image_alloc_);
+    image_ = VK_NULL_HANDLE;
+    image_alloc_ = VK_NULL_HANDLE;
+    vmaDestroyBuffer(allocator, staging_buffer, staging_alloc);
+    return;
+  }
+
+  // Copy and translate the image data from the staging buffer to the final GPU memory and
+  // format, for all mip levels
+  VkImageMemoryBarrier image_memory_barrier{};
+  image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+  image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  image_memory_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  image_memory_barrier.subresourceRange.baseMipLevel = 0;
+  image_memory_barrier.subresourceRange.levelCount = mip_count;
+  image_memory_barrier.subresourceRange.baseArrayLayer = 0;
+  image_memory_barrier.subresourceRange.layerCount = 1;
+  image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+  image_memory_barrier.image = image_;
+  image_memory_barrier.srcAccessMask = 0;
+  image_memory_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+  vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr,
+                       1, &image_memory_barrier);
+
+  vkCmdCopyBufferToImage(command_buffer, staging_buffer, image_,
+                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mip_count, copy_regions);
+
+  image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+  image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  image_memory_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  image_memory_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+  vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr,
+                       1, &image_memory_barrier);
+  // The renderer destroys the staging buffer once the copy has executed
+  renderer.EndStagingCommandBuffer(staging_buffer, staging_alloc, staging_size);
 }
 
 TextureVk::~TextureVk() {
