@@ -33,8 +33,8 @@ android {
         applicationId 'com.google.sample.agdktunnel'
         minSdkVersion 24
         targetSdkVersion 37
-        versionCode     126
-        versionName    '1.2.6'
+        versionCode     127
+        versionName    '1.2.7'
 
         externalNativeBuild {
             cmake {
@@ -48,30 +48,25 @@ android {
             abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
         }
     }
+    // (Build type CMake arguments are added to the defaultConfig ones above)
     buildTypes {
         release {
             minifyEnabled = false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
-                    'proguard-rules.pro',
-                    '$playcoreDir/proguard/common.pgcfg',
-                    '$playcoreDir/proguard/per-feature-proguard-files'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            if (usePad.toBoolean()) {
+                // The Play Core native SDK's keep rules (common.pgcfg and per-feature files)
+                fileTree(dir: "$playcoreDir/proguard", include: '*.pgcfg').each { proguardFile it }
+            }
             externalNativeBuild {
                 cmake {
-                    arguments "-DANDROID_STL=c++_shared",
-                              "-DUSE_ASSET_PACKS=$usePad",
-                              "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+                    arguments "-DUSE_ASSET_PACKS=$usePad"
                 }
             }
         }
         debug {
             externalNativeBuild {
-                minifyEnabled = false
-                proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
-                        'proguard-rules.pro'
                 cmake {
-                    arguments "-DANDROID_STL=c++_shared",
-                              "-DUSE_ASSET_PACKS=$usePad",
-                              "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+                    arguments "-DUSE_ASSET_PACKS=$usePad"
                 }
             }
             multiDexEnabled true
@@ -113,10 +108,10 @@ dependencies {
     implementation "androidx.core:core:1.19.0"
     implementation "androidx.constraintlayout:constraintlayout:2.2.1"
     implementation 'androidx.fragment:fragment:1.8.9'
-    implementation 'com.google.oboe:oboe:1.10.0'
-    implementation "androidx.games:games-frame-pacing:2.1.3"
+    implementation 'com.google.oboe:oboe:1.11.2'
+    implementation "androidx.games:games-frame-pacing:2.3.0-alpha01"
     implementation "androidx.games:games-activity:4.4.2"
-    implementation "androidx.games:games-controller:2.0.2"
+    implementation "androidx.games:games-controller:2.3.0-alpha01"
 
     // Dependency for using APIs wrapped using library wrapper
     implementation 'com.google.android.gms:play-services-gni-native-c:1.0.0-beta2'
